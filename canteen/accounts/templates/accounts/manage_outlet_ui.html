@@ -1,0 +1,36 @@
+<h1>{{ outlet.name }} – UI Settings</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% comment %} <p>
+        <label>Layout Theme</label><br>
+        {{ form.layout_type }}
+    </p>
+
+    <p>
+        <label>Theme Color</label><br>
+        {{ form.theme_color }}
+    </p> {% endcomment %}
+
+    <p>
+        <label>Banner</label><br>
+        {{ form.banner }}
+    </p>
+
+    <p>
+        {{ form.banner_active }} Activate Banner
+    </p>
+
+    <button type="submit">Save</button>
+</form>
+
+<br>
+<a href="{% url 'outlet_home' %}">⬅ Back</a>
+{% if is_owner %}
+<form method="post" action="{% url 'add_category' outlet.id %}">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="New Category" required>
+    <button>Add Category</button>
+</form>
+{% endif %}

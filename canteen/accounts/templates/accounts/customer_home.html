@@ -1,0 +1,83 @@
+{% comment %} <h1>Welcome, {{ request.user.username }} 👋</h1>
+
+{% if outlets %}
+<div style="display:flex; gap:25px; flex-wrap:wrap;">
+
+    {% for outlet in outlets %}
+        <div style="text-align:center;">
+            <a href="{% url 'outlet_detail' outlet.id %}">
+                {% if outlet.logo %}
+                    <img src="{{ outlet.logo.url }}" width="120">
+                {% else %}
+                    <div>{{ outlet.name }}</div>
+                {% endif %}
+            </a>
+            <p>{{ outlet.name }}</p>
+        </div>
+    {% endfor %}
+
+</div>
+{% else %}
+    <p>No outlets registered yet.</p>
+{% endif %}
+
+
+
+
+{% for category in categories %}
+    <h2>{{ category.name }}</h2>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        {% for product in category.products.all %}
+            {% if product.is_available %}
+                <div style="border:1px solid #ccc; padding:10px; width:150px;">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" width="120">
+                    {% endif %}
+                    <p>{{ product.name }}</p>
+                    <strong>₹{{ product.price }}</strong>
+                </div>
+            {% endif %}
+        {% empty %}
+            <p>No products in this category</p>
+        {% endfor %}
+    </div>
+{% endfor %} {% endcomment %}
+
+
+# chages in march  
+
+<h1>Welcome, {{ request.user.username }} 👋</h1>
+
+<a href="{% url 'cart' %}" style="float:right;">🛒 Cart</a>
+
+{% if outlets %}
+<div style="display:flex; gap:25px; flex-wrap:wrap;">
+
+{% for outlet in outlets %}
+
+<div style="text-align:center;">
+
+<a href="{% url 'outlet_detail' outlet.id %}">
+
+{% if outlet.logo %}
+<img src="{{ outlet.logo.url }}" width="120">
+{% else %}
+<div>{{ outlet.name }}</div>
+{% endif %}
+
+</a>
+
+<p>{{ outlet.name }}</p>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+<p>No outlets registered yet.</p>
+{% endif %}
+
+<p style="margin-top:20px;">Click an outlet above to browse products and add to cart.</p>

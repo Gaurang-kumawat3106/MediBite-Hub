@@ -1,0 +1,67 @@
+<h1>Welcome, {{ request.user.username }} 👋</h1>
+
+<h2>{{ outlet.name }} — Dashboard</h2>
+
+<hr>
+
+<!-- ================= ADD CATEGORY ================= -->
+<h3>➕ Add Category</h3>
+<form method="post" action="{% url 'add_category' %}">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Category name" required>
+    <button type="submit">Add Category</button>
+</form>
+
+<hr>
+
+<!-- ================= ADD PRODUCT ================= -->
+<h3>➕ Add Product</h3>
+<form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <select name="category" required>
+        <option value="">-- Select Category --</option>
+        {% for c in categories %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="text" name="name" placeholder="Product name" required>
+    <input type="number" name="price" step="0.01" placeholder="Price" required>
+    <input type="file" name="image">
+
+    <button type="submit">Add Product</button>
+</form>
+
+<hr>
+
+<!-- ================= CATEGORY LIST ================= -->
+<h3>📂 Categories</h3>
+{% for c in categories %}
+    <p>
+        {{ c.name }}
+        <a href="{% url 'delete_category' c.id %}" style="color:red;">❌</a>
+    </p>
+{% empty %}
+    <p>No categories yet</p>
+{% endfor %}
+
+<hr>
+
+<!-- ================= PRODUCT LIST ================= -->
+<h3>📦 Products</h3>
+{% for p in products %}
+    <div style="border:1px solid #ccc; padding:8px; margin-bottom:5px;">
+        <strong>{{ p.name }}</strong> — ₹{{ p.price }}
+        <br>
+        Category: {{ p.category.name }}
+    </div>
+{% empty %}
+    <p>No products yet</p>
+{% endfor %}
+
+<hr>
+
+<a href="{% url 'outlet_detail' outlet.id %}">
+    👀 View Outlet as Customer
+</a>

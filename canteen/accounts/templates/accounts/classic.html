@@ -1,0 +1,9 @@
+<body style="background-color: {{ ui.theme_color }}; padding:20px;">
+    <h1>{{ outlet.name }} (Classic)</h1>
+
+    {% if ui.banner and ui.banner_active %}
+        <img src="{{ ui.banner.url }}" style="width:100%; border-radius:10px;">
+    {% endif %}
+
+    <p>Welcome to our classic layout</p>
+</body>

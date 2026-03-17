@@ -1,0 +1,76 @@
+<p>
+    {% if is_owner %}
+    <a href="{% url 'outlet_home' %}">← Back to dashboard</a>
+    {% else %}
+    <a href="{% url 'customer_home' %}">← Back to outlets</a>
+    {% endif %}
+</p>
+<h1>{{ outlet.name }}</h1>
+
+{% if ui and ui.banner and ui.banner_active %}
+<img src="{{ ui.banner.url }}" style="width:100%; border-radius:10px;">
+{% endif %}
+
+<hr>
+
+{% if is_owner %}
+<h3>Add Category</h3>
+<form method="post" action="{% url 'add_category' %}">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Category name" required>
+    <button>Add</button>
+</form>
+<hr>
+{% endif %}
+
+{% for category in categories %}
+<h2>{{ category.name }}</h2>
+
+{% if is_owner %}
+<form method="post"
+      action="{% url 'add_product' %}"
+      enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="category" value="{{ category.id }}">
+    <input type="text" name="name" placeholder="Product name" required>
+    <input type="number" name="price" step="0.01" required>
+    <input type="file" name="image">
+    <button>Add Product</button>
+</form>
+{% endif %}
+
+<div style="display:flex; gap:15px; flex-wrap:wrap;">
+    {% for product in category.products.all %}
+        {% if product.is_available %}
+        <div style="border:1px solid #ddd; padding:12px; width:160px; text-align:center;">
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'product_detail' product.id %}">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" width="120" height="120" style="object-fit:cover; border-radius:8px;">
+                {% else %}
+                    <div style="width:120px; height:120px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;">No image</div>
+                {% endif %}
+            </a>
+            {% else %}
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" width="120" height="120" style="object-fit:cover; border-radius:8px;">
+                {% else %}
+                    <div style="width:120px; height:120px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;">No image</div>
+                {% endif %}
+            {% endif %}
+            <p><strong>{{ product.name }}</strong></p>
+            <p>₹{{ product.price }}</p>
+            {% if request.user.is_authenticated and request.user.is_customer %}
+            <a href="{% url 'add_to_cart' product.id %}">Add to Cart</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% empty %}
+    <p>No products in this category yet.</p>
+    {% endfor %}
+</div>
+
+<hr>
+{% empty %}
+<p>No products in this outlet yet.{% if is_owner %} Add categories above, then add products to each category.{% endif %}</p>
+{% endfor %}
