@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'django.contrib.sites',
+
 
     'allauth',
     'allauth.account',
@@ -132,8 +132,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-# Use SITE_ID 1 on Render (production) and 2 on local development
-SITE_ID = int(os.getenv('SITE_ID', '2'))
 
 
 AUTHENTICATION_BACKENDS = (
@@ -146,7 +144,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 
-SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_LOGIN_ON_GET = False
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
