@@ -2,3 +2,9 @@ Django==6.0.3
 django-allauth==65.15.0
 pillow==12.1.1
 python-dotenv==1.2.2
+channels==4.1.0
+channels-redis==4.1.0
+gunicorn==21.2.0
+dj-database-url==1.2.0
+whitenoise==6.5.0
+psycopg2-binary==2.9.9

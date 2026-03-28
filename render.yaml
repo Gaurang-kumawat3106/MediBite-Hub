@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: medicanteen
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "cd canteen && daphne canteen.asgi:application --port $PORT --bind 0.0.0.0"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medicanteen-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: medicanteen-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "canteen.settings"
+
+databases:
+  - name: medicanteen-db
+    plan: free
+
+redis:
+  - name: medicanteen-redis
+    plan: free
+    ipAllowList: [] # empty means only accessible within the project
