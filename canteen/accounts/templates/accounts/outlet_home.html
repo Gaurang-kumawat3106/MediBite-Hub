@@ -1,67 +1,185 @@
-<h1>Welcome, {{ request.user.username }} 👋</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ outlet.name }} — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+</head>
+<body>
 
-<h2>{{ outlet.name }} — Dashboard</h2>
+    <nav class="navbar">
+        <a href="{% url 'outlet_home' %}" class="navbar-brand">
+            Medi<span>Canteen</span>
+        </a>
+        <div class="nav-links">
+            <span class="nav-link">Welcome, {{ request.user.username }} 👋</span>
+            <a href="{% url 'outlet_detail' outlet.id %}" class="btn">👀 View Outlet</a>
+            <a href="{% url 'logout' %}" class="nav-link" style="color: var(--danger);">Logout</a>
+        </div>
+    </nav>
 
-<hr>
 
-<!-- ================= ADD CATEGORY ================= -->
-<h3>➕ Add Category</h3>
-<form method="post" action="{% url 'add_category' %}">
-    {% csrf_token %}
-    <input type="text" name="name" placeholder="Category name" required>
-    <button type="submit">Add Category</button>
-</form>
 
-<hr>
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">{{ outlet.name }}</h1>
+                <p class="page-subtitle">Manage your outlet, categories, products, and view statistics.</p>
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{% url 'outlet_products' %}" class="btn" style="background: var(--surface); color: var(--text);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Manage Products
+                </a>
+                <a href="{% url 'outlet_orders' %}" class="btn btn-primary">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    Manage Orders
+                </a>
+            </div>
+        </div>
 
-<!-- ================= ADD PRODUCT ================= -->
-<h3>➕ Add Product</h3>
-<form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
-    {% csrf_token %}
+        <!-- STATS SECTION -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">
+                    Weekly Statistics
+                    <svg width="20" height="20" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.week.under_100 }}</div>
+                        <div class="stat-label">Under ₹100</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.week.under_200 }}</div>
+                        <div class="stat-label">₹100 - ₹199</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.week.under_500 }}</div>
+                        <div class="stat-label">₹200 - ₹499</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.week.above_500 }}</div>
+                        <div class="stat-label">₹500+</div>
+                    </div>
+                </div>
+            </div>
 
-    <select name="category" required>
-        <option value="">-- Select Category --</option>
-        {% for c in categories %}
-            <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-    </select>
+            <div class="card">
+                <div class="card-title">
+                    Monthly Statistics
+                    <svg width="20" height="20" fill="none" stroke="var(--success)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.month.under_100 }}</div>
+                        <div class="stat-label">Under ₹100</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.month.under_200 }}</div>
+                        <div class="stat-label">₹100 - ₹199</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.month.under_500 }}</div>
+                        <div class="stat-label">₹200 - ₹499</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ stats.month.above_500 }}</div>
+                        <div class="stat-label">₹500+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <input type="text" name="name" placeholder="Product name" required>
-    <input type="number" name="price" step="0.01" placeholder="Price" required>
-    <input type="file" name="image">
+        <div class="dashboard-grid">
+            <!-- ADD CATEGORY & PRODUCT -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- ADD CATEGORY -->
+                <div class="card">
+                    <div class="card-title">➕ Add Category</div>
+                    <form method="post" action="{% url 'add_category' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <input type="text" name="name" class="form-control" placeholder="E.g., Beverages, Snacks..." required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Add Category</button>
+                    </form>
+                </div>
 
-    <button type="submit">Add Product</button>
-</form>
+                <!-- ADD PRODUCT -->
+                <div class="card">
+                    <div class="card-title">📦 Add Product</div>
+                    <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <select name="category" class="form-control" required style="appearance: none;">
+                                <option value="">-- Select Category --</option>
+                                {% for c in categories %}
+                                    <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="name" class="form-control" placeholder="Product name" required>
+                        </div>
+                        <div class="two-col-grid form-group">
+                            <input type="number" name="price" step="0.01" class="form-control" placeholder="Price (₹)" required>
+                            <input type="file" name="image" class="form-control" style="padding: 0.6rem;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Add Product</button>
+                    </form>
+                </div>
+            </div>
 
-<hr>
+            <!-- LISTINGS -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- CATEGORY LIST -->
+                <div class="card">
+                    <div class="card-title">📂 Categories</div>
+                    <div class="list-group">
+                        {% for c in categories %}
+                            <div class="list-item">
+                                <div class="list-item-content">
+                                    <strong>{{ c.name }}</strong>
+                                </div>
+                                <a href="{% url 'delete_category' c.id %}" class="btn-icon" title="Delete Category">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </a>
+                            </div>
+                        {% empty %}
+                            <p style="color: var(--text-muted); text-align: center; padding: 1rem 0;">No categories yet</p>
+                        {% endfor %}
+                    </div>
+                </div>
 
-<!-- ================= CATEGORY LIST ================= -->
-<h3>📂 Categories</h3>
-{% for c in categories %}
-    <p>
-        {{ c.name }}
-        <a href="{% url 'delete_category' c.id %}" style="color:red;">❌</a>
-    </p>
-{% empty %}
-    <p>No categories yet</p>
-{% endfor %}
-
-<hr>
-
-<!-- ================= PRODUCT LIST ================= -->
-<h3>📦 Products</h3>
-{% for p in products %}
-    <div style="border:1px solid #ccc; padding:8px; margin-bottom:5px;">
-        <strong>{{ p.name }}</strong> — ₹{{ p.price }}
-        <br>
-        Category: {{ p.category.name }}
+                <!-- PRODUCT LIST -->
+                <div class="card">
+                    <div class="card-title">🛍️ Products</div>
+                    <div class="list-group">
+                        {% for p in products %}
+                            <div class="list-item">
+                                <div class="list-item-content">
+                                    <strong>{{ p.name }}</strong>
+                                    <span>₹{{ p.price }}</span>
+                                    <span class="badge">{{ p.category.name }}</span>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p style="color: var(--text-muted); text-align: center; padding: 1rem 0;">No products yet</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-{% empty %}
-    <p>No products yet</p>
-{% endfor %}
-
-<hr>
-
-<a href="{% url 'outlet_detail' outlet.id %}">
-    👀 View Outlet as Customer
-</a>
+    <script src="{% static 'js/main.js' %}"></script>
+    
+</body>
+</html>

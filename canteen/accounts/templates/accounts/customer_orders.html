@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Orders — MediCanteen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/customer_token.css' %}"/>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <!-- ─── NAVBAR ─────────────────────────────────── -->
+  <nav>
+    <a href="{% url 'customer_home' %}" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Home
+    </a>
+    <div class="nav-page-title">
+      <i class="fa-solid fa-box-open"></i> My Orders
+    </div>
+    <div class="nav-spacer"></div>
+    <a href="{% url 'customer_token' %}" class="nav-back">
+      <i class="fa-solid fa-ticket"></i> Token
+    </a>
+  </nav>
+
+  <div class="container">
+
+    <div class="orders-header">
+      <h1>My Orders <span>📦</span></h1>
+    </div>
+
+    {% if orders %}
+    <div class="orders-list">
+      {% for order in orders %}
+
+      <div class="order-card"
+           data-status="{{ order.status }}"
+           style="animation-delay: {{ forloop.counter0 }}00ms">
+
+        <!-- Clickable Header -->
+        <div class="order-card-header">
+          <div class="order-meta">
+            <span class="order-id">#{{ order.id }}</span>
+            <span class="order-outlet">{{ order.outlet.name }}</span>
+            <span class="order-date">
+              <i class="fa-regular fa-clock"></i>
+              {{ order.created_at|date:"M d, Y · h:i A" }}
+            </span>
+          </div>
+
+          <div class="order-right">
+            <!-- Status Badge -->
+            {% if order.status == 'pending' %}
+              <span class="status-badge status-pending">
+                <i class="fa-solid fa-hourglass-half"></i> Pending
+              </span>
+            {% elif order.status == 'preparing' %}
+              <span class="status-badge status-preparing">
+                <i class="fa-solid fa-fire-burner"></i> Preparing
+              </span>
+            {% elif order.status == 'completed' %}
+              <span class="status-badge status-completed">
+                <i class="fa-solid fa-circle-check"></i> Completed
+              </span>
+            {% elif order.status == 'cancelled' %}
+              <span class="status-badge status-cancelled">
+                <i class="fa-solid fa-ban"></i> Cancelled
+              </span>
+            {% endif %}
+
+            <span class="order-total">₹{{ order.total_amount }}</span>
+            <i class="fa-solid fa-chevron-down order-chevron"></i>
+          </div>
+        </div>
+
+        <!-- Expandable Body -->
+        <div class="order-body">
+          <div class="order-items-list">
+            {% for item in order.items.all %}
+            <div class="order-item-row">
+              <div>
+                
+                <span class="order-item-qty">×{{ item.quantity }}</span>
+                <span class="order-item-name">{{ item.product.name }}</span>
+              </div>
+              <span>₹{{ item.product.price }} each</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% if order.status == 'pending' %}
+          <div class="order-actions">
+            <form action="{% url 'cancel_order' order.id %}" method="POST" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="cancel-btn">
+                <i class="fa-solid fa-xmark"></i> Cancel Order
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="no-orders">
+      <i class="fa-solid fa-box-open"></i>
+      <h2>No orders yet</h2>
+      <p>You haven't placed any orders. Start exploring outlets!</p>
+      <a href="{% url 'customer_home' %}" class="btn-browse" style="margin-top: 1.25rem;">
+        <i class="fa-solid fa-utensils"></i> Browse Outlets
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {% if popup_token %}
+  <div class="token-modal-overlay" id="tokenModalOverlay" role="dialog" aria-modal="true">
+    <div class="token-modal" data-remaining-seconds="{{ popup_token.remaining_seconds|default:0 }}">
+      <div class="token-modal-title">
+        {{ popup_token.outlet.name }}
+      </div>
+      <div class="token-modal-token">
+        Token #{{ popup_token.token_no }}
+      </div>
+      <div class="token-modal-sub">
+        Please show this token at the outlet.
+      </div>
+      <div class="token-modal-countdown">
+        Visible for: <strong class="token-countdown">--:--:--</strong>
+      </div>
+      <button class="token-modal-close" id="tokenModalClose" type="button">OK</button>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const overlay = document.getElementById('tokenModalOverlay');
+      const closeBtn = document.getElementById('tokenModalClose');
+      if (!overlay) return;
+      overlay.classList.add('active');
+      closeBtn?.addEventListener('click', () => overlay.classList.remove('active'));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+  </script>
+  {% endif %}
+
+  <script>
+    function formatHMS(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const ss = String(sec).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function startTokenCountdown(el) {
+      const raw = el.getAttribute('data-remaining-seconds');
+      let remaining = Number(raw || 0);
+      const out = el.querySelector('.token-countdown');
+      if (!out) return;
+
+      const tick = () => {
+        if (remaining <= 0) {
+          out.textContent = '00:00:00';
+          const overlay = document.getElementById('tokenModalOverlay');
+          overlay?.classList.remove('active');
+          return false;
+        }
+        out.textContent = formatHMS(remaining);
+        remaining -= 1;
+        return true;
+      };
+
+      tick();
+      const id = setInterval(() => {
+        const keep = tick();
+        if (!keep) clearInterval(id);
+      }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-remaining-seconds]').forEach(startTokenCountdown);
+    });
+  </script>
+
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main_.js' %}"></script>
+  <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+</html>

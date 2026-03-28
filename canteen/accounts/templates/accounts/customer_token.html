@@ -1,0 +1,157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>My Token — MediCanteen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/customer_token.css' %}"/>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- ─── NAVBAR ─────────────────────────────────── -->
+  <nav>
+    <a href="{% url 'customer_home' %}" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Home
+    </a>
+    <div class="nav-page-title">
+      <i class="fa-solid fa-ticket"></i> My Token
+    </div>
+    <div class="nav-spacer"></div>
+    <a href="{% url 'customer_orders' %}" class="nav-back">
+      <i class="fa-solid fa-box"></i> Orders
+    </a>
+  </nav>
+
+  <div class="container">
+    <div class="token-page-header">
+      <h1>
+        Tokens <span>🎟️</span>
+      </h1>
+      <p>Your token is generated when an outlet marks your order as completed.</p>
+    </div>
+
+    {% if tokens %}
+      <div class="token-cards">
+        {% for t in tokens %}
+          <div class="token-card" data-remaining-seconds="{{ t.remaining_seconds|default:0 }}">
+            <div class="token-card-outlet">{{ t.outlet.name }}</div>
+            <div class="token-card-no">Token #{{ t.token_no }}</div>
+            <div class="token-card-meta">
+              <span><i class="fa-regular fa-calendar"></i> {{ t.token_date|date:"M d, Y" }}</span>
+              <span class="token-visibility">
+                <i class="fa-solid fa-hourglass-half"></i>
+                Visible for: <strong class="token-countdown">--:--:--</strong>
+              </span>
+            </div>
+            <div class="token-card-order">
+              For Order #{{ t.order.id }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-orders">
+        <i class="fa-solid fa-ticket"></i>
+        <h2>No tokens yet</h2>
+        <p>Place an order and wait for the outlet to mark it completed.</p>
+        <a href="{% url 'customer_home' %}" class="btn-browse" style="margin-top: 1.25rem;">
+          <i class="fa-solid fa-utensils"></i> Browse Outlets
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if popup_token %}
+  <div class="token-modal-overlay" id="tokenModalOverlay" role="dialog" aria-modal="true">
+    <div class="token-modal" data-remaining-seconds="{{ popup_token.remaining_seconds|default:0 }}">
+      <div class="token-modal-title">
+        {{ popup_token.outlet.name }}
+      </div>
+      <div class="token-modal-token">
+        Token #{{ popup_token.token_no }}
+      </div>
+      <div class="token-modal-sub">
+        Your order is completed. Show this token at the outlet.
+      </div>
+      <div class="token-modal-countdown">
+        Visible for: <strong class="token-countdown">--:--:--</strong>
+      </div>
+      <button class="token-modal-close" id="tokenModalClose" type="button">OK</button>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const overlay = document.getElementById('tokenModalOverlay');
+      const closeBtn = document.getElementById('tokenModalClose');
+      if (!overlay) return;
+      overlay.classList.add('active');
+      closeBtn?.addEventListener('click', () => overlay.classList.remove('active'));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+  </script>
+  {% endif %}
+
+  <script>
+    function formatHMS(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const ss = String(sec).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function startTokenCountdown(el) {
+      const raw = el.getAttribute('data-remaining-seconds');
+      let remaining = Number(raw || 0);
+      const out = el.querySelector('.token-countdown');
+      if (!out) return;
+
+      const tick = () => {
+        if (remaining <= 0) {
+          out.textContent = '00:00:00';
+          // When expired, hide token card and close modal if open.
+          if (el.classList.contains('token-card')) el.style.display = 'none';
+          if (el.classList.contains('token-modal')) {
+            const overlay = document.getElementById('tokenModalOverlay');
+            overlay?.classList.remove('active');
+          }
+          return false;
+        }
+        out.textContent = formatHMS(remaining);
+        remaining -= 1;
+        return true;
+      };
+
+      tick();
+      const id = setInterval(() => {
+        const keep = tick();
+        if (!keep) clearInterval(id);
+      }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-remaining-seconds]').forEach(startTokenCountdown);
+    });
+  </script>
+  <script src="{% static 'js/notifications.js' %}"></script>
+  <script>
+    function showTokenUpdate(tokenNo) {
+        if(confirm(`Your order is ready! Token #${tokenNo} generated. Refresh to see it?`)) {
+            window.location.reload();
+        }
+    }
+  </script>
+</body>
+</html>
+

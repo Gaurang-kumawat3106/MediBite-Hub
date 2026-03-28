@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - MediCanteen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <div class="auth-container">
+        <div class="auth-card welcome-inner">
+            <div class="greeting">Welcome Dear</div>
+            <div class="name">
+                {% if is_customer %}
+                    {{ user_name }}
+                {% else %}
+                    {{ user_name }}
+                {% endif %}
+            </div>
+            
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+            <p style="margin-top: 25px; color: var(--text-muted); font-size: 0.95rem; letter-spacing: 1px; animation: pulse 1.5s infinite;">Preparing your dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Hidden element holding the redirect URL for JS -->
+    <div id="redirectPayload" data-url="{{ redirect_to }}" style="display: none;"></div>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+
+# Django
+*.sqlite3
+*.log
+media/
+staticfiles/
+
+# Environment variables (NEVER upload this!)
+.env
+
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+EOF

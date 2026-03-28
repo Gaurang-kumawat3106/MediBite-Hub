@@ -1,36 +1,121 @@
-<h1>{{ outlet.name }} – UI Settings</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Banner & Branding - {{ outlet.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="ambient-glow"></div>
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+    <nav>
+        <a href="{% url 'outlet_home' %}" class="nav-back">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </a>
+        <div style="font-weight: 600;"><i class="fa-solid fa-image" style="color:var(--accent); margin-right:5px;"></i> Branding</div>
+        <div style="width: 80px;"></div>
+    </nav>
 
-    {% comment %} <p>
-        <label>Layout Theme</label><br>
-        {{ form.layout_type }}
-    </p>
+    <div class="container">
+        <!-- Live Preview Header -->
+        <div class="preview-section">
+            <div class="preview-header">
+                <i class="fa-solid fa-eye"></i> Live Mobile Preview
+            </div>
+            <div class="outlet-header-preview">
+                {% if form.instance.banner_active %}
+                    {% if form.instance.banner %}<img src="{{ form.instance.banner.url }}" alt="Banner 1" class="header-bg carousel-slide">{% endif %}
+                    {% if form.instance.banner2 %}<img src="{{ form.instance.banner2.url }}" alt="Banner 2" class="header-bg carousel-slide">{% endif %}
+                    {% if form.instance.banner3 %}<img src="{{ form.instance.banner3.url }}" alt="Banner 3" class="header-bg carousel-slide">{% endif %}
+                    <div class="carousel-indicators" id="bannerIndicators"></div>
+                {% endif %}
+                <div class="header-overlay"></div>
+                <div class="outlet-details">
+                    <div class="outlet-logo-preview">
+                        {% if outlet.logo %}
+                            <img src="{{ outlet.logo.url }}" style="width:100%; height:100%; border-radius:10px; object-fit:cover;">
+                        {% else %}
+                            <i class="fa-solid fa-store"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1>{{ outlet.name }}</h1>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">Currently displayed header</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <p>
-        <label>Theme Color</label><br>
-        {{ form.theme_color }}
-    </p> {% endcomment %}
+        <div class="editor-card">
+            <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Banner Customization</h2>
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
 
-    <p>
-        <label>Banner</label><br>
-        {{ form.banner }}
-    </p>
+                <!-- Banner File Upload -->
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label><i class="fa-solid fa-cloud-arrow-up"></i> Upload Banner 1 (Primary)</label>
+                    <div class="form-control-file">
+                        {{ form.banner }}
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label><i class="fa-solid fa-cloud-arrow-up"></i> Upload Banner 2 (Optional Slide)</label>
+                    <div class="form-control-file">
+                        {{ form.banner2 }}
+                    </div>
+                </div>
 
-    <p>
-        {{ form.banner_active }} Activate Banner
-    </p>
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label><i class="fa-solid fa-cloud-arrow-up"></i> Upload Banner 3 (Optional Slide)</label>
+                    <div class="form-control-file">
+                        {{ form.banner3 }}
+                    </div>
+                    <small style="color: var(--text-muted); display: block; margin-top: 10px;">Recommended resolution: 1920x600px. Uploading multiple banners activates the Auto-Play Carousel automatically.</small>
+                </div>
 
-    <button type="submit">Save</button>
-</form>
+                <!-- Activation Toggle Row -->
+                <div class="toggle-wrapper" style="margin-bottom: 2rem;">
+                    <div class="toggle-info">
+                        <strong>Show Banner to Customers</strong>
+                        <span>Turn off to hide the image and display the minimal color gradient instead.</span>
+                    </div>
+                    <label class="switch">
+                        <!-- We manually render the checkbox and attach Django's field to it by hiding default and using CSS -->
+                        <div style="display: none;">{{ form.banner_active }}</div>
+                        <!-- Use custom switch that hooks the hidden input via JS -->
+                        <input type="checkbox" id="customToggle" {% if form.instance.banner_active %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
 
-<br>
-<a href="{% url 'outlet_home' %}">⬅ Back</a>
-{% if is_owner %}
-<form method="post" action="{% url 'add_category' outlet.id %}">
-    {% csrf_token %}
-    <input type="text" name="name" placeholder="New Category" required>
-    <button>Add Category</button>
-</form>
-{% endif %}
+                <!-- Advanced Settings Row (Hidden or styled) -->
+                <div class="form-row">
+                    <div class="form-group color-picker-input">
+                        <label>Brand Accent Color</label>
+                        {{ form.theme_color }}
+                    </div>
+                    <div class="form-group select-input">
+                        <label>Layout Style</label>
+                        {{ form.layout_type }}
+                    </div>
+                </div>
+
+                <!-- Django uses an implicit ID on the form widget for banner_active, typically id_banner_active -->
+                
+
+                <button type="submit" class="btn-save">
+                    Apply Changes <i class="fa-solid fa-check" style="margin-left: 5px;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

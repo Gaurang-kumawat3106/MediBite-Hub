@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Menu - {{ outlet.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/outlet_style.css' %}">
+
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <nav>
+        <a href="{% url 'outlet_home' %}" class="nav-back">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </a>
+        
+        <!-- Navbar Dropdown & Search -->
+        <div class="nav-controls">
+            <div class="category-select-wrapper">
+                <select class="category-select" id="categorySelect">
+                    <option value="all">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.name|lower }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search products by name...">
+            </div>
+        </div>
+
+        <div class="user-badge">
+            <i class="fa-solid fa-user-shield"></i> Outlet Manager
+        </div>
+    </nav>
+
+    <div class="outlet-header">
+        <div class="header-overlay"></div>
+        <div class="outlet-info-row">
+            <div class="outlet-details">
+                <h1>Manage Inventory</h1>
+                <p>Real-time activation toggles for {{ outlet.name }} items.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Products Grid -->
+        <div class="products-grid" id="productsGrid">
+            {% for category in categories %}
+                {% for product in category.products.all %}
+                    <div class="product-card {% if not product.is_available %}unavailable{% endif %}" data-category="{{ category.name|lower }}" data-name="{{ product.name|lower }}">
+                        <div class="img-wrapper">
+                            <!-- Status Badges overlaying image -->
+                            {% if product.is_available %}
+                                <div class="status-badge available">Live</div>
+                            {% else %}
+                                <div class="status-badge unavailable">Inactive</div>
+                            {% endif %}
+
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img">
+                            {% else %}
+                                <div class="product-img"><i class="fa-solid fa-image"></i></div>
+                            {% endif %}
+                        </div>
+
+                        <div class="product-info">
+                           
+                            <div class="product-category">{{ category.name }}
+                                <h3 class="product-name">{{ product.name }}</h3> 
+                            </div>
+                            
+                            <div class="product-footer">
+                                <div class="product-price">₹{{ product.price }}</div>
+                                
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="toggle-label">
+                                        {% if product.is_available %}Enabled{% else %}Disabled{% endif %}
+                                    </span>
+                                    <!-- Toggle Switch form hook -->
+                                    <form action="{% url 'toggle_availability' product.id %}" method="post" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <label class="switch">
+                                            <input type="checkbox" onchange="this.form.submit()" {% if product.is_available %}checked{% endif %}>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+            
+            <div class="empty-state" id="emptyState">
+                <i class="fa-solid fa-search"></i>
+                <h2>No products found</h2>
+                <p>Try searching for something else or changing the category filter.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Filter System Same As Customer Side -->
+    
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/outlet.js' %}"></script>
+</body>
+</html>

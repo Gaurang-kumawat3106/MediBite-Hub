@@ -1,0 +1,155 @@
+/* Admin-only styling for the Order changelist dashboard.
+   Keep selectors scoped under .order-admin-* to avoid affecting the rest of Django admin. */
+
+.order-admin-dashboard {
+  margin: 0 0 18px 0;
+  padding: 18px 18px 8px;
+  border-radius: 16px;
+  background: rgba(9, 15, 27, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.order-admin-header h2 {
+  margin: 0 0 6px 0;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.order-admin-header p {
+  margin: 0 0 14px 0;
+  color: rgba(230, 237, 243, 0.75);
+  font-size: 0.95rem;
+}
+
+.order-admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 900px) {
+  .order-admin-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.order-admin-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(26, 35, 50, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.order-admin-card--accent {
+  background: linear-gradient(180deg, rgba(28, 97, 166, 0.35), rgba(26, 35, 50, 0.7));
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.order-admin-card h3 {
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.order-admin-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .order-admin-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+.order-admin-kpi {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 20, 25, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.order-admin-kpi .label {
+  color: rgba(230, 237, 243, 0.72);
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.order-admin-kpi .value {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin-bottom: 3px;
+}
+
+.order-admin-kpi .sub {
+  color: rgba(230, 237, 243, 0.6);
+  font-size: 0.82rem;
+}
+
+.order-admin-details {
+  margin: 14px 0;
+  padding: 12px 12px 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(26, 35, 50, 0.35);
+}
+
+.order-admin-details > summary {
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.order-admin-table-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.order-admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 980px;
+}
+
+@media (max-width: 1200px) {
+  .order-admin-table {
+    min-width: 880px;
+  }
+}
+
+.order-admin-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(15, 20, 25, 0.65);
+  color: rgba(230, 237, 243, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.order-admin-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  vertical-align: top;
+  color: #ffffff;
+}
+
+.order-admin-table tr:hover td {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.order-admin-muted {
+  color: rgba(230, 237, 243, 0.62);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+

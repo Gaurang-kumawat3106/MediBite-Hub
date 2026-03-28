@@ -1,3 +1,5 @@
+{% load static %}
+{% load socialaccount %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,179 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0f1419;
-            --surface: #1a2332;
-            --surface-hover: #243044;
-            --border: #2d3a4f;
-            --text: #e6edf3;
-            --text-muted: #8b9cb4;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --error-bg: rgba(239, 68, 68, 0.12);
-            --error-text: #f87171;
-            --success-text: #34d399;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            background-image:
-                radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent),
-                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.08), transparent);
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 400px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2.5rem;
-            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .logo h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--text);
-        }
-
-        .logo p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-top: 0.35rem;
-        }
-
-        .alert {
-            padding: 0.75rem 1rem;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .alert-error {
-            background: var(--error-bg);
-            color: var(--error-text);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text);
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            font-family: inherit;
-            color: var(--text);
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .form-group input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .form-group .field-error {
-            font-size: 0.8rem;
-            color: var(--error-text);
-            margin-top: 0.35rem;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 0.875rem 1.25rem;
-            font-size: 1rem;
-            font-weight: 600;
-            font-family: inherit;
-            color: #fff;
-            background: var(--accent);
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.05s;
-            margin-top: 0.5rem;
-        }
-
-        .submit-btn:hover {
-            background: var(--accent-hover);
-        }
-
-        .submit-btn:active {
-            transform: scale(0.99);
-        }
-
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 1.75rem 0;
-        }
-
-        .register-links {
-            text-align: center;
-        }
-
-        .register-links p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.75rem;
-        }
-
-        .register-links a {
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .register-links a:hover {
-            color: #60a5fa;
-        }
-
-        .register-links .link-sep {
-            color: var(--text-muted);
-            margin: 0 0.5rem;
-            font-weight: 400;
-        }
-    </style>
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <div class="login-card">
@@ -242,11 +73,12 @@
 
         <div class="divider"></div>
         <div class="register-links">
-            <p>New user?</p>
+            <p>New __ user?</p>
             <a href="{% url 'customer_register' %}">Customer Register</a>
             <span class="link-sep">|</span>
             <a href="{% url 'outlet_register' %}">Outlet Register</a>
         </div>
     </div>
+    <script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>

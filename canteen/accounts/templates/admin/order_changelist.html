@@ -1,0 +1,150 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_order_changelist.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="order-admin-dashboard">
+  <div class="order-admin-header">
+    <h2>Order Analytics (Excluding Cancelled)</h2>
+    <p>Bucketed by <strong>total_amount</strong> for each <strong>Outlet Head</strong>.</p>
+  </div>
+
+  <div class="order-admin-summary-grid">
+    <div class="order-admin-card">
+      <h3>This Week</h3>
+      <div class="order-admin-kpis">
+        <div class="order-admin-kpi">
+          <div class="label">&lt; ₹100</div>
+          <div class="value">₹{{ stats.week.under_100_sales }}</div>
+          <div class="sub">({{ stats.week.under_100_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹100 - ₹199</div>
+          <div class="value">₹{{ stats.week.under_200_sales }}</div>
+          <div class="sub">({{ stats.week.under_200_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹200 - ₹499</div>
+          <div class="value">₹{{ stats.week.under_500_sales }}</div>
+          <div class="sub">({{ stats.week.under_500_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹500+</div>
+          <div class="value">₹{{ stats.week.above_500_sales }}</div>
+          <div class="sub">({{ stats.week.above_500_orders }} orders)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-admin-card order-admin-card--accent">
+      <h3>This Month</h3>
+      <div class="order-admin-kpis">
+        <div class="order-admin-kpi">
+          <div class="label">&lt; ₹100</div>
+          <div class="value">₹{{ stats.month.under_100_sales }}</div>
+          <div class="sub">({{ stats.month.under_100_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹100 - ₹199</div>
+          <div class="value">₹{{ stats.month.under_200_sales }}</div>
+          <div class="sub">({{ stats.month.under_200_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹200 - ₹499</div>
+          <div class="value">₹{{ stats.month.under_500_sales }}</div>
+          <div class="sub">({{ stats.month.under_500_orders }} orders)</div>
+        </div>
+        <div class="order-admin-kpi">
+          <div class="label">₹500+</div>
+          <div class="value">₹{{ stats.month.above_500_sales }}</div>
+          <div class="sub">({{ stats.month.above_500_orders }} orders)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <details class="order-admin-details" open>
+    <summary>Outlet Head Breakdown - This Week</summary>
+    <div class="order-admin-table-wrap">
+      <table class="order-admin-table">
+        <thead>
+          <tr>
+            <th>Outlet Head</th>
+            <th>Total Orders</th>
+            <th>Total Sales</th>
+            <th>&lt; ₹100</th>
+            <th>₹100 - ₹199</th>
+            <th>₹200 - ₹499</th>
+            <th>₹500+</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for head in outlet_head_stats_week %}
+            <tr>
+              <td>
+                <strong>{{ head.outlet_name }}</strong><br />
+                <span class="order-admin-muted">{{ head.head_username }}</span>
+              </td>
+              <td>{{ head.total_orders }}</td>
+              <td>₹{{ head.total_sales }}</td>
+              <td>₹{{ head.under_100_sales }}<br /><span class="order-admin-muted">({{ head.under_100_orders }})</span></td>
+              <td>₹{{ head.under_200_sales }}<br /><span class="order-admin-muted">({{ head.under_200_orders }})</span></td>
+              <td>₹{{ head.under_500_sales }}<br /><span class="order-admin-muted">({{ head.under_500_orders }})</span></td>
+              <td>₹{{ head.above_500_sales }}<br /><span class="order-admin-muted">({{ head.above_500_orders }})</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">No outlet heads found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="order-admin-details">
+    <summary>Outlet Head Breakdown - This Month</summary>
+    <div class="order-admin-table-wrap">
+      <table class="order-admin-table">
+        <thead>
+          <tr>
+            <th>Outlet Head</th>
+            <th>Total Orders</th>
+            <th>Total Sales</th>
+            <th>&lt; ₹100</th>
+            <th>₹100 - ₹199</th>
+            <th>₹200 - ₹499</th>
+            <th>₹500+</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for head in outlet_head_stats_month %}
+            <tr>
+              <td>
+                <strong>{{ head.outlet_name }}</strong><br />
+                <span class="order-admin-muted">{{ head.head_username }}</span>
+              </td>
+              <td>{{ head.total_orders }}</td>
+              <td>₹{{ head.total_sales }}</td>
+              <td>₹{{ head.under_100_sales }}<br /><span class="order-admin-muted">({{ head.under_100_orders }})</span></td>
+              <td>₹{{ head.under_200_sales }}<br /><span class="order-admin-muted">({{ head.under_200_orders }})</span></td>
+              <td>₹{{ head.under_500_sales }}<br /><span class="order-admin-muted">({{ head.under_500_orders }})</span></td>
+              <td>₹{{ head.above_500_sales }}<br /><span class="order-admin-muted">({{ head.above_500_orders }})</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">No outlet heads found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,11 @@
+{% load static %}
+<body style="font-family:sans-serif;">
+    <h2 style="color:{{ ui.theme_color }};">{{ outlet.name }}</h2>
+
+    {% if ui.banner and ui.banner_active %}
+        <img src="{{ ui.banner.url }}" width="80%">
+    {% endif %}
+
+    <p>Clean & minimal design</p>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>

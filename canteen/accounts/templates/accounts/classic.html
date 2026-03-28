@@ -1,3 +1,4 @@
+{% load static %}
 <body style="background-color: {{ ui.theme_color }}; padding:20px;">
     <h1>{{ outlet.name }} (Classic)</h1>
 
@@ -6,4 +7,5 @@
     {% endif %}
 
     <p>Welcome to our classic layout</p>
+    <script src="{% static 'js/main.js' %}"></script>
 </body>

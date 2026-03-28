@@ -1,76 +1,111 @@
-<p>
-    {% if is_owner %}
-    <a href="{% url 'outlet_home' %}">← Back to dashboard</a>
-    {% else %}
-    <a href="{% url 'customer_home' %}">← Back to outlets</a>
-    {% endif %}
-</p>
-<h1>{{ outlet.name }}</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ outlet.name }} — MediCanteen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
+</head>
+<body>
 
-{% if ui and ui.banner and ui.banner_active %}
-<img src="{{ ui.banner.url }}" style="width:100%; border-radius:10px;">
-{% endif %}
+  <div class="ambient-glow"></div>
 
-<hr>
+  <!-- ─── NAVBAR ─────────────────────────────────── -->
+  <nav>
+    <a href="{% url 'customer_home' %}" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Home
+    </a>
 
-{% if is_owner %}
-<h3>Add Category</h3>
-<form method="post" action="{% url 'add_category' %}">
-    {% csrf_token %}
-    <input type="text" name="name" placeholder="Category name" required>
-    <button>Add</button>
-</form>
-<hr>
-{% endif %}
+    <div class="nav-controls">
+      <div class="category-select-wrapper">
+        <select class="category-select" id="categorySelect">
+          <option value="all">All Categories</option>
+          {% for category in categories %}
+            <option value="{{ category.name|lower }}">{{ category.name }}</option>
+          {% endfor %}
+        </select>
+        <i class="fa-solid fa-chevron-down"></i>
+      </div>
+      <div class="search-bar">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search items, meals, drinks…"/>
+      </div>
+    </div>
 
-{% for category in categories %}
-<h2>{{ category.name }}</h2>
+    <a href="{% url 'cart' %}" class="cart-btn">
+      <i class="fa-solid fa-cart-shopping"></i> My Cart
+    </a>
+  </nav>
 
-{% if is_owner %}
-<form method="post"
-      action="{% url 'add_product' %}"
-      enctype="multipart/form-data">
-    {% csrf_token %}
-    <input type="hidden" name="category" value="{{ category.id }}">
-    <input type="text" name="name" placeholder="Product name" required>
-    <input type="number" name="price" step="0.01" required>
-    <input type="file" name="image">
-    <button>Add Product</button>
-</form>
-{% endif %}
+  <!-- Floating Cart (mobile) -->
+  <a href="{% url 'cart' %}" class="floating-cart" aria-label="Cart">
+    <i class="fa-solid fa-cart-shopping"></i>
+  </a>
 
-<div style="display:flex; gap:15px; flex-wrap:wrap;">
-    {% for product in category.products.all %}
-        {% if product.is_available %}
-        <div style="border:1px solid #ddd; padding:12px; width:160px; text-align:center;">
-            {% if request.user.is_authenticated %}
-            <a href="{% url 'product_detail' product.id %}">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" width="120" height="120" style="object-fit:cover; border-radius:8px;">
-                {% else %}
-                    <div style="width:120px; height:120px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;">No image</div>
-                {% endif %}
-            </a>
-            {% else %}
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" width="120" height="120" style="object-fit:cover; border-radius:8px;">
-                {% else %}
-                    <div style="width:120px; height:120px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;">No image</div>
-                {% endif %}
-            {% endif %}
-            <p><strong>{{ product.name }}</strong></p>
-            <p>₹{{ product.price }}</p>
-            {% if request.user.is_authenticated and request.user.is_customer %}
-            <a href="{% url 'add_to_cart' product.id %}">Add to Cart</a>
-            {% endif %}
-        </div>
+  <!-- ─── OUTLET HERO ──────────────────────────── -->
+  <div class="outlet-header">
+    <div class="outlet-info-row">
+      <div class="outlet-logo">
+        {% if outlet.logo %}
+          <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }} logo"/>
+        {% else %}
+          <i class="fa-solid fa-store"></i>
         {% endif %}
-    {% empty %}
-    <p>No products in this category yet.</p>
-    {% endfor %}
-</div>
+      </div>
+      <div class="outlet-details">
+        <h1>{{ outlet.name }}</h1>
+        <p>Order your favourite meals, freshly prepared.</p>
+      </div>
+    </div>
+  </div>
 
-<hr>
-{% empty %}
-<p>No products in this outlet yet.{% if is_owner %} Add categories above, then add products to each category.{% endif %}</p>
-{% endfor %}
+  <!-- ─── PRODUCTS ─────────────────────────────── -->
+  <div class="container">
+    <div class="products-grid" id="productsGrid">
+      {% for category in categories %}
+        {% for product in category.products.all %}
+          {% if product.is_available %}
+          <div class="product-card"
+               data-category="{{ category.name|lower }}"
+               data-name="{{ product.name|lower }}">
+            <div class="img-wrapper">
+              {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img"/>
+              {% else %}
+                <div class="product-img"><i class="fa-solid fa-bowl-food"></i></div>
+              {% endif %}
+            </div>
+            <div class="product-info">
+              <div class="product-category">{{ category.name }}
+                   <h3 class="product-name">{{ product.name }} </h3> 
+                 ₹{{ product.price }}</div>
+             
+              <div class="product-footer">
+              
+                <a href="{% url 'add_to_cart' product.id %}" class="add-cart-btn" title="Add to cart">
+                  <i class="fa-solid fa-plus"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+
+      <!-- Empty Search State -->
+      <div class="empty-state" id="emptyState">
+        <i class="fa-solid fa-magnifying-glass empty-icon"></i>
+        <h2 class="empty-title">No items found</h2>
+        <p class="empty-subtitle">Try a different search or change the category filter.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main_.js' %}"></script>
+</body>
+</html>

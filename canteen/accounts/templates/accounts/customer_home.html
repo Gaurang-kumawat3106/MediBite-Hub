@@ -1,83 +1,117 @@
-{% comment %} <h1>Welcome, {{ request.user.username }} 👋</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Customer Dashboard — MediCanteen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/customer_home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
 
-{% if outlets %}
-<div style="display:flex; gap:25px; flex-wrap:wrap;">
+    <!-- ── Navbar ───────────────────────────────────── -->
+    <nav>
+        <a class="nav-brand" href="{% url 'customer_home' %}">
+            <i class="fa-solid fa-utensils"></i>
+            MediCanteen
+        </a>
 
-    {% for outlet in outlets %}
-        <div style="text-align:center;">
-            <a href="{% url 'outlet_detail' outlet.id %}">
-                {% if outlet.logo %}
-                    <img src="{{ outlet.logo.url }}" width="120">
-                {% else %}
-                    <div>{{ outlet.name }}</div>
-                {% endif %}
+        <div class="nav-links">
+            <a class="nav-btn" href="{% url 'customer_orders' %}">
+                <i class="fa-solid fa-box"></i>
+                <span>My Orders</span>
             </a>
-            <p>{{ outlet.name }}</p>
+            <a class="nav-btn" href="{% url 'customer_token' %}">
+                <i class="fa-solid fa-ticket"></i>
+                <span>My Token</span>
+            </a>
+            <a class="nav-btn primary" href="{% url 'cart' %}">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart</span>
+            </a>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button class="nav-btn" type="submit">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
-    {% endfor %}
+    </nav>
 
-</div>
-{% else %}
-    <p>No outlets registered yet.</p>
-{% endif %}
-
-
-
-
-{% for category in categories %}
-    <h2>{{ category.name }}</h2>
-
-    <div style="display:flex; gap:20px; flex-wrap:wrap;">
-        {% for product in category.products.all %}
-            {% if product.is_available %}
-                <div style="border:1px solid #ccc; padding:10px; width:150px;">
-                    {% if product.image %}
-                        <img src="{{ product.image.url }}" width="120">
-                    {% endif %}
-                    <p>{{ product.name }}</p>
-                    <strong>₹{{ product.price }}</strong>
-                </div>
-            {% endif %}
-        {% empty %}
-            <p>No products in this category</p>
-        {% endfor %}
+    <div class="container">
+        {% if messages %}
+        <div class="messages" style="margin-top: 1rem;">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" style="padding: 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: #fff; margin-bottom: 1rem;">
+            <i class="fa-solid fa-circle-info"></i> {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
     </div>
-{% endfor %} {% endcomment %}
 
+    <!-- ── Hero ─────────────────────────────────────── -->
+    <div class="hero">
+        <div class="hero-tag">
+            <i class="fa-solid fa-circle" style="font-size:0.45rem;"></i>
+            Live Ordering
+        </div>
+        <h1>
+            Hey, <span class="highlight">{{ request.user.username }}</span>! 👋
+        </h1>
+        <p>Craving something delicious? Browse top outlets and get your favourite meals delivered fresh.</p>
+    </div>
 
-# chages in march  
+    <!-- ── Outlets ───────────────────────────────────── -->
+    <div class="container">
+        <h2 class="section-title">
+            <i class="fa-solid fa-store"></i>
+            Available Outlets
+        </h2>
 
-<h1>Welcome, {{ request.user.username }} 👋</h1>
+        {% if outlets %}
+        <div class="grid">
+            {% for outlet in outlets %}
+            <a class="card reveal" href="{% url 'outlet_detail' outlet.id %}">
 
-<a href="{% url 'cart' %}" style="float:right;">🛒 Cart</a>
+                <div class="card-img-wrapper">
+                    {% if outlet.logo %}
+                        <img alt="{{ outlet.name }}" src="{{ outlet.logo.url }}"/>
+                    {% else %}
+                        <i class="fa-solid fa-shop placeholder"></i>
+                    {% endif %}
+                    <span class="card-badge">Open</span>
+                </div>
 
-{% if outlets %}
-<div style="display:flex; gap:25px; flex-wrap:wrap;">
+                <div class="card-content">
+                    <div class="card-title">{{ outlet.name }}</div>
+                    <div class="card-meta">
+                        <i class="fa-solid fa-clock"></i> 15–25 min
+                    </div>
+                    <div class="card-action">
+                        View Menu <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
 
-{% for outlet in outlets %}
+            </a>
+            {% endfor %}
+        </div>
 
-<div style="text-align:center;">
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-shop-slash"></i>
+            <h3>No outlets available</h3>
+            <p>Check back soon for new delicious options!</p>
+        </div>
+        {% endif %}
+    </div>
 
-<a href="{% url 'outlet_detail' outlet.id %}">
-
-{% if outlet.logo %}
-<img src="{{ outlet.logo.url }}" width="120">
-{% else %}
-<div>{{ outlet.name }}</div>
-{% endif %}
-
-</a>
-
-<p>{{ outlet.name }}</p>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-{% else %}
-<p>No outlets registered yet.</p>
-{% endif %}
-
-<p style="margin-top:20px;">Click an outlet above to browse products and add to cart.</p>
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/customer_home.js' %}"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+</html>

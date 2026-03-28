@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit Logo — {{ outlet.name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<nav>
+<div class="nav-brand">
+<i class="fa-solid fa-store" style="color: var(--accent);"></i> Logo Manager
+        </div>
+<a class="btn" href="{% url 'outlet_detail' outlet.id %}">
+<i class="fa-solid fa-arrow-left"></i> Back to {{ outlet.name }}
+        </a>
+</nav>
+<div class="container">
+<div class="card">
+<div class="card-header">
+<h1>Edit Outlet Logo</h1>
+<p>Update the identity mark for {{ outlet.name }}.</p>
+</div>
+
+            {% if outlet.logo %}
+            <div class="current-logo">
+<img alt="{{ outlet.name }} Logo" src="{{ outlet.logo.url }}"/>
+</div>
+            {% endif %}
+
+            <form enctype="multipart/form-data" method="post">
+                {% csrf_token %}
+
+                <div class="form-group">
+<label for="{{ form.logo.id_for_label }}">Upload New Logo <i class="fa-solid fa-image"></i></label>
+                    {{ form.logo }}
+                </div>
+<button class="btn btn-primary" type="submit">
+<i class="fa-solid fa-cloud-arrow-up"></i> Save Logo
+                </button>
+</form>
+</div>
+</div>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

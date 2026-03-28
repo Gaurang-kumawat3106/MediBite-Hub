@@ -1,59 +1,147 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Cart</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Cart — MediCanteen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
 </head>
 <body>
 
-<h1>Your Cart</h1>
+  <!-- ─── NAVBAR ─────────────────────────────────── -->
+  <nav>
+    <a href="{% url 'customer_home' %}" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Home
+    </a>
+    <div class="nav-page-title">
+      <i class="fa-solid fa-cart-shopping"></i> My Cart
+    </div>
+    <div class="nav-spacer"></div>
+  </nav>
 
-{% if items %}
+  <div class="container" style="padding-top: 2.5rem;">
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: #fff;">
+        <i class="fa-solid fa-circle-info"></i> {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-<table border="1" cellpadding="10">
-<tr>
-    <th>Product</th>
-    <th>Quantity</th>
-    <th>Item Total</th>
-    <th>Action</th>
-</tr>
+    {% if items %}
 
-{% for item in items %}
-<tr>
+    <div class="cart-layout">
 
-    <td>{{ item.product.name }}</td>
+      <!-- ─── ITEMS COLUMN ───────────────────────── -->
+      <div class="cart-items-wrapper">
 
-    <td>
-        <a href="{% url 'decrease_quantity' item.id %}">➖</a>
-        {{ item.quantity }}
-        <a href="{% url 'increase_quantity' item.id %}">➕</a>
-    </td>
+        {% for item in items %}
+        <div class="cart-item">
 
-    <td>
-        {{ item.total_price }}
-    </td>
+          <!-- Image -->
+          {% if item.product.image %}
+            <img src="{{ item.product.image.url }}"
+                 alt="{{ item.product.name }}"
+                 class="item-img">
+          {% else %}
+            <div class="item-img">
+              <i class="fa-solid fa-bowl-food"></i>
+            </div>
+          {% endif %}
 
-    <td>
-        <a href="{% url 'remove_from_cart' item.id %}">Remove</a>
-    </td>
+          <!-- Details -->
+          <div class="item-details">
+            <div class="item-outlet">{{ item.product.outlet.name }}</div>
+            <div class="item-name">{{ item.product.name }}</div>
+            <div class="item-price">₹{{ item.product.price }} each</div>
+          </div>
 
-</tr>
-{% endfor %}
+          <!-- Qty Controls -->
+          <div class="qty-controls">
+            <a href="{% url 'decrease_quantity' item.id %}" class="qty-btn" title="Decrease">
+              <i class="fa-solid fa-minus"></i>
+            </a>
+            <div class="qty-display">{{ item.quantity }}</div>
+            <a href="{% url 'increase_quantity' item.id %}" class="qty-btn" title="Increase">
+              <i class="fa-solid fa-plus"></i>
+            </a>
+          </div>
 
-</table>
+          <!-- Subtotal -->
+          <div class="item-subtotal">₹{{ item.total_price }}</div>
 
-<h3>Total Cart Price: {{ total }}</h3>
+          <!-- Remove -->
+          <a href="{% url 'remove_from_cart' item.id %}" class="remove-btn" title="Remove">
+            <i class="fa-solid fa-trash-can"></i>
+          </a>
 
-<br>
+        </div>
+        {% endfor %}
 
-<a href="{% url 'place_order' %}">
-    <button>Place Order</button>
-</a>
+      </div>
 
-{% else %}
+      <!-- ─── SUMMARY COLUMN ─────────────────────── -->
+      <div class="summary-panel">
+        <div class="summary-title">
+          Order Summary
+          <span class="summary-badge">{{ items|length }} item{{ items|length|pluralize }}</span>
+        </div>
 
-<p>Your cart is empty.</p>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span>₹{{ total }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Taxes & Fees</span>
+          <span style="color: var(--accent); font-size: 0.85rem;">At outlet</span>
+        </div>
 
-{% endif %}
+        <div class="summary-divider"></div>
 
+        <div class="summary-total">
+          <span>Grand Total</span>
+          <span>₹{{ total }}</span>
+        </div>
+
+        <a href="{% url 'place_order' %}" class="btn-checkout" id="checkoutBtn">
+          Place Order <i class="fa-solid fa-arrow-right"></i>
+        </a>
+
+        <div style="margin-top: 1rem; text-align: center; font-size: 0.8rem; color: var(--text-dim);">
+          <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i>
+          Secure &amp; encrypted checkout
+        </div>
+      </div>
+
+    </div>
+
+    {% else %}
+    <!-- ─── EMPTY STATE ────────────────────────── -->
+    <div class="empty-state">
+      <i class="fa-solid fa-basket-shopping empty-icon"></i>
+      <h2 class="empty-title">Your cart is empty</h2>
+      <p class="empty-subtitle">Looks like you haven't added anything delicious yet. Let's fix that!</p>
+      <a href="{% url 'customer_home' %}" class="btn-browse">
+        <i class="fa-solid fa-utensils"></i> Browse Outlets
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Fullscreen Loader -->
+  <div class="fullscreen-loader" id="pageLoader">
+    <div class="loader-ring"></div>
+    <div class="loader-text" id="loaderText">Placing your order…</div>
+  </div>
+
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main_.js' %}"></script>
 </body>
 </html>

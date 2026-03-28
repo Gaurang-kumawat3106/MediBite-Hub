@@ -6,6 +6,7 @@ from django.db import models
 class CustomUser(AbstractUser):
     is_customer = models.BooleanField(default=False)
     is_outlet_head = models.BooleanField(default=False)
+    is_email_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
@@ -15,6 +16,7 @@ class CustomUser(AbstractUser):
 class Outlet(models.Model):
     name = models.CharField(max_length=50)
     logo = models.ImageField(upload_to='outlet_logos/', blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
 
     manager = models.OneToOneField(   # 🔥 ONE outlet = ONE outlet head
         CustomUser,
@@ -36,6 +38,16 @@ class OutletUI(models.Model):
     )
 
     banner = models.ImageField(
+        upload_to='outlet_banners/',
+        blank=True,
+        null=True
+    )
+    banner2 = models.ImageField(
+        upload_to='outlet_banners/',
+        blank=True,
+        null=True
+    )
+    banner3 = models.ImageField(
         upload_to='outlet_banners/',
         blank=True,
         null=True
@@ -131,13 +143,16 @@ class Order(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     outlet = models.ForeignKey(Outlet, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     status = models.CharField(
         max_length=20,
         choices=[
             ('pending', 'Pending'),
             ('preparing', 'Preparing'),
-            ('completed', 'Completed')
+            ('completed', 'Completed'),
+            ('cancelled', 'Cancelled')
         ],
         default='pending'
     )
@@ -151,3 +166,40 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
+
+
+# ---------------- ORDER TOKEN ----------------
+# Token is generated when the outlet marks an order as "completed".
+# Token number never repeats for the same `outlet` on the same day.
+class OrderToken(models.Model):
+    order = models.OneToOneField(
+        'Order',
+        on_delete=models.CASCADE,
+        related_name='token'
+    )
+    outlet = models.ForeignKey(Outlet, on_delete=models.CASCADE, related_name='tokens')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tokens')
+
+    token_date = models.DateField()
+    token_no = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Used to show a one-time popup to the customer.
+    is_viewed = models.BooleanField(default=False)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['outlet', 'token_date', 'token_no'],
+                name='unique_outlet_token_per_day',
+            )
+        ]
+        indexes = [
+            models.Index(fields=['outlet', 'token_date']),
+            models.Index(fields=['user', 'token_date']),
+        ]
+
+    def __str__(self):
+        return f'{self.outlet.name} - Token #{self.token_no}'

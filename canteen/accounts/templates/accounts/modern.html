@@ -1,3 +1,4 @@
+{% load static %}
 <body style="background:#f5f5f5;">
     <div style="background:{{ ui.theme_color }}; padding:30px; color:white;">
         <h1>{{ outlet.name }}</h1>
@@ -8,4 +9,5 @@
     {% endif %}
 
     <p style="padding:20px;">Modern experience 🚀</p>
+    <script src="{% static 'js/main.js' %}"></script>
 </body>
