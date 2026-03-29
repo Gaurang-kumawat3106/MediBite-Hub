@@ -6,8 +6,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # OAuth / social login routes (Google)
-    path('accounts/', include('allauth.urls')),
+    # OAuth / social login routes removed
 
     # Application routes
     path('app/', include('accounts.urls')),
