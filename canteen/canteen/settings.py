@@ -18,9 +18,9 @@ load_dotenv(env_path)
 print(f"\n--- DEBUG INFO ---")
 print(f"1. Looking for .env file at: {env_path}")
 print(f"2. Does this file actually exist? {env_path.exists()}")
-print(f"3. Did python-dotenv load it successfully? {load_dotenv(env_path)}")
+print(f"3. Did python-dotenv load it successfully? {load_dotenv(env_path, override=True)}") # <-- ADDED OVERRIDE HERE
+print(f"4. What is the URL value now? -> {os.environ.get('DATABASE_URL')}") # <-- NEW CHECK
 print(f"------------------\n")
-
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -103,7 +103,7 @@ else:
 # Safely get the URL, stripping any whitespace or accidental quotes
 # 
 
-raw_db_url = "postgresql://neondb_owner:npg_vVck0nJ9rDEq@ep-odd-credit-a88npej1.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require"
+raw_db_url = os.environ.get("DATABASE_URL", "").strip().strip("'").strip('"')
 
 if raw_db_url:
     # If a URL is found, parse it securely. Neon requires SSL, which this handles.
