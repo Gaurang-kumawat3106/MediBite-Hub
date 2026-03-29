@@ -21,8 +21,10 @@ domain = os.getenv('RENDER_EXTERNAL_HOSTNAME', 'medibite-hub.onrender.com')
 name = 'MediBite Hub'
 
 try:
+    # Use the same SITE_ID as settings.py
+    site_id = int(os.getenv('SITE_ID', 1))
     site, created = Site.objects.get_or_create(
-        id=1,
+        pk=site_id,
         defaults={'domain': domain, 'name': name}
     )
     if not created:
@@ -31,15 +33,12 @@ try:
         site.save()
     print(f"Site ensured: ID={site.id}, Domain={site.domain}")
 except Exception as e:
-    print(f"Error ensuring site: {e}")
-    # Fallback to update any existing site if ID 1 is problematic
+    print(f"Error ensuring site {site_id}: {e}")
+    # Fallback to ensure *at least one* site exists
     site = Site.objects.first()
-    if site:
-        site.domain = domain
-        site.name = name
-        site.save()
-        print(f"Updated existing site instead: ID={site.id}, Domain={site.domain}")
-    else:
+    if not site:
         site = Site.objects.create(domain=domain, name=name)
-        print(f"Created new site: ID={site.id}, Domain={site.domain}")
+        print(f"Created fresh site: ID={site.id}, Domain={site.domain}")
+    else:
+        print(f"Site exists but ID mismatch: Found ID={site.id}, expected {site_id}")
 PYEOF
