@@ -138,11 +138,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-# ✅ SITE_ID - Use 1 on Render and 2 on Local
-if os.getenv('RENDER'):
-    SITE_ID = 1
-else:
-    SITE_ID = 2
+# ✅ SITE_ID - Use environment variable or default to 1
+SITE_ID = int(os.getenv('SITE_ID', 1))
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
