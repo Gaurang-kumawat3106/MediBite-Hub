@@ -16,29 +16,39 @@ python manage.py shell << 'PYEOF'
 import os
 from django.contrib.sites.models import Site
 from django.db import IntegrityError
+from django.apps import apps
 
 domain = os.getenv('RENDER_EXTERNAL_HOSTNAME', 'medibite-hub.onrender.com')
 name = 'MediBite Hub'
 
 try:
-    # Use the same SITE_ID as settings.py
     site_id = int(os.getenv('SITE_ID', 1))
+    
+    # Prefix old sites to avoid unique constraint on domain
+    for old_site in Site.objects.exclude(id=site_id):
+        if old_site.domain == domain:
+            old_site.domain = f"old-{old_site.id}-{domain}"
+            old_site.save()
+
+    # Create or update the correct site
     site, created = Site.objects.get_or_create(
-        pk=site_id,
+        id=site_id,
         defaults={'domain': domain, 'name': name}
     )
     if not created:
         site.domain = domain
         site.name = name
         site.save()
+        
     print(f"Site ensured: ID={site.id}, Domain={site.domain}")
+
+    # Ensure all Google SocialApps are linked to this site
+    if apps.is_installed('allauth.socialaccount'):
+        from allauth.socialaccount.models import SocialApp
+        for app in SocialApp.objects.all():
+            app.sites.add(site)
+            print(f"Linked SocialApp '{app.name}' to Site ID={site.id}")
+
 except Exception as e:
-    print(f"Error ensuring site {site_id}: {e}")
-    # Fallback to ensure *at least one* site exists
-    site = Site.objects.first()
-    if not site:
-        site = Site.objects.create(domain=domain, name=name)
-        print(f"Created fresh site: ID={site.id}, Domain={site.domain}")
-    else:
-        print(f"Site exists but ID mismatch: Found ID={site.id}, expected {site_id}")
+    print(f"Error ensuring site {os.getenv('SITE_ID', 1)}: {e}")
 PYEOF
