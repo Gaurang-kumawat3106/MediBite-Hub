@@ -1,4 +1,4 @@
-asgiref==3.8.1
+asgiref==3.11.1
 attrs==26.1.0
 autobahn==25.12.2
 Automat==25.4.16
@@ -9,6 +9,7 @@ brotli==1.2.0
 cbor2==5.9.0
 certifi==2025.1.31
 cffi==2.0.0
+channels==4.3.2
 charset-normalizer==3.4.1
 click==8.3.1
 cloudinary==1.44.1
