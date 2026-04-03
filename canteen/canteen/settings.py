@@ -112,6 +112,7 @@ if raw_db_url:
     DATABASES = {
         'default': dj_database_url.parse(
             raw_db_url,
+            # changed = 600 to =0 on apr 3 
             conn_max_age=0,
             conn_health_checks=True,
             ssl_require=True, # Forces SSL for Neon
