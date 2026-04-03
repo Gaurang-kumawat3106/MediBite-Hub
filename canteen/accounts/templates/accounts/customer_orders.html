@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/customer_token.css' %}"/>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
 
@@ -201,5 +202,7 @@
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/main_.js' %}"></script>
   <script src="{% static 'js/notifications.js' %}"></script>
+    {% include 'footer.html' %}
+    <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

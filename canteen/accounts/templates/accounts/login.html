@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
    
 
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
 
@@ -78,5 +79,7 @@
         });
     </script>
     {% endif %}
+    {% include 'footer.html' %}
+    <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,148 @@
+{% load static %}
+<footer class="modern-footer">
+    <div class="footer-container">
+        <!-- Brand & About -->
+        <div class="footer-col about-us">
+            <h3 class="footer-title">
+                <i class="fa-solid fa-utensils"></i> MediBite Hub
+            </h3>
+            <p>Welcome to MediBite Hub, your trusted college canteen ordering platform.</p>
+            <p>We provide a fast and easy way for students and staff to order fresh and tasty food online. Our goal is to reduce waiting time, improve service speed, and make canteen ordering more convenient.</p>
+            <ul class="why-choose-us">
+                <li><i class="fa-solid fa-check" style="color: #4ade80;"></i> Fresh & hygienic food</li>
+                <li><i class="fa-solid fa-check" style="color: #4ade80;"></i> Quick ordering system</li>
+                <li><i class="fa-solid fa-check" style="color: #4ade80;"></i> Secure payments via Razorpay</li>
+                <li><i class="fa-solid fa-check" style="color: #4ade80;"></i> Easy pickup</li>
+            </ul>
+        </div>
+
+        <!-- Links (Policy) -->
+        <div class="footer-col quick-links">
+            <h3 class="footer-title">Policies</h3>
+            <ul>
+                <li><a href="#" class="policy-link" data-policy="privacy">Privacy Policy</a></li>
+                <li><a href="#" class="policy-link" data-policy="terms">Terms & Conditions</a></li>
+                <li><a href="#" class="policy-link" data-policy="refund">Refund & Cancellation</a></li>
+            </ul>
+        </div>
+
+        <!-- Contact Us -->
+        <div class="footer-col contact-us">
+            <h3 class="footer-title">Contact Us</h3>
+            <p>We’re here to help you with orders, payments, and support.</p>
+            <ul>
+                <li><i class="fa-solid fa-envelope"></i> <a href="mailto:gaurangkumawat026@gmail.com">gaurangkumawat026@gmail.com</a></li>
+                <li><i class="fa-solid fa-phone"></i> <a href="tel:+918640006268">+91 8640006268</a></li>
+                <li><i class="fa-solid fa-location-dot"></i> College Canteen,<br>Medi-Caps University,<br>Indore, MP, India</li>
+                <li><i class="fa-solid fa-clock"></i> Mon-Sat: 8:00 AM – 6:00 PM<br>Sun: Closed</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; {% now "Y" %} MediBite Hub. All rights reserved.</p>
+    </div>
+
+    <!-- Modals for Policies -->
+    <div class="policy-modal-overlay" id="policyModal">
+        <div class="policy-modal-content">
+            <button class="close-modal" id="closeModalBtn"><i class="fa-solid fa-times"></i></button>
+            <div id="policyModalBody" class="modal-body-scroll"></div>
+        </div>
+    </div>
+</footer>
+
+<div id="privacy-content" style="display: none;">
+    <h2 class="modal-title">Privacy Policy</h2>
+    <div class="modal-text">
+        <p>At MediBite Hub, we respect your privacy and are committed to protecting your personal information.</p>
+        <h3>Information We Collect</h3>
+        <ul>
+            <li>Name</li>
+            <li>Phone Number</li>
+            <li>Email Address</li>
+            <li>Order Details</li>
+            <li>Payment Transaction Details (through Razorpay)</li>
+        </ul>
+        <h3>How We Use Your Information</h3>
+        <ul>
+            <li>Processing and confirming your order</li>
+            <li>Delivering food to the correct customer</li>
+            <li>Contacting you regarding order updates</li>
+            <li>Improving our service</li>
+        </ul>
+        <h3>Payment Security</h3>
+        <p>All online payments are securely processed through Razorpay. We do not store your card, UPI, or banking details on our website.</p>
+        <h3>Sharing of Information</h3>
+        <p>We do not sell or share your personal data with any third party except payment processing partners like Razorpay.</p>
+        <h3>Cookies</h3>
+        <p>Our website may use cookies to improve user experience and website performance.</p>
+        <h3>Data Protection</h3>
+        <p>We take necessary steps to protect your personal data. However, no online system is 100% secure.</p>
+        <h3>Contact</h3>
+        <p>If you have any privacy-related concerns, contact us at: <a href="mailto:gaurangkumawat026@gmail.com" class="footer-link">gaurangkumawat026@gmail.com</a></p>
+    </div>
+</div>
+
+<div id="terms-content" style="display: none;">
+    <h2 class="modal-title">Terms & Conditions</h2>
+    <div class="modal-text">
+        <p>By using our website MediBite Hub, you agree to the following terms and conditions.</p>
+        <h3>Order Rules</h3>
+        <ul>
+            <li>Orders can be placed through our website/app.</li>
+            <li>Once an order is confirmed, it will be prepared immediately.</li>
+            <li>Customers must provide correct details (name, phone, etc.) while ordering.</li>
+            <li>Any wrong details may lead to delay or cancellation.</li>
+        </ul>
+        <h3>Pricing & Availability</h3>
+        <ul>
+            <li>Food items are subject to availability.</li>
+            <li>Prices may change anytime without prior notice.</li>
+        </ul>
+        <h3>Delivery / Pickup</h3>
+        <ul>
+            <li>Orders are either delivered inside the college campus (if applicable) or available for pickup at the canteen counter.</li>
+            <li>Delivery time may vary depending on crowd and order volume.</li>
+        </ul>
+        <h3>Cancellation Policy</h3>
+        <ul>
+            <li>Order cancellation is allowed only if the order is not prepared yet.</li>
+            <li>If the food preparation has started, cancellation is not possible.</li>
+        </ul>
+        <h3>Refund Policy</h3>
+        <ul>
+            <li>Refund will be processed only if payment is deducted but order is not confirmed due to technical issues.</li>
+            <li>No refund will be provided after the order is confirmed.</li>
+        </ul>
+        <h3>Changes to Terms</h3>
+        <p>We reserve the right to update these Terms & Conditions anytime without prior notice.</p>
+    </div>
+</div>
+
+<div id="refund-content" style="display: none;">
+    <h2 class="modal-title">Refund & Cancellation Policy</h2>
+    <div class="modal-text">
+        <p>At MediBite Hub, customer satisfaction is important to us.</p>
+        <h3>Cancellation Policy</h3>
+        <ul>
+            <li>You can cancel your order only before it is confirmed or before preparation starts.</li>
+            <li>Once the order is confirmed and preparation has started, it cannot be cancelled.</li>
+        </ul>
+        <h3>Refund Policy</h3>
+        <ul>
+            <li>No refunds will be provided after the order is confirmed.</li>
+            <li>Refund will be applicable only in these cases:
+                <ul>
+                    <li>✅ Payment deducted but order not placed/confirmed</li>
+                    <li>✅ Technical error from payment gateway</li>
+                    <li>✅ Order cancelled by canteen due to unavailability of items</li>
+                </ul>
+            </li>
+        </ul>
+        <h3>Refund Processing Time</h3>
+        <p>If refund is applicable, it will be processed within 5–7 working days to the original payment method.</p>
+        <p>For refund related queries, contact:</p>
+        <p>📧 <a href="mailto:gaurangkumawat026@gmail.com" class="footer-link">gaurangkumawat026@gmail.com</a></p>
+        <p>📞 <a href="tel:+918640006268" class="footer-link">+91 8640006268</a></p>
+    </div>
+</div>

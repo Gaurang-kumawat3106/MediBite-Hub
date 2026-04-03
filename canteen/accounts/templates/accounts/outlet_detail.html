@@ -9,6 +9,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
 
@@ -107,5 +108,7 @@
 
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/main_.js' %}"></script>
+    {% include 'footer.html' %}
+    <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>
