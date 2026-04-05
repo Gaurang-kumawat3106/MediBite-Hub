@@ -34,6 +34,7 @@ path('add-to-cart/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
 path('remove-from-cart/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
 
 path('place-order/', views.place_order, name='place_order'),
+path('payment/callback/', views.payment_callback, name='payment_callback'),
 
 path('outlet/orders/', views.outlet_orders, name='outlet_orders'),
 path('outlet/order/<int:order_id>/update-status/', views.update_order_status, name='update_order_status'),

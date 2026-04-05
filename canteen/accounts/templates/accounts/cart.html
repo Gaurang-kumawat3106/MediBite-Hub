@@ -110,9 +110,66 @@
           <span>₹{{ total }}</span>
         </div>
 
-        <a href="{% url 'place_order' %}" class="btn-checkout" id="checkoutBtn">
-          Place Order <i class="fa-solid fa-arrow-right"></i>
-        </a>
+        {% if can_order and total > 0 %}
+        <button type="button" class="btn-checkout" id="rzp-button1">
+          Pay via Razorpay <i class="fa-solid fa-arrow-right"></i>
+        </button>
+
+        <!-- Razorpay Script -->
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <script>
+        var options = {
+            "key": "{{ razorpay_key_id }}",
+            "amount": "{{ amount_in_paisa }}",
+            "currency": "INR",
+            "name": "MediCanteen",
+            "description": "Order Payment",
+            "order_id": "{{ razorpay_order_id }}",
+            "handler": function (response){
+                // Create an invisible form to submit the Razorpay details to our backend
+                var form = document.createElement("form");
+                form.method = "POST";
+                form.action = "{% url 'payment_callback' %}";
+                
+                var pid = document.createElement("input");
+                pid.type = "hidden";
+                pid.name = "razorpay_payment_id";
+                pid.value = response.razorpay_payment_id;
+                form.appendChild(pid);
+
+                var oid = document.createElement("input");
+                oid.type = "hidden";
+                oid.name = "razorpay_order_id";
+                oid.value = response.razorpay_order_id;
+                form.appendChild(oid);
+
+                var sig = document.createElement("input");
+                sig.type = "hidden";
+                sig.name = "razorpay_signature";
+                sig.value = response.razorpay_signature;
+                form.appendChild(sig);
+
+                document.body.appendChild(form);
+                form.submit();
+            },
+            "prefill": {
+                "name": "{{ request.user.username }}",
+                "email": "{{ request.user.email }}"
+            },
+            "theme": {
+                "color": "#3b82f6"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.on('payment.failed', function (response){
+                alert("Payment Failed: " + response.error.description);
+        });
+        document.getElementById('rzp-button1').onclick = function(e){
+            rzp1.open();
+            e.preventDefault();
+        }
+        </script>
+        {% endif %}
 
         <div style="margin-top: 1rem; text-align: center; font-size: 0.8rem; color: var(--text-dim);">
           <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i>
