@@ -152,6 +152,7 @@ class Order(models.Model):
             ('pending', 'Pending'),
             ('preparing', 'Preparing'),
             ('completed', 'Completed'),
+            ('delivered', 'Delivered'),
             ('cancelled', 'Cancelled')
         ],
         default='pending'
