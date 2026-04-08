@@ -71,7 +71,7 @@
               </span>
             {% elif order.status == 'cancelled' %}
               <span class="status-badge status-cancelled">
-                <i class="fa-solid fa-ban"></i> Cancelled
+                <i class="fa-solid fa-ban"></i> Cancelled {% if order.cancelled_by %}(By {{ order.get_cancelled_by_display }}){% endif %}
               </span>
             {% endif %}
 

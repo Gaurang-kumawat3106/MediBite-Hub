@@ -1,0 +1,107 @@
+/* Mobile Responsiveness & UI Enhancements */
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced Cards */
+.card {
+    animation: fadeIn 0.5s ease-out; border-radius: 16px;
+}
+
+.two-col-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Touch Targets & Interactions */
+a, button, .btn {
+    min-height: 44px; 
+    touch-action: manipulation;
+}
+
+/* Universal Mobile Fixes */
+@media screen and (max-width: 768px) {
+    /* General Padding */
+    .container {
+        padding: 1.5rem 1rem !important;
+    }
+
+    /* Outlets & Products Grid */
+    .dashboard-grid, .product-grid, .grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Navbar Responsive */
+    nav, .navbar {
+        flex-direction: column !important;
+        gap: 1rem !important;
+        padding: 1rem !important;
+        text-align: center;
+        align-items: center;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+    }
+    
+    .nav-btn {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Hero Text */
+    .hero, .page-header {
+        text-align: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    .hero h1, .page-header .page-title {
+        font-size: 2rem !important;
+    }
+    .hero p, .page-header .page-subtitle {
+        font-size: 1rem !important;
+    }
+
+    /* Stats Grid Fix */
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.5rem !important;
+    }
+
+    /* Forms */
+    .two-col-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    input, select, button {
+        font-size: 16px !important; /* Prevents iOS Safari Zoom */
+    }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .card {
+        padding: 1.25rem !important;
+    }
+    .auth-card {
+        padding: 1.5rem !important;
+    }
+    .auth-title {
+        font-size: 1.5rem !important;
+    }
+}

@@ -15,12 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 # --- DIAGNOSTIC PRINTS ---
-print(f"\n--- DEBUG INFO ---")
-print(f"1. Looking for .env file at: {env_path}")
-print(f"2. Does this file actually exist? {env_path.exists()}")
-print(f"3. Did python-dotenv load it successfully? {load_dotenv(env_path, override=True)}") # <-- ADDED OVERRIDE HERE
-print(f"4. What is the URL value now? -> {os.environ.get('DATABASE_URL')}") # <-- NEW CHECK
-print(f"------------------\n")
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'

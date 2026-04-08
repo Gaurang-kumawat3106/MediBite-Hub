@@ -221,7 +221,7 @@
                                 </div>
                             {% elif order.status == 'cancelled' %}
                                 <div style="flex: 1; text-align: center; color: var(--danger); font-weight: 600; padding: 0.6rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
-                                    Order Cancelled
+                                    Order Cancelled {% if order.cancelled_by %}(By {{ order.get_cancelled_by_display }}){% endif %}
                                 </div>
                             {% endif %}
                         </div>

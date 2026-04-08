@@ -164,6 +164,15 @@ class Order(models.Model):
         ],
         default='pending'
     )
+    cancelled_by = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        choices=[
+            ('customer', 'Customer'),
+            ('outlet', 'Outlet Head')
+        ]
+    )
 
     def __str__(self):
         return f"Order {self.id} - {self.user.username}"

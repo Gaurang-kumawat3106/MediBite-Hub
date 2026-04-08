@@ -42,8 +42,23 @@
                 {{ msg }}
             </div>
             {% endif %}
+            
+            {% if form.errors %}
+            <div class="alert-error" style="text-align: left; margin-bottom: 15px;">
+                <ul style="list-style-type: none; padding: 0; margin: 0;">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
 
-            <form method="POST" action="{% url 'login' %}">
+            <form method="POST" action="{% url 'login' %}" id="loginForm">
                 {% csrf_token %}
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label class="form-label">Username</label>
@@ -55,8 +70,9 @@
                     <i class="fa-solid fa-lock form-icon"></i>
                     {{ form.password }}
                 </div>
+                
                 <input type="hidden" name="next" value="{{ next }}">
-                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Log In</button>
             </form>
 
             <div class="auth-links">

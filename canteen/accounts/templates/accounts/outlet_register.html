@@ -4,31 +4,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outlet Register | MediCanteen</title>
+    <title>Outlet Register - MediCanteen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <section class="page">
-        <div class="card">
-            <h1>Outlet Head Signup</h1>
-            <p class="subtitle">Create an outlet account and upload your logo.</p>
+
+    <!-- Background Animation -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card" style="max-width: 550px;">
+            <div class="auth-header">
+                <i class="fa-solid fa-store auth-logo"></i>
+                <h1 class="auth-title">Outlet Head <span>Signup</span></h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Create an outlet account and upload your logo</p>
+            </div>
+
             {% if msg %}
-            <p class="error">{{ msg }}</p>
+            <div class="alert-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ msg }}
+            </div>
             {% endif %}
+
+            {% if form.errors %}
+            <div class="alert-error" style="text-align: left; margin-bottom: 15px;">
+                <ul style="list-style-type: none; padding: 0; margin: 0;">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li><i class="fa-solid fa-circle-exclamation"></i> <strong>{{ field|title }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
             <form method="post" action="{% url 'outlet_register' %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="form-group"><label for="id_username">Username</label>{{ form.username }}</div>
-                <div class="form-group"><label for="id_email">Email</label>{{ form.email }}</div>
-                <div class="form-group"><label for="id_password1">Password</label>{{ form.password1 }}</div>
-                <div class="form-group"><label for="id_password2">Confirm Password</label>{{ form.password2 }}</div>
-                <div class="form-group"><label for="id_outlet_name">Outlet Name</label>{{ form.outlet_name }}</div>
-                <div class="form-group"><label for="id_logo">Logo</label>{{ form.logo }}</div>
-                <button type="submit">Register</button>
+                <div class="form-group">
+                    <label class="form-label" for="id_username">Username</label>
+                    <i class="fa-solid fa-user form-icon"></i>
+                    {{ form.username }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_email">Email</label>
+                    <i class="fa-solid fa-envelope form-icon"></i>
+                    {{ form.email }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_password1">Password</label>
+                    <i class="fa-solid fa-lock form-icon"></i>
+                    {{ form.password1 }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_password2">Confirm Password</label>
+                    <i class="fa-solid fa-lock form-icon"></i>
+                    {{ form.password2 }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_outlet_name">Outlet Name</label>
+                    <i class="fa-solid fa-utensils form-icon"></i>
+                    {{ form.outlet_name }}
+                </div>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label class="form-label" for="id_logo">Logo</label>
+                    {{ form.logo }}
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Register Outlet</button>
             </form>
-            <p class="small">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+
+            <div class="auth-links">
+                <p>Already have an account? <a href="{% url 'login' %}">Login Here</a></p>
+            </div>
         </div>
-    </section>
+    </div>
+
     <script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>

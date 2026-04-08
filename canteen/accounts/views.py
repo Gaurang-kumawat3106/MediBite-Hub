@@ -84,6 +84,10 @@ def login_view(request):
                         'show_approval_popup': True,
                     })
                 login(request, user)
+                
+                # Unconditionally enable persistent session for 14 days
+                request.session.set_expiry(1209600)
+                    
                 next_url = request.POST.get('next') or next_url
                 if next_url and next_url.startswith('/'):
                     request.session['next_url'] = next_url
@@ -151,8 +155,12 @@ def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-        return redirect('customer_home')
+        # Do not log in immediately, instead show animated welcome and redirect to login
+        return render(request, 'accounts/welcome.html', {
+            'user_name': user.username,
+            'is_customer': True,
+            'redirect_to': '/accounts/login/'
+        })
     return render(request, 'accounts/customer_register.html', {'form': form})
 
 
@@ -197,7 +205,10 @@ def get_order_stats(outlet):
     week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    valid_orders = Order.objects.filter(outlet=outlet).exclude(status='cancelled')
+    valid_orders = Order.objects.filter(
+        outlet=outlet, 
+        payment_status__in=['paid', 'SUCCESS', 'PAID']
+    ).exclude(status='cancelled')
 
     week_orders = valid_orders.filter(created_at__gte=week_start)
     month_orders = valid_orders.filter(created_at__gte=month_start)
@@ -689,6 +700,7 @@ def cancel_order(request, order_id):
     if order.status == 'pending':
         if request.method == 'POST':
             order.status = 'cancelled'
+            order.cancelled_by = 'customer'
             order.save()
     return redirect('customer_orders')
 
@@ -703,7 +715,10 @@ def outlet_orders(request):
 
     outlet = request.user.outlet
 
-    orders = Order.objects.filter(outlet=outlet).order_by('-created_at')
+    orders = Order.objects.filter(
+        outlet=outlet,
+        payment_status__in=['paid', 'SUCCESS', 'PAID']
+    ).order_by('-created_at')
 
     return render(request, 'accounts/outlet_orders.html', {
         'orders': orders
@@ -783,6 +798,8 @@ def update_order_status(request, order_id):
         old_status = order.status
         if new_status in ['preparing', 'completed', 'delivered', 'cancelled']:
             order.status = new_status
+            if new_status == 'cancelled':
+                order.cancelled_by = 'outlet'
             if new_status == 'completed' and old_status != 'completed':
                 order.completed_at = timezone.now()
             order.save()

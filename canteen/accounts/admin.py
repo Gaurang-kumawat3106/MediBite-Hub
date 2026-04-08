@@ -68,7 +68,7 @@ class OutletAdmin(admin.ModelAdmin):
 # ---- Order Admin ----
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'outlet', 'total_amount', 'payment_status','status', 'created_at')
+    list_display = ('id', 'user', 'outlet', 'total_amount', 'payment_status','status', 'cancelled_by', 'created_at')
     list_filter = ('outlet', 'status', 'created_at')
     change_list_template = 'admin/order_changelist.html'
 

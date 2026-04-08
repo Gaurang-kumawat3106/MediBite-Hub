@@ -122,9 +122,8 @@ nav {
   box-shadow: var(--glow);
 }
 
-/* Mobile nav label hide */
+/* Mobile nav tweaks */
 @media (max-width: 480px) {
-  .nav-btn span { display: none; }
   .nav-btn { padding: 9px 12px; }
 }
 
