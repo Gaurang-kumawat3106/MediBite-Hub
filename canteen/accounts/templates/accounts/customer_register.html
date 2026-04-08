@@ -53,23 +53,23 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label" for="id_username">Username</label>
-                    <i class="fa-solid fa-user form-icon"></i>
+                    <i class="fa-solid fa-user form-icon" style="padding-top: 23px;"></i>
                     {{ form.username }}
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_email">Email</label>
-                    <i class="fa-solid fa-envelope form-icon"></i>
+                    <i class="fa-solid fa-envelope form-icon"style="padding-top: 23px;"></i>
                     {{ form.email }}
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_password1">Password</label>
-                    <i class="fa-solid fa-lock form-icon"></i>
+                    <i class="fa-solid fa-lock form-icon"style="padding-bottom: 40px;"></i>
                     {{ form.password1 }}
                     <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 5px;">{{ form.password1.help_text|striptags }}</small>
                 </div>
                 <div class="form-group" style="margin-bottom: 25px;">
                     <label class="form-label" for="id_password2">Confirm Password</label>
-                    <i class="fa-solid fa-lock form-icon"></i>
+                    <i class="fa-solid fa-lock form-icon"style="padding-top: 23px;"></i>
                     {{ form.password2 }}
                 </div>
                 

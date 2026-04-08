@@ -21,7 +21,7 @@
     <div class="auth-container">
         <div class="auth-card" style="max-width: 550px;">
             <div class="auth-header">
-                <i class="fa-solid fa-store auth-logo"></i>
+                <i class="fa-solid fa-store auth-logo" ></i>
                 <h1 class="auth-title">Outlet Head <span>Signup</span></h1>
                 <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Create an outlet account and upload your logo</p>
             </div>
@@ -38,7 +38,7 @@
                 <ul style="list-style-type: none; padding: 0; margin: 0;">
                 {% for field, errors in form.errors.items %}
                     {% for error in errors %}
-                        <li><i class="fa-solid fa-circle-exclamation"></i> <strong>{{ field|title }}:</strong> {{ error }}</li>
+                        <li><i class="fa-solid fa-circle-exclamation" ></i> <strong>{{ field|title }}:</strong> {{ error }}</li>
                     {% endfor %}
                 {% endfor %}
                 {% for error in form.non_field_errors %}
@@ -52,27 +52,27 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label" for="id_username">Username</label>
-                    <i class="fa-solid fa-user form-icon"></i>
+                    <i class="fa-solid fa-user form-icon" style="padding-top: 23px;"></i>
                     {{ form.username }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="id_email">Email</label>
-                    <i class="fa-solid fa-envelope form-icon"></i>
+                    <label class="form-label" for="id_email" >Email</label>
+                    <i class="fa-solid fa-envelope form-icon" style="padding-top: 23px;"></i>
                     {{ form.email }}
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_password1">Password</label>
-                    <i class="fa-solid fa-lock form-icon"></i>
+                    <i class="fa-solid fa-lock form-icon"style="padding-top: 23px;"></i>
                     {{ form.password1 }}
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_password2">Confirm Password</label>
-                    <i class="fa-solid fa-lock form-icon"></i>
+                    <i class="fa-solid fa-lock form-icon"style="padding-top: 23px;"></i>
                     {{ form.password2 }}
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_outlet_name">Outlet Name</label>
-                    <i class="fa-solid fa-utensils form-icon"></i>
+                    <i class="fa-solid fa-utensils form-icon" style="padding-top: 23px;"></i>
                     {{ form.outlet_name }}
                 </div>
                 <div class="form-group" style="margin-bottom: 25px;">
