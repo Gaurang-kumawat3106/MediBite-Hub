@@ -11,6 +11,8 @@ from datetime import timedelta
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 import razorpay
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from .forms import (
     LoginForm,
@@ -399,38 +401,95 @@ def add_to_cart(request, product_id):
 
     return redirect('cart')
 
-
 @login_required
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-
     items = cart.items.all()
 
     total = sum([item.total_price() for item in items])
     can_order = all(item.product.is_available for item in items) and bool(items)
 
-    amount_in_paisa = int(total * 100) if total else 0
-    razorpay_order_id = None
-    if can_order and amount_in_paisa > 0:
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-        try:
-            payment = client.order.create({
-                "amount": amount_in_paisa,
-                "currency": "INR",
-                "payment_capture": "1"
-            })
-            razorpay_order_id = payment['id']
-        except Exception as e:
-            print("Razorpay Error:", e)
-
     return render(request, 'accounts/cart.html', {
         'items': items,
         'total': total,
         'can_order': can_order,
-        'razorpay_order_id': razorpay_order_id,
-        'razorpay_key_id': getattr(settings, 'RAZORPAY_KEY_ID', ''),
-        'amount_in_paisa': amount_in_paisa
+        'razorpay_key_id': getattr(settings, "RAZORPAY_KEY_ID", "")
     })
+@login_required
+@require_POST
+def create_razorpay_order(request):
+    cart = get_object_or_404(Cart, user=request.user)
+    items = cart.items.all()
+
+    if not items:
+        return JsonResponse({"success": False, "error": "Cart is empty"}, status=400)
+
+    for item in items:
+        if not item.product.is_available:
+            return JsonResponse({"success": False, "error": f"{item.product.name} is unavailable"}, status=400)
+
+    outlet = items.first().product.outlet
+    total_amount = sum([item.total_price() for item in items])
+    amount_in_paisa = int(total_amount * 100)
+
+    # ✅ Create DB Order first
+    order = Order.objects.create(
+        user=request.user,
+        outlet=outlet,
+        total_amount=total_amount,
+        status="pending",
+        payment_status="unpaid"
+    )
+
+    # ✅ Create Razorpay order
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    razorpay_order = client.order.create({
+        "amount": amount_in_paisa,
+        "currency": "INR",
+        "payment_capture": 1
+    })
+
+    order.razorpay_order_id = razorpay_order["id"]
+    order.save()
+
+    return JsonResponse({
+        "success": True,
+        "razorpay_order_id": razorpay_order["id"],
+        "amount": amount_in_paisa,
+        "key": settings.RAZORPAY_KEY_ID
+    })
+
+# @login_required
+# def cart_view(request):
+#     cart, created = Cart.objects.get_or_create(user=request.user)
+
+#     items = cart.items.all()
+
+#     total = sum([item.total_price() for item in items])
+#     can_order = all(item.product.is_available for item in items) and bool(items)
+
+#     amount_in_paisa = int(total * 100) if total else 0
+#     razorpay_order_id = None
+#     if can_order and amount_in_paisa > 0:
+#         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+#         try:
+#             payment = client.order.create({
+#                 "amount": amount_in_paisa,
+#                 "currency": "INR",
+#                 "payment_capture": "1"
+#             })
+#             razorpay_order_id = payment['id']
+#         except Exception as e:
+#             print("Razorpay Error:", e)
+
+#     return render(request, 'accounts/cart.html', {
+#         'items': items,
+#         'total': total,
+#         'can_order': can_order,
+#         'razorpay_order_id': razorpay_order_id,
+#         'razorpay_key_id': getattr(settings, 'RAZORPAY_KEY_ID', ''),
+#         'amount_in_paisa': amount_in_paisa
+#     })
     
     
 @login_required
@@ -445,47 +504,45 @@ def place_order(request):
     # Keep it as fallback if needed or just redirect.
     return redirect('cart')
 
+
 @csrf_exempt
-@login_required
 def payment_callback(request):
     if request.method == "POST":
-        payment_id = request.POST.get('razorpay_payment_id', '')
-        razorpay_order_id = request.POST.get('razorpay_order_id', '')
-        signature = request.POST.get('razorpay_signature', '')
+        payment_id = request.POST.get("razorpay_payment_id", "")
+        razorpay_order_id = request.POST.get("razorpay_order_id", "")
+        signature = request.POST.get("razorpay_signature", "")
+
+        if not payment_id or not razorpay_order_id or not signature:
+            messages.error(request, "Invalid payment response.")
+            return redirect("cart")
 
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
         params_dict = {
-            'razorpay_order_id': razorpay_order_id,
-            'razorpay_payment_id': payment_id,
-            'razorpay_signature': signature
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": payment_id,
+            "razorpay_signature": signature
         }
 
         try:
+            # ✅ Verify payment signature
             client.utility.verify_payment_signature(params_dict)
-            
-            # Signature Valid -> Create Order
-            cart = get_object_or_404(Cart, user=request.user)
+
+            # ✅ Find order using razorpay_order_id
+            order = get_object_or_404(Order, razorpay_order_id=razorpay_order_id)
+
+            # If already paid then skip
+            if order.payment_status == "paid":
+                return redirect("customer_orders")
+
+            cart = get_object_or_404(Cart, user=order.user)
             items = cart.items.all()
 
             if not items:
-                return redirect('cart')
+                messages.error(request, "Cart empty. Order cannot be completed.")
+                return redirect("cart")
 
-            # Ensure all items still available (optional but good)
-            for item in items:
-                if not item.product.is_available:
-                    messages.error(request, f"{item.product.name} is no longer available.")
-                    return redirect('cart')
-
-            outlet = items.first().product.outlet
-            total_amount = sum([item.total_price() for item in items])
-
-            order = Order.objects.create(
-                user=request.user,
-                outlet=outlet,
-                total_amount=total_amount,
-                status='pending'
-            )
-
+            # Create OrderItems
             for item in items:
                 OrderItem.objects.create(
                     order=order,
@@ -493,28 +550,114 @@ def payment_callback(request):
                     quantity=item.quantity
                 )
 
+            # Clear cart
             items.delete()
 
-            # Trigger WebSocket notification to the outlet
+            # Update payment details
+            order.payment_status = "paid"
+            order.razorpay_payment_id = payment_id
+            order.razorpay_signature = signature
+
+            # 🔥 payment success => preparing
+            order.status = "preparing"
+            order.save()
+
+            # Websocket notify outlet
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
-                f"outlet_{outlet.id}",
+                f"outlet_{order.outlet.id}",
                 {
                     "type": "new_order",
                     "order_id": order.id,
-                    "customer_name": request.user.username,
-                    "total_amount": str(total_amount)
+                    "customer_name": order.user.username,
+                    "total_amount": str(order.total_amount)
                 }
             )
 
-            messages.success(request, "Order placed successfully! Payment verified.")
-            return redirect('customer_orders')
+            messages.success(request, "Payment successful! Order placed.")
+            return redirect("customer_orders")
 
         except razorpay.errors.SignatureVerificationError:
-            messages.error(request, "Payment signature verification failed. Order not placed.")
-            return redirect('cart')
+            messages.error(request, "Payment verification failed.")
+            return redirect("cart")
 
-    return redirect('cart')
+        except Exception as e:
+            print("PAYMENT CALLBACK ERROR:", e)
+            messages.error(request, "Something went wrong.")
+            return redirect("cart")
+
+    return redirect("cart")
+
+# @csrf_exempt
+# @login_required
+# def payment_callback(request):
+#     if request.method == "POST":
+#         payment_id = request.POST.get('razorpay_payment_id', '')
+#         razorpay_order_id = request.POST.get('razorpay_order_id', '')
+#         signature = request.POST.get('razorpay_signature', '')
+
+#         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+#         params_dict = {
+#             'razorpay_order_id': razorpay_order_id,
+#             'razorpay_payment_id': payment_id,
+#             'razorpay_signature': signature
+#         }
+
+#         try:
+#             client.utility.verify_payment_signature(params_dict)
+            
+#             # Signature Valid -> Create Order
+#             cart = get_object_or_404(Cart, user=request.user)
+#             items = cart.items.all()
+
+#             if not items:
+#                 return redirect('cart')
+
+#             # Ensure all items still available (optional but good)
+#             for item in items:
+#                 if not item.product.is_available:
+#                     messages.error(request, f"{item.product.name} is no longer available.")
+#                     return redirect('cart')
+
+#             outlet = items.first().product.outlet
+#             total_amount = sum([item.total_price() for item in items])
+
+#             order = Order.objects.create(
+#                 user=request.user,
+#                 outlet=outlet,
+#                 total_amount=total_amount,
+#                 status='pending'
+#             )
+
+#             for item in items:
+#                 OrderItem.objects.create(
+#                     order=order,
+#                     product=item.product,
+#                     quantity=item.quantity
+#                 )
+
+#             items.delete()
+
+#             # Trigger WebSocket notification to the outlet
+#             channel_layer = get_channel_layer()
+#             async_to_sync(channel_layer.group_send)(
+#                 f"outlet_{outlet.id}",
+#                 {
+#                     "type": "new_order",
+#                     "order_id": order.id,
+#                     "customer_name": request.user.username,
+#                     "total_amount": str(total_amount)
+#                 }
+#             )
+
+#             messages.success(request, "Order placed successfully! Payment verified.")
+#             return redirect('customer_orders')
+
+#         except razorpay.errors.SignatureVerificationError:
+#             messages.error(request, "Payment signature verification failed. Order not placed.")
+#             return redirect('cart')
+
+#     return redirect('cart')
 
 @login_required
 def customer_orders(request):

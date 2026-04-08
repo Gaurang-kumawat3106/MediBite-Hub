@@ -1,4 +1,4 @@
-{% load static %}
+{% comment %} {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -203,5 +203,265 @@
   <script src="{% static 'js/main_.js' %}"></script>
     {% include 'footer.html' %}
     <script src="{% static 'js/footer.js' %}"></script>
+</body>
+</html> {% endcomment %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Cart — MediCanteen</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+
+<body>
+
+  <!-- ─── NAVBAR ─────────────────────────────────── -->
+  <nav>
+    <a href="{% url 'customer_home' %}" class="nav-back">
+      <i class="fa-solid fa-arrow-left"></i> Home
+    </a>
+    <div class="nav-page-title">
+      <i class="fa-solid fa-cart-shopping"></i> My Cart
+    </div>
+    <div class="nav-spacer"></div>
+  </nav>
+
+  <div class="container" style="padding-top: 2.5rem;">
+    
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: #fff;">
+        <i class="fa-solid fa-circle-info"></i> {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if items %}
+
+    <div class="cart-layout">
+
+      <!-- ─── ITEMS COLUMN ───────────────────────── -->
+      <div class="cart-items-wrapper">
+
+        {% for item in items %}
+        <div class="cart-item">
+
+          <!-- Image -->
+          {% if item.product.image %}
+            <img src="{{ item.product.image.url }}"
+                 alt="{{ item.product.name }}"
+                 class="item-img">
+          {% else %}
+            <div class="item-img">
+              <i class="fa-solid fa-bowl-food"></i>
+            </div>
+          {% endif %}
+
+          <!-- Details -->
+          <div class="item-details">
+            <div class="item-outlet">{{ item.product.outlet.name }}</div>
+            <div class="item-name">{{ item.product.name }}</div>
+            <div class="item-price">₹{{ item.product.price }} each</div>
+          </div>
+
+          <!-- Qty Controls -->
+          <div class="qty-controls">
+            <a href="{% url 'decrease_quantity' item.id %}" class="qty-btn" title="Decrease">
+              <i class="fa-solid fa-minus"></i>
+            </a>
+            <div class="qty-display">{{ item.quantity }}</div>
+            <a href="{% url 'increase_quantity' item.id %}" class="qty-btn" title="Increase">
+              <i class="fa-solid fa-plus"></i>
+            </a>
+          </div>
+
+          <!-- Subtotal -->
+          <div class="item-subtotal">₹{{ item.total_price }}</div>
+
+          <!-- Remove -->
+          <a href="{% url 'remove_from_cart' item.id %}" class="remove-btn" title="Remove">
+            <i class="fa-solid fa-trash-can"></i>
+          </a>
+
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <!-- ─── SUMMARY COLUMN ─────────────────────── -->
+      <div class="summary-panel">
+        <div class="summary-title">
+          Order Summary
+          <span class="summary-badge">{{ items|length }} item{{ items|length|pluralize }}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span>₹{{ total }}</span>
+        </div>
+
+        <div class="summary-row">
+          <span>Taxes & Fees</span>
+          <span style="color: var(--accent); font-size: 0.85rem;">At outlet</span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-total">
+          <span>Grand Total</span>
+          <span>₹{{ total }}</span>
+        </div>
+
+        {% if can_order and total > 0 %}
+        <button type="button" class="btn-checkout" id="rzp-button1">
+          Pay via Razorpay <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        {% endif %}
+
+        <div style="margin-top: 1rem; text-align: center; font-size: 0.8rem; color: var(--text-dim);">
+          <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i>
+          Secure &amp; encrypted checkout
+        </div>
+
+      </div>
+
+    </div>
+
+    {% else %}
+    <!-- ─── EMPTY STATE ────────────────────────── -->
+    <div class="empty-state">
+      <i class="fa-solid fa-basket-shopping empty-icon"></i>
+      <h2 class="empty-title">Your cart is empty</h2>
+      <p class="empty-subtitle">Looks like you haven't added anything delicious yet. Let's fix that!</p>
+      <a href="{% url 'customer_home' %}" class="btn-browse">
+        <i class="fa-solid fa-utensils"></i> Browse Outlets
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Fullscreen Loader -->
+  <div class="fullscreen-loader" id="pageLoader">
+    <div class="loader-ring"></div>
+    <div class="loader-text" id="loaderText">Processing payment…</div>
+  </div>
+
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main_.js' %}"></script>
+
+  {% include 'footer.html' %}
+  <script src="{% static 'js/footer.js' %}"></script>
+
+  <!-- Razorpay Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <script>
+    const payBtn = document.getElementById("rzp-button1");
+    const loader = document.getElementById("pageLoader");
+
+    if(payBtn){
+      payBtn.onclick = function(e){
+        e.preventDefault();
+
+        // Show loader
+        if(loader){
+          loader.style.display = "flex";
+        }
+
+        fetch("{% url 'create_razorpay_order' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}"
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+
+          if(loader){
+            loader.style.display = "none";
+          }
+
+          if(!data.success){
+            alert(data.error);
+            return;
+          }
+
+          var options = {
+            "key": data.key,
+            "amount": data.amount,
+            "currency": "INR",
+            "name": "MediCanteen",
+            "description": "Order Payment",
+            "order_id": data.razorpay_order_id,
+
+            "handler": function(response){
+              var form = document.createElement("form");
+              form.method = "POST";
+              form.action = "{% url 'payment_callback' %}";
+
+              var pid = document.createElement("input");
+              pid.type = "hidden";
+              pid.name = "razorpay_payment_id";
+              pid.value = response.razorpay_payment_id;
+              form.appendChild(pid);
+
+              var oid = document.createElement("input");
+              oid.type = "hidden";
+              oid.name = "razorpay_order_id";
+              oid.value = response.razorpay_order_id;
+              form.appendChild(oid);
+
+              var sig = document.createElement("input");
+              sig.type = "hidden";
+              sig.name = "razorpay_signature";
+              sig.value = response.razorpay_signature;
+              form.appendChild(sig);
+
+              document.body.appendChild(form);
+              form.submit();
+            },
+
+            "prefill": {
+              "name": "{{ request.user.username }}",
+              "email": "{{ request.user.email }}"
+            },
+
+            "theme": {
+              "color": "#3b82f6"
+            }
+          };
+
+          var rzp1 = new Razorpay(options);
+
+          rzp1.on("payment.failed", function(response){
+            alert("Payment Failed: " + response.error.description);
+          });
+
+          rzp1.open();
+        })
+        .catch(err => {
+          console.log(err);
+
+          if(loader){
+            loader.style.display = "none";
+          }
+
+          alert("Something went wrong. Please try again.");
+        });
+      }
+    }
+  </script>
+
 </body>
 </html>
