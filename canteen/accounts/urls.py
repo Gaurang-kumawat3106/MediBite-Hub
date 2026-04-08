@@ -35,6 +35,7 @@ path('remove-from-cart/<int:item_id>/', views.remove_from_cart, name='remove_fro
 
 path('place-order/', views.place_order, name='place_order'),
 path('payment/callback/', views.payment_callback, name='payment_callback'),
+path('payment/create/', views.create_razorpay_order, name='create_razorpay_order'),
 
 path('outlet/orders/', views.outlet_orders, name='outlet_orders'),
 path('outlet/order/<int:order_id>/update-status/', views.update_order_status, name='update_order_status'),
