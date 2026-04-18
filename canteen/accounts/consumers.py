@@ -1,30 +1,63 @@
+# import json
+# from channels.generic.websocket import AsyncWebsocketConsumer
+# from channels.db import database_sync_to_async
+
+# class OrderConsumer(AsyncWebsocketConsumer):
+#     async def connect(self):
+#         self.user = self.scope["user"]
+        
+#         if self.user.is_anonymous:
+#             await self.close()
+#             return
+
+#         # Users join a group specific to themselves (for order updates)
+#         self.user_group_name = f"user_{self.user.id}"
+#         await self.channel_layer.group_add(
+#             self.user_group_name,
+#             self.channel_name
+#         )
+
+#         # If it's an outlet head, join the outlet's group too (for new orders)
+#         if hasattr(self.user, 'is_outlet_head') and self.user.is_outlet_head:
+#             if hasattr(self.user, 'outlet'):
+#                 self.outlet_group_name = f"outlet_{self.user.outlet.id}"
+#                 await self.channel_layer.group_add(
+#                     self.outlet_group_name,
+#                     self.channel_name
+#                 )
+        
+#         await self.accept()
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 
 class OrderConsumer(AsyncWebsocketConsumer):
+
+    @database_sync_to_async
+    def get_outlet_id(self, user):
+        try:
+            return user.outlet.id
+        except:
+            return None
+
     async def connect(self):
         self.user = self.scope["user"]
-        
+
         if self.user.is_anonymous:
             await self.close()
             return
 
-        # Users join a group specific to themselves (for order updates)
         self.user_group_name = f"user_{self.user.id}"
-        await self.channel_layer.group_add(
-            self.user_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
-        # If it's an outlet head, join the outlet's group too (for new orders)
-        if hasattr(self.user, 'is_outlet_head') and self.user.is_outlet_head:
-            if hasattr(self.user, 'outlet'):
-                self.outlet_group_name = f"outlet_{self.user.outlet.id}"
-                await self.channel_layer.group_add(
-                    self.outlet_group_name,
-                    self.channel_name
-                )
-        
+        # outlet group join (safe)
+        if getattr(self.user, "is_outlet_head", False):
+            outlet_id = await self.get_outlet_id(self.user)
+
+            if outlet_id:
+                self.outlet_group_name = f"outlet_{outlet_id}"
+                await self.channel_layer.group_add(self.outlet_group_name, self.channel_name)
+
         await self.accept()
 
     async def disconnect(self, close_code):
