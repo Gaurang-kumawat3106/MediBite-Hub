@@ -83,7 +83,9 @@ class OrderAdmin(admin.ModelAdmin):
         )
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        valid_orders = Order.objects.exclude(status='cancelled')
+        valid_orders = Order.objects.filter(
+            payment_status__in=['paid', 'SUCCESS', 'PAID']
+        ).exclude(status='cancelled')
 
         week_orders = valid_orders.filter(created_at__gte=week_start)
         month_orders = valid_orders.filter(created_at__gte=month_start)
