@@ -16,9 +16,9 @@ env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 # --- DIAGNOSTIC PRINTS ---
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ['medibite-hub.onrender.com', 'localhost', '127.0.0.1']
 
@@ -242,3 +242,7 @@ else:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
+    
+    import os
+
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")

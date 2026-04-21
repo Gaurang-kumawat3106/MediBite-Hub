@@ -229,6 +229,70 @@ def resend_verification_email(request):
     return render(request, 'accounts/resend_verification.html')
 
 
+# ---------------- PASSWORD RESET ----------------
+def password_reset_request(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+
+        user = UserModel.objects.filter(email=email).first()
+
+        if user:
+            current_site = get_current_site(request)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            mail_subject = "Password Reset Request"
+
+            message = render_to_string('accounts/email/password_reset_email.html', {
+                'user': user,
+                'domain': current_site.domain,
+                'uid': uid,
+                'token': token,
+            })
+
+            send_mail(
+                mail_subject,
+                "",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=message
+            )
+            messages.success(request, "We've emailed you instructions for setting your password.")
+            return redirect('login')
+        else:
+            messages.error(request, 'No user found with this email address.')
+    return render(request, 'accounts/password_reset_form.html')
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = UserModel.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            if new_password and confirm_password:
+                if len(new_password) < 8:
+                    messages.error(request, "Password must be at least 8 characters long.")
+                elif new_password == confirm_password:
+                    user.set_password(new_password)
+                    user.save()
+                    messages.success(request, 'Your password has been successfully reset! You can now log in.')
+                    return redirect('login')
+                else:
+                    messages.error(request, 'Passwords do not match. Please try again.')
+            else:
+                messages.error(request, 'Please fill in both password fields.')
+
+        return render(request, 'accounts/password_reset_confirm.html', {'validlink': True})
+    else:
+        messages.error(request, 'The password reset link was invalid, possibly because it has already been used.')
+        return render(request, 'accounts/password_reset_confirm.html', {'validlink': False})
+
+
 # ---------------- CUSTOMER DASHBOARD ----------------
 @login_required
 def customer_home(request):
