@@ -25,13 +25,15 @@ class LoginForm(forms.Form):
 
 # ---- SIGNUP FORMS ----
 class CustomerSignupForm(UserCreationForm):
+    email = forms.EmailField(required=True)
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email') # password1 and password2 are handled by UserCreationForm
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_customer = True
+        user.is_active = False # 🔥 wait for email verification
         if commit:
             user.save()
         return user
@@ -58,14 +60,16 @@ class OutletSignupForm(UserCreationForm):
         })
     )
 
+    email = forms.EmailField(required=True)
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email')
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_outlet_head = True
         user.is_staff = True  # Grant staff status Home
+        user.is_active = False # 🔥 Wait for email verification
         if commit:
             user.save()
         return user

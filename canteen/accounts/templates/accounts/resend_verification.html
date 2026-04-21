@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resend Verification Email</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fa-solid fa-paper-plane auth-logo"></i>
+                <h1 class="auth-title">Resend Verification</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Enter your email to receive a new verification link</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert-{{ message.tags }}" style="padding: 10px; border-radius: 8px; font-size: 0.95rem; margin-bottom: 15px; background-color: {% if message.tags == 'success' %}rgba(40,167,69,0.1){% else %}rgba(220,53,69,0.1){% endif %}; color: {% if message.tags == 'success' %}#28a745{% else %}#dc3545{% endif %};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" for="email">Email Address</label>
+                    <i class="fa-solid fa-envelope form-icon" style="padding-top: 23px;"></i>
+                    <input type="email" name="email" id="email" class="form-control" placeholder="Enter your email address" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Send Verification Link</button>
+            </form>
+            <div class="auth-links" style="margin-top: 20px; text-align: center;">
+                <a href="{% url 'login' %}">Back to Login</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -13,6 +13,12 @@ from django.views.decorators.csrf import csrf_exempt
 import razorpay
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
 
 from .forms import (
     LoginForm,
@@ -151,16 +157,25 @@ def logout_view(request):
 
 
 # ---------------- REGISTER ----------------
+def send_verification_email(request, user):
+    current_site = get_current_site(request)
+    mail_subject = 'Activate your Medibite account'
+    message = render_to_string('accounts/email/verification_email.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+        'token': default_token_generator.make_token(user),
+    })
+    send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
+
+
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        # Do not log in immediately, instead show animated welcome and redirect to login
-        return render(request, 'accounts/welcome.html', {
-            'user_name': user.username,
-            'is_customer': True,
-            'redirect_to': '/accounts/login/'
-        })
+        send_verification_email(request, user)
+        messages.success(request, 'Registration successful. Please check your email to verify your account.')
+        return redirect('login')
     return render(request, 'accounts/customer_register.html', {'form': form})
 
 
@@ -176,14 +191,42 @@ def outlet_register(request):
             logo=outlet_logo,
             is_approved=False,
         )
-        # Don't log in unapproved outlet heads; ask them to wait for admin approval.
-        return render(request, 'accounts/login.html', {
-            'form': LoginForm(),
-            'msg': 'Registration successful. Wait until the admin approves your outlet account.',
-            'next': '',
-            'show_approval_popup': True,
-        })
+        send_verification_email(request, user)
+        messages.success(request, 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.')
+        return redirect('login')
     return render(request, 'accounts/outlet_register.html', {'form': form})
+
+# ---------------- EMAIL VERIFICATION ----------------
+def verify_email(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = UserModel.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.is_email_verified = True
+        user.save()
+        messages.success(request, 'Thank you for your email confirmation. Now you can log in your account.')
+        return redirect('login')
+    else:
+        messages.error(request, 'Verification link is invalid or has expired.')
+        return render(request, 'accounts/verify_email_done.html', {'success': False})
+
+def resend_verification_email(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = UserModel.objects.get(email=email)
+            if user.is_active:
+                messages.info(request, 'Your account is already verified. Please log in.')
+            else:
+                send_verification_email(request, user)
+                messages.success(request, 'Verification email sent successfully.')
+        except UserModel.DoesNotExist:
+            messages.error(request, 'No user found with this email address.')
+    return render(request, 'accounts/resend_verification.html')
 
 
 # ---------------- CUSTOMER DASHBOARD ----------------

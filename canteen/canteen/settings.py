@@ -179,10 +179,8 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/app/welcome/"
 LOGOUT_REDIRECT_URL = "/"
 
-if os.getenv('RENDER'):
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Use SMTP email backend
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
