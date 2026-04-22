@@ -14,7 +14,8 @@ import razorpay
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.mail import send_mail
+# from django.core.mail import send_mail
+from utils.brevo_email import send_brevo_email
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -157,17 +158,33 @@ def logout_view(request):
 
 
 # ---------------- REGISTER ----------------
+# def send_verification_email(request, user):
+#     current_site = get_current_site(request)
+#     mail_subject = 'Activate your Medibite account'
+#     message = render_to_string('accounts/email/verification_email.html', {
+#         'user': user,
+#         'domain': current_site.domain,
+#         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+#         'token': default_token_generator.make_token(user),
+#     })
+#     send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
+
 def send_verification_email(request, user):
     current_site = get_current_site(request)
     mail_subject = 'Activate your Medibite account'
+
     message = render_to_string('accounts/email/verification_email.html', {
         'user': user,
         'domain': current_site.domain,
         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
         'token': default_token_generator.make_token(user),
     })
-    send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
 
+    send_brevo_email(
+        to_email=user.email,
+        subject=mail_subject,
+        html_content=message
+    )
 
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
@@ -250,13 +267,11 @@ def password_reset_request(request):
                 'token': token,
             })
 
-            send_mail(
-                mail_subject,
-                "",
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                html_message=message
-            )
+            send_brevo_email(
+    to_email=user.email,
+    subject=mail_subject,
+    html_content=message
+)
             messages.success(request, "We've emailed you instructions for setting your password.")
             return redirect('login')
         else:
