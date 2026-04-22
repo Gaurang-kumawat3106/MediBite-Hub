@@ -188,6 +188,8 @@ def send_verification_email(request, user):
 
     print("BREVO STATUS:", status)
     print("BREVO RES:", res)
+    
+    return status 
 
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
