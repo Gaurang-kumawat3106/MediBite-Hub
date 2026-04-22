@@ -180,11 +180,14 @@ def send_verification_email(request, user):
         'token': default_token_generator.make_token(user),
     })
 
-    send_brevo_email(
-        to_email=user.email,
-        subject=mail_subject,
-        html_content=message
+    status, res = send_brevo_email(
+        user.email,
+        mail_subject,
+        message
     )
+
+    print("BREVO STATUS:", status)
+    print("BREVO RES:", res)
 
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
