@@ -1035,5 +1035,42 @@ def toggle_availability(request, product_id):
         
     return redirect('outlet_products')
 
+@login_required
+def edit_product(request, product_id):
+    if not request.user.is_outlet_head:
+        return redirect('login')
+    if _is_pending_outlet_user(request.user):
+        logout(request)
+        return redirect('login')
+    
+    product = get_object_or_404(Product, id=product_id, outlet=request.user.outlet)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete':
+            product.delete()
+            messages.success(request, f"Product deleted successfully.")
+            return redirect('outlet_products')
+        elif action == 'increase':
+            product.price += 10
+            product.save()
+            messages.success(request, f"Price increased by ₹10.")
+        elif action == 'decrease':
+            if product.price >= 10:
+                product.price -= 10
+            else:
+                product.price = 0
+            product.save()
+            messages.success(request, f"Price decreased by ₹10.")
+        elif action == 'set_price':
+            new_price = request.POST.get('price')
+            if new_price:
+                try:
+                    product.price = float(new_price)
+                    product.save()
+                    messages.success(request, f"Price updated successfully.")
+                except ValueError:
+                    messages.error(request, "Invalid price format.")
+        return redirect('edit_product', product_id=product.id)
 
-   
+    return render(request, 'accounts/edit_product.html', {'product': product})

@@ -58,44 +58,48 @@
             {% for category in categories %}
                 {% for product in category.products.all %}
                     <div class="product-card {% if not product.is_available %}unavailable{% endif %}" data-category="{{ category.name|lower }}" data-name="{{ product.name|lower }}">
-                        <div class="img-wrapper">
-                            <!-- Status Badges overlaying image -->
+                        <div class="img-wrapper" style="position: relative; width: 100%; aspect-ratio: 4/3; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <!-- Status Badges -->
                             {% if product.is_available %}
-                                <div class="status-badge available">Live</div>
+                                <div class="status-badge available" style="position: absolute; top: 0.8rem; right: 0.8rem; z-index: 3; background: rgba(74,222,128,0.2); color: #4ade80; padding: 0.3rem 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.7rem; backdrop-filter: blur(4px);">Live</div>
                             {% else %}
-                                <div class="status-badge unavailable">Inactive</div>
+                                <div class="status-badge unavailable" style="position: absolute; top: 0.8rem; right: 0.8rem; z-index: 3; background: rgba(239,68,68,0.2); color: #ef4444; padding: 0.3rem 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.7rem; backdrop-filter: blur(4px);">Inactive</div>
                             {% endif %}
+                            
+                            <!-- Category Badge -->
+                            <div class="product-category" style="position: absolute; top: 0.8rem; left: 0.8rem; z-index: 3; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; color: #fff; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); margin: 0;">{{ category.name }}</div>
 
                             {% if product.image %}
-                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
                             {% else %}
-                                <div class="product-img"><i class="fa-solid fa-image"></i></div>
+                                <div class="product-img" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1a1a1a;"><i class="fa-solid fa-image" style="font-size: 3rem; opacity: 0.2;"></i></div>
                             {% endif %}
+                            
+                            <!-- Gradient Overlay -->
+                            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%); z-index: 1; pointer-events: none;"></div>
+                            
+                            <!-- Text on Image -->
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1.2rem; z-index: 2; display: flex; flex-direction: column;">
+                                <h3 class="product-name" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">{{ product.name }}</h3>
+                                <div class="product-price" style="margin-top: 0.3rem; font-size: 1.35rem; font-weight: 800; color: #4ade80; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">₹{{ product.price }}</div>
+                            </div>
                         </div>
 
-                        <div class="product-info">
-                           
-                            <div class="product-category">{{ category.name }}
-                                <h3 class="product-name">{{ product.name }}</h3> 
-                            </div>
+                        <!-- Action Bar -->
+                        <div class="product-actions" style="padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; background: var(--surface);">
+                            <!-- Highly Visible Edit Button -->
+                            <a href="{% url 'edit_product' product.id %}" title="Edit Product" style="display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; padding: 0.6rem 1.2rem; border-radius: 12px; font-weight: 600; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); text-decoration: none;">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                            </a>
                             
-                            <div class="product-footer">
-                                <div class="product-price">₹{{ product.price }}</div>
-                                
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span class="toggle-label">
-                                        {% if product.is_available %}Enabled{% else %}Disabled{% endif %}
-                                    </span>
-                                    <!-- Toggle Switch form hook -->
-                                    <form action="{% url 'toggle_availability' product.id %}" method="post" style="margin: 0;">
-                                        {% csrf_token %}
-                                        <label class="switch">
-                                            <input type="checkbox" onchange="this.form.submit()" {% if product.is_available %}checked{% endif %}>
-                                            <span class="slider round"></span>
-                                        </label>
-                                    </form>
-                                </div>
-                            </div>
+                            <!-- Toggle Switch -->
+                            <form action="{% url 'toggle_availability' product.id %}" method="post" style="margin: 0;">
+                                {% csrf_token %}
+                                <label class="switch">
+                                    <input type="checkbox" onchange="this.form.submit()" {% if product.is_available %}checked{% endif %}>
+                                    <span class="slider round"></span>
+                                </label>
+                            </form>
                         </div>
                     </div>
                 {% endfor %}

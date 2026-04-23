@@ -58,4 +58,5 @@ path('customer/order/<int:order_id>/cancel/', views.cancel_order, name='cancel_o
 
 path('outlet/products/', views.outlet_products_view, name='outlet_products'),
 path('outlet/product/<int:product_id>/toggle/', views.toggle_availability, name='toggle_availability'),
+path('outlet/product/<int:product_id>/edit/', views.edit_product, name='edit_product'),
 ]
