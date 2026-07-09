@@ -4,11 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
-# Initialize environment variables
-# BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Explicitly load the .env file from the BASE_DIR
-# env_path = BASE_DIR / '.env'
 
 # Initialize environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,9 +12,9 @@ env_path = BASE_DIR / '.env'
 load_dotenv(env_path)
 # --- DIAGNOSTIC PRINTS ---
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['medibite-hub.onrender.com', 'localhost', '127.0.0.1']
 
@@ -175,6 +171,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+PASSWORD_RESET_TIMEOUT = 3600
+
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/app/welcome/"
 LOGOUT_REDIRECT_URL = "/"
@@ -187,7 +185,7 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
 CLOUDINARY_STORAGE = {
@@ -242,7 +240,3 @@ else:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
-    
-    import os
-
-SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")

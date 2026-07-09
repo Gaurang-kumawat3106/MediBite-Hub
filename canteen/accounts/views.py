@@ -14,12 +14,14 @@ import razorpay
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.sites.shortcuts import get_current_site
-# from django.core.mail import send_mail
-from utils.brevo_email import send_brevo_email
+from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .forms import (
     LoginForm,
@@ -76,11 +78,30 @@ def login_view(request):
 
     if request.method == 'POST':
         if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            
+            # Print login debug info
+            print("\n================ LOGIN VIEW DEBUG ================")
+            print(f"[DEBUG] Login attempt for Username: {username}")
+            
+            # Find user in DB
+            try:
+                db_user = UserModel.objects.get(username=username)
+                print(f"[DEBUG] Found User in DB: {db_user.username} (ID: {db_user.pk}), Email: {db_user.email}")
+                print(f"[DEBUG] Password Hash in DB: {db_user.password}")
+                print(f"[DEBUG] check_password validation result: {db_user.check_password(password)}")
+            except UserModel.DoesNotExist:
+                print("[DEBUG] User not found in DB.")
+
             user = authenticate(
                 request,
-                username=form.cleaned_data['username'],
-                password=form.cleaned_data['password']
+                username=username,
+                password=password
             )
+            print(f"[DEBUG] authenticate() result: {user}")
+            print("==================================================\n")
+
             if user is not None:
                 if _is_pending_outlet_user(user):
                     msg = 'Wait until the admin approves your outlet account.'
@@ -180,16 +201,19 @@ def send_verification_email(request, user):
         'token': default_token_generator.make_token(user),
     })
 
-    status, res = send_brevo_email(
-        user.email,
-        mail_subject,
-        message
-    )
-
-    print("BREVO STATUS:", status)
-    print("BREVO RES:", res)
-    
-    return status 
+    try:
+        send_mail(
+            subject=mail_subject,
+            message="",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=message,
+            fail_silently=False
+        )
+        return 1
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        return 0 
 
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
@@ -251,37 +275,130 @@ def resend_verification_email(request):
     return render(request, 'accounts/resend_verification.html')
 
 
+# Helper to partially mask usernames for security
+def mask_username(username):
+    if len(username) <= 2:
+        return username[0] + "*" * (len(username) - 1)
+    elif len(username) <= 4:
+        return username[0] + "*" * (len(username) - 2) + username[-1]
+    else:
+        return username[:2] + "*" * (len(username) - 4) + username[-2:]
+
+# Helper to send password reset email
+def send_reset_email_for_user(request, user):
+    current_site = get_current_site(request)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    mail_subject = "Password Reset Request"
+
+    message = render_to_string('accounts/email/password_reset_email.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'uid': uid,
+        'token': token,
+    })
+
+    send_mail(
+        subject=mail_subject,
+        message="",
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=message,
+        fail_silently=False
+    )
+
+# Helper to check rate limiting for security
+def is_password_reset_rate_limited(request, email):
+    ip = request.META.get('REMOTE_ADDR')
+    email_key = f"pwd_reset_email_{email.lower()}"
+    ip_key = f"pwd_reset_ip_{ip}"
+    
+    # Max 3 requests per 15 minutes per email/IP
+    email_count = cache.get(email_key, 0)
+    ip_count = cache.get(ip_key, 0)
+    
+    if email_count >= 3 or ip_count >= 10:
+        return True
+        
+    cache.set(email_key, email_count + 1, 900)  # 15 minutes expiry
+    cache.set(ip_key, ip_count + 1, 900)
+    return False
+
 # ---------------- PASSWORD RESET ----------------
 def password_reset_request(request):
     if request.method == 'POST':
-        email = request.POST.get('email')
+        email = request.POST.get('email', '').strip()
+        if not email:
+            messages.error(request, 'Please enter a valid email address.')
+            return render(request, 'accounts/password_reset_form.html')
 
-        user = UserModel.objects.filter(email=email).first()
+        # Rate limiting check
+        if is_password_reset_rate_limited(request, email):
+            messages.error(request, 'Too many password reset attempts. Please try again in 15 minutes.')
+            return render(request, 'accounts/password_reset_form.html')
 
-        if user:
-            current_site = get_current_site(request)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
+        # Get active users matching email
+        users = UserModel.objects.filter(email__iexact=email, is_active=True)
 
-            mail_subject = "Password Reset Request"
-
-            message = render_to_string('accounts/email/password_reset_email.html', {
-                'user': user,
-                'domain': current_site.domain,
-                'uid': uid,
-                'token': token,
-            })
-
-            send_brevo_email(
-    to_email=user.email,
-    subject=mail_subject,
-    html_content=message
-)
+        if users.count() == 1:
+            user = users.first()
+            send_reset_email_for_user(request, user)
             messages.success(request, "We've emailed you instructions for setting your password.")
             return redirect('login')
+
+        elif users.count() > 1:
+            users_data = []
+            for u in users:
+                masked_name = mask_username(u.username)
+                outlet_name = ""
+                if u.is_outlet_head and hasattr(u, 'outlet'):
+                    outlet_name = u.outlet.name
+                users_data.append({
+                    'id': u.pk,
+                    'masked_username': masked_name,
+                    'is_outlet_head': u.is_outlet_head,
+                    'outlet_name': outlet_name,
+                })
+            return render(request, 'accounts/password_reset_select.html', {
+                'users_data': users_data,
+                'email': email
+            })
         else:
-            messages.error(request, 'No user found with this email address.')
+            # Prevent account enumeration: show success even if no active accounts match
+            messages.success(request, "We've emailed you instructions for setting your password.")
+            return redirect('login')
+
     return render(request, 'accounts/password_reset_form.html')
+
+def password_reset_select(request):
+    if request.method != 'POST':
+        return redirect('password_reset')
+
+    user_id = request.POST.get('user_id')
+    email = request.POST.get('email', '').strip()
+
+    if not user_id or not email:
+        messages.error(request, 'Invalid request. Please try again.')
+        return redirect('password_reset')
+
+    # Rate limiting check
+    if is_password_reset_rate_limited(request, email):
+        messages.error(request, 'Too many password reset attempts. Please try again in 15 minutes.')
+        return redirect('password_reset')
+
+    try:
+        # Fetch target user securely, enforcing matching email and is_active=True
+        user = UserModel.objects.get(pk=user_id, email__iexact=email, is_active=True)
+    except UserModel.DoesNotExist:
+        # Handle tempering/invalid selection gracefully
+        messages.error(request, 'Invalid account selection. Please try again.')
+        return redirect('password_reset')
+
+    send_reset_email_for_user(request, user)
+    messages.success(request, "We've emailed you instructions for setting your password.")
+    return redirect('login')
+
 def password_reset_confirm(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
@@ -289,26 +406,61 @@ def password_reset_confirm(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
         user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
+    # DEBUG LOGS BEFORE RESET
+    print("\n================ PASSWORD RESET CONFIRM DEBUG ================")
+    if user:
+        print(f"[DEBUG] Loaded User ID: {user.pk}")
+        print(f"[DEBUG] Username: {user.username}")
+        print(f"[DEBUG] Email: {user.email}")
+        print(f"[DEBUG] Password Hash before reset: {user.password}")
+    else:
+        print("[DEBUG] User not found.")
+    print(f"[DEBUG] Token: {token}")
+
+    token_valid = default_token_generator.check_token(user, token) if user else False
+    print(f"[DEBUG] Is Token Valid? {token_valid}")
+
+    if user is not None and token_valid:
         if request.method == 'POST':
             new_password = request.POST.get('new_password')
             confirm_password = request.POST.get('confirm_password')
+            print(f"[DEBUG] POST request received. New password length: {len(new_password) if new_password else 0}")
 
             if new_password and confirm_password:
-                if len(new_password) < 8:
-                    messages.error(request, "Password must be at least 8 characters long.")
-                elif new_password == confirm_password:
-                    user.set_password(new_password)
-                    user.save()
-                    messages.success(request, 'Your password has been successfully reset! You can now log in.')
-                    return redirect('login')
-                else:
+                if new_password != confirm_password:
+                    print("[DEBUG] Passwords mismatch.")
                     messages.error(request, 'Passwords do not match. Please try again.')
+                else:
+                    try:
+                        # Secure password strength validation using standard Django password validators
+                        validate_password(new_password, user)
+                        print("[DEBUG] Password validated successfully.")
+                        
+                        user.set_password(new_password)
+                        print(f"[DEBUG] Called set_password. New Password Hash in memory: {user.password}")
+                        
+                        user.save()
+                        print("[DEBUG] Called user.save() successfully.")
+                        
+                        # Verify from DB directly
+                        db_user = UserModel.objects.get(pk=user.pk)
+                        print(f"[DEBUG] Verifying DB state after save. Password Hash in DB: {db_user.password}")
+                        
+                        messages.success(request, 'Your password has been successfully reset! You can now log in.')
+                        print("==============================================================\n")
+                        return redirect('login')
+                    except ValidationError as e:
+                        print(f"[DEBUG] Password validation failed: {e.messages}")
+                        for error in e.messages:
+                            messages.error(request, error)
             else:
                 messages.error(request, 'Please fill in both password fields.')
 
+        print("==============================================================\n")
         return render(request, 'accounts/password_reset_confirm.html', {'validlink': True})
     else:
+        print("[DEBUG] Link is invalid.")
+        print("==============================================================\n")
         messages.error(request, 'The password reset link was invalid, possibly because it has already been used.')
         return render(request, 'accounts/password_reset_confirm.html', {'validlink': False})
 

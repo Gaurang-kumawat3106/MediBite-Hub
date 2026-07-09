@@ -1,4 +1,76 @@
+// Run theme initialization immediately to avoid page flash
+(function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+    }
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme toggle button injection & behavior logic
+    const initThemeToggle = () => {
+        if (document.getElementById('theme-toggle-btn')) return;
+
+        const nav = document.querySelector('nav') || document.querySelector('.navbar');
+        
+        // Create toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'theme-toggle-btn';
+        toggleBtn.className = 'theme-toggle-btn';
+        toggleBtn.setAttribute('aria-label', 'Toggle Theme');
+        
+        const updateButtonState = () => {
+            const isLight = document.body.classList.contains('light-theme');
+            toggleBtn.innerHTML = `
+                <span class="theme-toggle-icon">
+                    <i class="fa-solid ${isLight ? 'fa-sun' : 'fa-moon'}"></i>
+                </span>
+            `;
+        };
+
+        updateButtonState();
+
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.add('theme-transitioning');
+            setTimeout(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 500);
+
+            const isLight = document.body.classList.toggle('light-theme');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateButtonState();
+        });
+
+        if (nav) {
+            // Check if there is a nav-links container (customer_home)
+            const navLinks = nav.querySelector('.nav-links');
+            if (navLinks) {
+                // Insert it before Cart button or at the start
+                const primaryBtn = navLinks.querySelector('.nav-btn.primary') || navLinks.firstChild;
+                navLinks.insertBefore(toggleBtn, primaryBtn);
+            } else {
+                // For other pages with nav, insert before the last child or nav-spacer
+                const spacer = nav.querySelector('.nav-spacer') || nav.querySelector('.cart-btn') || nav.querySelector('.floating-cart');
+                if (spacer) {
+                    nav.insertBefore(toggleBtn, spacer);
+                } else {
+                    nav.appendChild(toggleBtn);
+                }
+            }
+        } else {
+            // Floating pill for pages without nav (like login/register)
+            const floatContainer = document.createElement('div');
+            floatContainer.style.position = 'fixed';
+            floatContainer.style.top = '1.5rem';
+            floatContainer.style.right = '1.5rem';
+            floatContainer.style.zIndex = '99999';
+            floatContainer.appendChild(toggleBtn);
+            document.body.appendChild(floatContainer);
+        }
+    };
+
+    initThemeToggle();
+
     // 1) Dynamic Username Typing Animation (Login Page)
     const usernameInput = document.getElementById('id_username');
     const welcomeText = document.getElementById('welcomeText');

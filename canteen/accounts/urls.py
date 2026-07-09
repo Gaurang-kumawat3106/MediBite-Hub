@@ -16,6 +16,7 @@ urlpatterns = [
 
     # Custom Password Reset
     path('password-reset/', views.password_reset_request, name='password_reset'),
+    path('password-reset/select/', views.password_reset_select, name='password_reset_select'),
     path('password-reset-confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
 
     path('customer/home/', views.customer_home, name='customer_home'),
