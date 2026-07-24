@@ -2,6 +2,11 @@
 set -o errexit
 
 pip install -r requirements.txt
+echo "===== DEBUG ====="
+python --version
+pip show psycopg2-binary || true
+python -c "import psycopg2; print(psycopg2.__version__)"
+echo "================="
 
 if [ -d "canteen" ]; then
   cd canteen
