@@ -191,12 +191,12 @@ def logout_view(request):
 #     send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
 
 def send_verification_email(request, user):
-    current_site = get_current_site(request)
+    site_url = settings.SITE_URL.rstrip('/')
     mail_subject = 'Activate your Medibite account'
 
     message = render_to_string('accounts/email/verification_email.html', {
         'user': user,
-        'domain': current_site.domain,
+        'site_url': site_url,
         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
         'token': default_token_generator.make_token(user),
     })
@@ -219,8 +219,11 @@ def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        send_verification_email(request, user)
-        messages.success(request, 'Registration successful. Please check your email to verify your account.')
+        email_sent = send_verification_email(request, user)
+        if email_sent:
+            messages.success(request, 'Registration successful. Please check your email to verify your account.')
+        else:
+            messages.warning(request, 'Registration successful, but we could not send the verification email due to a server error. Please try resending later.')
         return redirect('login')
     return render(request, 'accounts/customer_register.html', {'form': form})
 
@@ -237,8 +240,11 @@ def outlet_register(request):
             logo=outlet_logo,
             is_approved=False,
         )
-        send_verification_email(request, user)
-        messages.success(request, 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.')
+        email_sent = send_verification_email(request, user)
+        if email_sent:
+            messages.success(request, 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.')
+        else:
+            messages.warning(request, 'Registration successful, but the verification email failed to send. Wait until admin approves your outlet account.')
         return redirect('login')
     return render(request, 'accounts/outlet_register.html', {'form': form})
 
@@ -268,8 +274,11 @@ def resend_verification_email(request):
             if user.is_active:
                 messages.info(request, 'Your account is already verified. Please log in.')
             else:
-                send_verification_email(request, user)
-                messages.success(request, 'Verification email sent successfully.')
+                email_sent = send_verification_email(request, user)
+                if email_sent:
+                    messages.success(request, 'Verification email sent successfully.')
+                else:
+                    messages.error(request, 'Failed to send verification email due to a server error.')
         except UserModel.DoesNotExist:
             messages.error(request, 'No user found with this email address.')
     return render(request, 'accounts/resend_verification.html')
@@ -286,7 +295,7 @@ def mask_username(username):
 
 # Helper to send password reset email
 def send_reset_email_for_user(request, user):
-    current_site = get_current_site(request)
+    site_url = settings.SITE_URL.rstrip('/')
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
 
@@ -294,7 +303,7 @@ def send_reset_email_for_user(request, user):
 
     message = render_to_string('accounts/email/password_reset_email.html', {
         'user': user,
-        'domain': current_site.domain,
+        'site_url': site_url,
         'uid': uid,
         'token': token,
     })

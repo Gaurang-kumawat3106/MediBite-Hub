@@ -11,6 +11,18 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
+class VerifiedCustomer(CustomUser):
+    class Meta:
+        proxy = True
+        verbose_name = 'Verified Customer'
+        verbose_name_plural = 'Verified Customers'
+
+class PendingVerificationUser(CustomUser):
+    class Meta:
+        proxy = True
+        verbose_name = 'Pending Verification User'
+        verbose_name_plural = 'Pending Verification Users'
+
 
 # ---------------- OUTLET ----------------
 class Outlet(models.Model):

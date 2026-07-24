@@ -10,7 +10,7 @@
             Please confirm your email address to activate your account.
         </p>
         <div style="text-align: center; margin: 30px 0;">
-            <a href="http://{{ domain }}{% url 'verify_email' uidb64=uid token=token %}" 
+            <a href="{{ site_url }}{% url 'verify_email' uidb64=uid token=token %}" 
                style="background-color: #0d6efd; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
                 Verify Email Address
             </a>

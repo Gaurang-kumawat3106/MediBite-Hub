@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count, Q, Sum
-from .models import CustomUser, Outlet
+from .models import CustomUser, Outlet, VerifiedCustomer, PendingVerificationUser
 from .models import Category, Product, Order
 from decimal import Decimal
 
@@ -50,6 +50,18 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(CustomUser, CustomUserAdmin)
 
+class VerifiedCustomerAdmin(CustomUserAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(is_customer=True, is_active=True, is_email_verified=True)
+
+class PendingVerificationUserAdmin(CustomUserAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(is_active=False)
+
+admin.site.register(VerifiedCustomer, VerifiedCustomerAdmin)
+admin.site.register(PendingVerificationUser, PendingVerificationUserAdmin)
 # ---- Outlet Admin ----
 @admin.register(Outlet)
 class OutletAdmin(admin.ModelAdmin):
