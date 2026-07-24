@@ -212,8 +212,9 @@ def send_verification_email(request, user):
         )
         return 1
     except Exception as e:
-        print(f"Error sending verification email: {e}")
-        return 0 
+    import traceback
+    traceback.print_exc()
+    return 0
 
 def customer_register(request):
     form = CustomerSignupForm(request.POST or None)
