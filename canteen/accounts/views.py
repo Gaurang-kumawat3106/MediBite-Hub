@@ -1252,3 +1252,25 @@ def debug_admin(request):
     ))
 
     return JsonResponse(users, safe=False)
+
+from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+
+def create_admin(request):
+    secret = request.GET.get("key")
+
+    if secret != "gaurang123":
+        return HttpResponse("Forbidden", status=403)
+
+    User = get_user_model()
+
+    if User.objects.filter(username="Host").exists():
+        return HttpResponse("Already exists")
+
+    User.objects.create_superuser(
+        username="Host",
+        email="gaurangkumawat026@gmail.com",
+        password="always34"
+    )
+
+    return HttpResponse("Superuser created")
