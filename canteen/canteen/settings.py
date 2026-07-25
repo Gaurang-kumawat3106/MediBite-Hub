@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'cloudinary',
     'cloudinary_storage',
+    'anymail',
 ]
 
 MIDDLEWARE = [
@@ -172,18 +173,14 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/app/welcome/"
 LOGOUT_REDIRECT_URL = "/"
 
-# Use SMTP email backend
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Use Anymail Brevo backend
+EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Medibite <medibite.hub26@gmail.com>')
 
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-print("EMAIL_HOST:", EMAIL_HOST)
-print("EMAIL_PORT:", EMAIL_PORT)
-print("EMAIL_HOST_USER:", EMAIL_HOST_USER)
+ANYMAIL = {
+    "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
+}
+
 print("DEFAULT_FROM_EMAIL:", DEFAULT_FROM_EMAIL)
 
 
