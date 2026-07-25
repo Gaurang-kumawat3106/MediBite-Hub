@@ -1237,19 +1237,18 @@ def edit_product(request, product_id):
 
     return render(request, 'accounts/edit_product.html', {'product': product})
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 
-def create_admin(request):
+def debug_admin(request):
     User = get_user_model()
 
-    if User.objects.filter(username="Host").exists():
-        return HttpResponse("Superuser already exists")
+    users = list(User.objects.filter(is_superuser=True).values(
+        "username",
+        "email",
+        "is_superuser",
+        "is_staff",
+        "is_active",
+    ))
 
-    User.objects.create_superuser(
-        username="Host",
-        email="gaurangkumawat026@gmail.com",
-        password="Always34@123"   # Strong password use karo
-    )
-
-    return HttpResponse("Superuser created")
+    return JsonResponse(users, safe=False)
