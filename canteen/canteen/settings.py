@@ -25,7 +25,11 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
-SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
+# Use RENDER_EXTERNAL_HOSTNAME as fallback if SITE_URL is not explicitly set
+if RENDER_EXTERNAL_HOSTNAME and not os.getenv('SITE_URL'):
+    SITE_URL = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+else:
+    SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
 
 INSTALLED_APPS = [
     'daphne',
