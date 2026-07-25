@@ -179,16 +179,6 @@ def logout_view(request):
 
 
 # ---------------- REGISTER ----------------
-# def send_verification_email(request, user):
-#     current_site = get_current_site(request)
-#     mail_subject = 'Activate your Medibite account'
-#     message = render_to_string('accounts/email/verification_email.html', {
-#         'user': user,
-#         'domain': current_site.domain,
-#         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-#         'token': default_token_generator.make_token(user),
-#     })
-#     send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
 
 def send_verification_email(request, user):
     site_url = settings.SITE_URL.rstrip('/')
@@ -759,38 +749,7 @@ def create_razorpay_order(request):
         "key": settings.RAZORPAY_KEY_ID
     })
 
-# @login_required
-# def cart_view(request):
-#     cart, created = Cart.objects.get_or_create(user=request.user)
 
-#     items = cart.items.all()
-
-#     total = sum([item.total_price() for item in items])
-#     can_order = all(item.product.is_available for item in items) and bool(items)
-
-#     amount_in_paisa = int(total * 100) if total else 0
-#     razorpay_order_id = None
-#     if can_order and amount_in_paisa > 0:
-#         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-#         try:
-#             payment = client.order.create({
-#                 "amount": amount_in_paisa,
-#                 "currency": "INR",
-#                 "payment_capture": "1"
-#             })
-#             razorpay_order_id = payment['id']
-#         except Exception as e:
-#             print("Razorpay Error:", e)
-
-#     return render(request, 'accounts/cart.html', {
-#         'items': items,
-#         'total': total,
-#         'can_order': can_order,
-#         'razorpay_order_id': razorpay_order_id,
-#         'razorpay_key_id': getattr(settings, 'RAZORPAY_KEY_ID', ''),
-#         'amount_in_paisa': amount_in_paisa
-#     })
-    
     
 @login_required
 def remove_from_cart(request, item_id):
@@ -888,76 +847,7 @@ def payment_callback(request):
 
     return redirect("cart")
 
-# @csrf_exempt
-# @login_required
-# def payment_callback(request):
-#     if request.method == "POST":
-#         payment_id = request.POST.get('razorpay_payment_id', '')
-#         razorpay_order_id = request.POST.get('razorpay_order_id', '')
-#         signature = request.POST.get('razorpay_signature', '')
 
-#         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-#         params_dict = {
-#             'razorpay_order_id': razorpay_order_id,
-#             'razorpay_payment_id': payment_id,
-#             'razorpay_signature': signature
-#         }
-
-#         try:
-#             client.utility.verify_payment_signature(params_dict)
-            
-#             # Signature Valid -> Create Order
-#             cart = get_object_or_404(Cart, user=request.user)
-#             items = cart.items.all()
-
-#             if not items:
-#                 return redirect('cart')
-
-#             # Ensure all items still available (optional but good)
-#             for item in items:
-#                 if not item.product.is_available:
-#                     messages.error(request, f"{item.product.name} is no longer available.")
-#                     return redirect('cart')
-
-#             outlet = items.first().product.outlet
-#             total_amount = sum([item.total_price() for item in items])
-
-#             order = Order.objects.create(
-#                 user=request.user,
-#                 outlet=outlet,
-#                 total_amount=total_amount,
-#                 status='pending'
-#             )
-
-#             for item in items:
-#                 OrderItem.objects.create(
-#                     order=order,
-#                     product=item.product,
-#                     quantity=item.quantity
-#                 )
-
-#             items.delete()
-
-#             # Trigger WebSocket notification to the outlet
-#             channel_layer = get_channel_layer()
-#             async_to_sync(channel_layer.group_send)(
-#                 f"outlet_{outlet.id}",
-#                 {
-#                     "type": "new_order",
-#                     "order_id": order.id,
-#                     "customer_name": request.user.username,
-#                     "total_amount": str(total_amount)
-#                 }
-#             )
-
-#             messages.success(request, "Order placed successfully! Payment verified.")
-#             return redirect('customer_orders')
-
-#         except razorpay.errors.SignatureVerificationError:
-#             messages.error(request, "Payment signature verification failed. Order not placed.")
-#             return redirect('cart')
-
-#     return redirect('cart')
 
 @login_required
 def customer_orders(request):
@@ -1237,40 +1127,3 @@ def edit_product(request, product_id):
 
     return render(request, 'accounts/edit_product.html', {'product': product})
 
-from django.http import JsonResponse
-from django.contrib.auth import get_user_model
-
-def debug_admin(request):
-    User = get_user_model()
-
-    users = list(User.objects.filter(is_superuser=True).values(
-        "username",
-        "email",
-        "is_superuser",
-        "is_staff",
-        "is_active",
-    ))
-
-    return JsonResponse(users, safe=False)
-
-from django.contrib.auth import get_user_model
-from django.http import HttpResponse
-
-def create_admin(request):
-    secret = request.GET.get("key")
-
-    if secret != "gaurang123":
-        return HttpResponse("Forbidden", status=403)
-
-    User = get_user_model()
-
-    if User.objects.filter(username="Host").exists():
-        return HttpResponse("Already exists")
-
-    User.objects.create_superuser(
-        username="Host",
-        email="gaurangkumawat026@gmail.com",
-        password="always34"
-    )
-
-    return HttpResponse("Superuser created")
