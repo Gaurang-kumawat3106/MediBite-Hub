@@ -80,21 +80,21 @@ ASGI_APPLICATION = 'canteen.asgi.application'
 
 REDIS_URL = os.getenv('REDIS_URL')
 
-if REDIS_URL:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [os.getenv("REDIS_URL", "redis://127.0.0.1:6379")],
-            },
-        },
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
-        },
-    }
+# if REDIS_URL:
+#     CHANNEL_LAYERS = {
+#         "default": {
+#             "BACKEND": "channels_redis.core.RedisChannelLayer",
+#             "CONFIG": {
+#                 "hosts": [os.getenv("REDIS_URL", "redis://127.0.0.1:6379")],
+#             },
+#         },
+#     }
+# else:
+#     CHANNEL_LAYERS = {
+#         "default": {
+#             "BACKEND": "channels.layers.InMemoryChannelLayer",
+#         },
+#     }
 
 # ==========================================
 # ✅ DATABASE CONFIGURATION FOR NEON POSTGRES
@@ -116,8 +116,7 @@ if raw_db_url:
             ssl_require=True, # Forces SSL for Neon
         )
     }
-    # Verification Print Statement
-    print("\n🟢 SUCCESS: Connected to POSTGRESQL (Neon) via DATABASE_URL!\n", file=sys.stderr)
+
 else:
     # Safe fallback for local development if .env is missing or empty
     DATABASES = {
@@ -126,9 +125,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    # Verification Print Statement
-    print("\n🔴 WARNING: No DATABASE_URL found. Falling back to local SQLITE3.\n", file=sys.stderr)
-
+   
 # ==========================================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -185,10 +182,7 @@ ANYMAIL = {
     "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
 }
 
-print("DEFAULT_FROM_EMAIL:", DEFAULT_FROM_EMAIL)
-# 👇 YAHAN ADD KARO
 
-print("DEFAULT_FROM_EMAIL:", DEFAULT_FROM_EMAIL)
 
 
 CLOUDINARY_STORAGE = {
