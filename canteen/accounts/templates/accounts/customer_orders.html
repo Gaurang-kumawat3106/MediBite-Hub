@@ -95,16 +95,23 @@
             {% endfor %}
           </div>
 
-          {% if order.status == 'pending' %}
-          <div class="order-actions">
+          <div class="order-actions" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+            {% if order.status == 'pending' %}
             <form action="{% url 'cancel_order' order.id %}" method="POST" style="margin:0;">
               {% csrf_token %}
               <button type="submit" class="cancel-btn">
                 <i class="fa-solid fa-xmark"></i> Cancel Order
               </button>
             </form>
+            {% endif %}
+            
+            <form action="{% url 'reorder' order.id %}" method="POST" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="reorder-btn" style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; border: none; padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 600; font-family: inherit; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(74, 222, 128, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(74, 222, 128, 0.3)';">
+                <i class="fa-solid fa-rotate-right"></i> Reorder
+              </button>
+            </form>
           </div>
-          {% endif %}
         </div>
 
       </div>

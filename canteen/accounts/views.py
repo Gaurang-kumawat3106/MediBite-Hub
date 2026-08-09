@@ -663,8 +663,11 @@ def product_detail(request, product_id):
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1'
+
     if not product.is_available:
-        # Cannot add unavailable product
+        if is_ajax:
+            return JsonResponse({'success': False, 'message': 'Product is unavailable'}, status=400)
         return redirect('outlet_detail', product.outlet.id)
 
     cart, created = Cart.objects.get_or_create(user=request.user)
@@ -688,6 +691,9 @@ def add_to_cart(request, product_id):
     if not created:
         item.quantity += 1
         item.save()
+
+    if is_ajax:
+        return JsonResponse({'success': True, 'message': 'Product added to cart successfully.'})
 
     return redirect('cart')
 
@@ -853,7 +859,9 @@ def payment_callback(request):
 def customer_orders(request):
     if not request.user.is_customer:
         return redirect('login')
-    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Only show orders that are not unpaid (e.g., paid, cancelled, pending but not unpaid)
+    orders = Order.objects.filter(user=request.user).exclude(payment_status='unpaid').order_by('-created_at')
     # Popup only if the token is still valid (<= 3 hours since completion).
     popup_token = None
     candidate = (
@@ -1126,4 +1134,43 @@ def edit_product(request, product_id):
         return redirect('edit_product', product_id=product.id)
 
     return render(request, 'accounts/edit_product.html', {'product': product})
+
+@login_required
+@require_POST
+def reorder(request, order_id):
+    if not request.user.is_customer:
+        return redirect('login')
+    
+    old_order = get_object_or_404(Order, id=order_id, user=request.user)
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    
+    # Check if cart has items from a different outlet
+    if cart.items.exists():
+        existing_outlet = cart.items.first().product.outlet
+        if existing_outlet != old_order.outlet:
+            # Clear cart to ensure reorder works smoothly with the correct outlet
+            cart.items.all().delete()
+            messages.info(request, f"Your cart was cleared to add items from {old_order.outlet.name}.")
+    
+    unavailable_items = []
+    
+    for order_item in old_order.items.all():
+        if order_item.product.is_available:
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                product=order_item.product,
+                defaults={'quantity': order_item.quantity}
+            )
+            if not created:
+                cart_item.quantity += order_item.quantity
+                cart_item.save()
+        else:
+            unavailable_items.append(order_item.product.name)
+            
+    if unavailable_items:
+        messages.warning(request, f"The following items are no longer available: {', '.join(unavailable_items)}")
+    else:
+        messages.success(request, "Items successfully added to your cart.")
+        
+    return redirect('cart')
 

@@ -115,7 +115,97 @@
 
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/main_.js' %}"></script>
-    {% include 'footer.html' %}
+  
+  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const addCartBtns = document.querySelectorAll('.add-cart-btn');
+      
+      addCartBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (btn.classList.contains('adding')) return;
+          
+          btn.classList.add('adding');
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          
+          const url = btn.getAttribute('href');
+          
+          try {
+            const response = await fetch(url, {
+              method: 'GET', // or POST if changed, but url is a GET endpoint currently
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              showToast('Product added to cart successfully.', 'success');
+              // Optionally update cart count if there's a badge
+              const cartBadge = document.querySelector('.cart-badge'); // Assuming there might be a cart badge somewhere
+              if (cartBadge && data.cart_count) {
+                 cartBadge.textContent = data.cart_count;
+              }
+            } else {
+              showToast(data.message || 'Failed to add product.', 'error');
+            }
+          } catch (error) {
+            console.error('Error adding to cart:', error);
+            showToast('An error occurred.', 'error');
+          } finally {
+            btn.classList.remove('adding');
+            btn.innerHTML = '<i class="fa-solid fa-plus" style="font-size: 1.1rem;"></i>';
+          }
+        });
+      });
+      
+      function showToast(message, type) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        
+        toast.style.background = type === 'success' ? '#22c55e' : '#ef4444';
+        toast.style.color = '#fff';
+        toast.style.padding = '12px 20px';
+        toast.style.borderRadius = '8px';
+        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        toast.style.display = 'flex';
+        toast.style.alignItems = 'center';
+        toast.style.gap = '15px';
+        toast.style.animation = 'slideIn 0.3s ease forwards';
+        toast.style.fontFamily = 'inherit';
+        toast.style.fontWeight = '500';
+        
+        toast.innerHTML = `
+          <span>${message}</span>
+          ${type === 'success' ? `<a href="{% url 'cart' %}" style="color: #fff; text-decoration: underline; font-weight: 700; white-space: nowrap;">Continue to Cart</a>` : ''}
+          <button style="background:none; border:none; color:white; cursor:pointer; margin-left: auto;" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+          if(toast.parentElement) {
+            toast.style.animation = 'slideOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+          }
+        }, 5000);
+      }
+    });
+    
+    // Add keyframes for toast
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    `;
+    document.head.appendChild(style);
+  </script>
+
+  {% include 'footer.html' %}
     <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

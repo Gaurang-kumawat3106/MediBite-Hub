@@ -56,6 +56,7 @@ path('cart/decrease/<int:item_id>/', views.decrease_quantity, name='decrease_qua
 path('customer/orders/', views.customer_orders, name='customer_orders'),
 path('customer/token/', views.customer_token, name='customer_token'),
 path('customer/order/<int:order_id>/cancel/', views.cancel_order, name='cancel_order'),
+path('customer/order/<int:order_id>/reorder/', views.reorder, name='reorder'),
 
 path('outlet/products/', views.outlet_products_view, name='outlet_products'),
 path('outlet/product/<int:product_id>/toggle/', views.toggle_availability, name='toggle_availability'),
