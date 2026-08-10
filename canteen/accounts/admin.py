@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count, Q, Sum
 from .models import CustomUser, Outlet, VerifiedCustomer, PendingVerificationUser
-from .models import Category, Product, Order
+from .models import Category, Product, Order, PlatformFeeConfig, PlatformFeeSlab
 from decimal import Decimal
 
 # ---- Block / Unblock Actions ----
@@ -77,10 +77,21 @@ class OutletAdmin(admin.ModelAdmin):
     def unapprove_outlets(self, request, queryset):
         queryset.update(is_approved=False)
 
+@admin.register(PlatformFeeConfig)
+class PlatformFeeConfigAdmin(admin.ModelAdmin):
+    list_display = ('fee_amount', 'updated_at')
+
+
+@admin.register(PlatformFeeSlab)
+class PlatformFeeSlabAdmin(admin.ModelAdmin):
+    list_display = ('min_price', 'max_price', 'fee_amount', 'updated_at')
+    list_editable = ('fee_amount',)
+    ordering = ('min_price',)
+
 # ---- Order Admin ----
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'outlet', 'total_amount', 'payment_status','status', 'cancelled_by', 'created_at')
+    list_display = ('id', 'user', 'outlet', 'total_amount', 'actual_amount', 'platform_fee', 'payment_status','status', 'cancelled_by', 'created_at')
     list_filter = ('outlet', 'status', 'created_at')
     change_list_template = 'admin/order_changelist.html'
 
@@ -90,6 +101,7 @@ class OrderAdmin(admin.ModelAdmin):
 
         extra_context = extra_context or {}
         now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         week_start = (now - timedelta(days=now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
@@ -99,40 +111,21 @@ class OrderAdmin(admin.ModelAdmin):
             payment_status__in=['paid', 'SUCCESS', 'PAID']
         ).exclude(status='cancelled')
 
+        today_orders = valid_orders.filter(created_at__gte=today_start)
         week_orders = valid_orders.filter(created_at__gte=week_start)
         month_orders = valid_orders.filter(created_at__gte=month_start)
 
         def coalesce_decimal(val):
-            # Helps keep template rendering clean when SUM(filter=...) returns None
             return val if val is not None else Decimal("0.00")
 
-        def get_global_bucket_stats(orders_qs):
+        def get_global_stats(orders_qs):
             return orders_qs.aggregate(
                 total_orders=Count("id"),
-                total_sales=Sum("total_amount"),
-                under_100_orders=Count("id", filter=Q(total_amount__lt=100)),
-                under_100_sales=Sum("total_amount", filter=Q(total_amount__lt=100)),
-                under_200_orders=Count(
-                    "id", filter=Q(total_amount__gte=100, total_amount__lt=200)
-                ),
-                under_200_sales=Sum(
-                    "total_amount",
-                    filter=Q(total_amount__gte=100, total_amount__lt=200),
-                ),
-                under_500_orders=Count(
-                    "id", filter=Q(total_amount__gte=200, total_amount__lt=500)
-                ),
-                under_500_sales=Sum(
-                    "total_amount",
-                    filter=Q(total_amount__gte=200, total_amount__lt=500),
-                ),
-                above_500_orders=Count("id", filter=Q(total_amount__gte=500)),
-                above_500_sales=Sum("total_amount", filter=Q(total_amount__gte=500)),
+                total_platform_fee=Sum("platform_fee"),
+                total_sales=Sum("total_amount")
             )
 
-        def get_outlet_head_bucket_stats(orders_qs):
-            # One outlet head = one outlet (via Outlet.manager OneToOneField), but we still
-            # group by outlet manager from Order -> outlet -> manager to keep it consistent.
+        def get_outlet_stats(orders_qs):
             outlet_heads = list(
                 CustomUser.objects.filter(is_outlet_head=True).select_related("outlet").order_by(
                     "username"
@@ -142,32 +135,10 @@ class OrderAdmin(admin.ModelAdmin):
             bucket_agg_rows = list(
                 orders_qs.values(
                     "outlet__manager_id",
-                    "outlet__manager__username",
                     "outlet__name",
                 ).annotate(
                     total_orders=Count("id"),
-                    total_sales=Sum("total_amount"),
-                    under_100_orders=Count("id", filter=Q(total_amount__lt=100)),
-                    under_100_sales=Sum("total_amount", filter=Q(total_amount__lt=100)),
-                    under_200_orders=Count(
-                        "id", filter=Q(total_amount__gte=100, total_amount__lt=200)
-                    ),
-                    under_200_sales=Sum(
-                        "total_amount",
-                        filter=Q(total_amount__gte=100, total_amount__lt=200),
-                    ),
-                    under_500_orders=Count(
-                        "id", filter=Q(total_amount__gte=200, total_amount__lt=500)
-                    ),
-                    under_500_sales=Sum(
-                        "total_amount",
-                        filter=Q(total_amount__gte=200, total_amount__lt=500),
-                    ),
-                    above_500_orders=Count("id", filter=Q(total_amount__gte=500)),
-                    above_500_sales=Sum(
-                        "total_amount",
-                        filter=Q(total_amount__gte=500),
-                    ),
+                    total_actual_amount=Sum("actual_amount"),
                 )
             )
 
@@ -180,39 +151,40 @@ class OrderAdmin(admin.ModelAdmin):
             result = []
             for head in outlet_heads:
                 row = row_by_manager_id.get(head.id, {})
-
                 result.append(
                     {
                         "head_id": head.id,
-                        "head_username": head.username,
-                        "outlet_name": getattr(getattr(head, "outlet", None), "name", ""),
+                        "outlet_name": getattr(getattr(head, "outlet", None), "name", "No Outlet"),
                         "total_orders": row.get("total_orders") or 0,
-                        "total_sales": coalesce_decimal(row.get("total_sales")),
-                        "under_100_orders": row.get("under_100_orders") or 0,
-                        "under_100_sales": coalesce_decimal(row.get("under_100_sales")),
-                        "under_200_orders": row.get("under_200_orders") or 0,
-                        "under_200_sales": coalesce_decimal(row.get("under_200_sales")),
-                        "under_500_orders": row.get("under_500_orders") or 0,
-                        "under_500_sales": coalesce_decimal(row.get("under_500_sales")),
-                        "above_500_orders": row.get("above_500_orders") or 0,
-                        "above_500_sales": coalesce_decimal(row.get("above_500_sales")),
+                        "total_actual_amount": coalesce_decimal(row.get("total_actual_amount")),
                     }
                 )
             return result
 
-        global_week = get_global_bucket_stats(week_orders)
-        global_month = get_global_bucket_stats(month_orders)
+        global_today = get_global_stats(today_orders)
+        global_week = get_global_stats(week_orders)
+        global_month = get_global_stats(month_orders)
 
-        # Ensure decimals are never None for template rendering
-        for d in (global_week, global_month):
+        for d in (global_today, global_week, global_month):
+            d["total_platform_fee"] = coalesce_decimal(d.get("total_platform_fee"))
             d["total_sales"] = coalesce_decimal(d.get("total_sales"))
-            d["under_100_sales"] = coalesce_decimal(d.get("under_100_sales"))
-            d["under_200_sales"] = coalesce_decimal(d.get("under_200_sales"))
-            d["under_500_sales"] = coalesce_decimal(d.get("under_500_sales"))
-            d["above_500_sales"] = coalesce_decimal(d.get("above_500_sales"))
 
-        extra_context["stats"] = {"week": global_week, "month": global_month}
-        extra_context["outlet_head_stats_week"] = get_outlet_head_bucket_stats(week_orders)
-        extra_context["outlet_head_stats_month"] = get_outlet_head_bucket_stats(month_orders)
+        extra_context["stats"] = {"today": global_today, "week": global_week, "month": global_month}
+        
+        outlet_today = {item['head_id']: item for item in get_outlet_stats(today_orders)}
+        outlet_week = {item['head_id']: item for item in get_outlet_stats(week_orders)}
+        outlet_month = {item['head_id']: item for item in get_outlet_stats(month_orders)}
+
+        combined_outlet_stats = []
+        outlet_heads = CustomUser.objects.filter(is_outlet_head=True).select_related("outlet").order_by("username")
+        for head in outlet_heads:
+            combined_outlet_stats.append({
+                "outlet_name": getattr(getattr(head, "outlet", None), "name", "No Outlet"),
+                "today": outlet_today.get(head.id, {}).get("total_actual_amount", Decimal("0.00")),
+                "week": outlet_week.get(head.id, {}).get("total_actual_amount", Decimal("0.00")),
+                "month": outlet_month.get(head.id, {}).get("total_actual_amount", Decimal("0.00")),
+            })
+
+        extra_context["combined_outlet_stats"] = combined_outlet_stats
 
         return super().changelist_view(request, extra_context=extra_context)

@@ -50,6 +50,10 @@ class OrderConsumer(AsyncWebsocketConsumer):
         self.user_group_name = f"user_{self.user.id}"
         await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
+        # customer group join (safe)
+        if getattr(self.user, "is_customer", False):
+            await self.channel_layer.group_add("customers", self.channel_name)
+
         # outlet group join (safe)
         if getattr(self.user, "is_outlet_head", False):
             outlet_id = await self.get_outlet_id(self.user)
@@ -74,6 +78,18 @@ class OrderConsumer(AsyncWebsocketConsumer):
                 self.outlet_group_name,
                 self.channel_name
             )
+
+        # Leave customers group
+        if getattr(self.user, "is_customer", False):
+            await self.channel_layer.group_discard("customers", self.channel_name)
+
+    # Receive message from customers group
+    async def product_deactivated(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'product_deactivated',
+            'product_id': event['product_id'],
+            'product_name': event['product_name']
+        }))
 
     # Receive message from user_group
     async def order_update(self, event):

@@ -1,5 +1,23 @@
+from decimal import Decimal
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
+
+
+def get_platform_fee_for_price(price):
+    """Return platform fee for a given base product price using configured slabs."""
+    price = Decimal(str(price))
+    slab = (
+        PlatformFeeSlab.objects.filter(min_price__lte=price)
+        .filter(Q(max_price__gte=price) | Q(max_price__isnull=True))
+        .order_by('-min_price')
+        .first()
+    )
+    if slab:
+        return slab.fee_amount
+    config = PlatformFeeConfig.objects.first()
+    return config.fee_amount if config else Decimal('0.00')
 
 
 # ---------------- USER MODEL ----------------
@@ -125,6 +143,13 @@ class Product(models.Model):
 
     is_available = models.BooleanField(default=True)
 
+    def get_platform_fee(self):
+        return get_platform_fee_for_price(self.price)
+
+    @property
+    def customer_price(self):
+        return self.price + self.get_platform_fee()
+
     def __str__(self):
         return f"{self.name} - {self.outlet.name}"
     
@@ -147,7 +172,13 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def total_price(self):
+        return self.product.customer_price * self.quantity
+
+    def outlet_total(self):
         return self.product.price * self.quantity
+
+    def platform_fee_total(self):
+        return self.product.get_platform_fee() * self.quantity
 
 
 # ---------------- ORDER ----------------
@@ -157,6 +188,8 @@ class Order(models.Model):
     outlet = models.ForeignKey(Outlet, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    actual_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     # Razorpay fields
@@ -253,3 +286,34 @@ class OrderToken(models.Model):
 
     def __str__(self):
         return f'{self.outlet.name} - Token #{self.token_no}'
+
+# ---------------- PLATFORM FEE CONFIG ----------------
+class PlatformFeeConfig(models.Model):
+    fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Platform Fee Configuration (Fallback)'
+        verbose_name_plural = 'Platform Fee Configuration (Fallback)'
+
+    def __str__(self):
+        return f"Platform Fee: ₹{self.fee_amount}"
+
+
+class PlatformFeeSlab(models.Model):
+    min_price = models.DecimalField(max_digits=10, decimal_places=2)
+    max_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Leave blank for no upper limit",
+    )
+    fee_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['min_price']
+        verbose_name = 'Platform Fee Slab'
+        verbose_name_plural = 'Platform Fee Slabs'
+
+    def __str__(self):
+        upper = f"₹{self.max_price}" if self.max_price is not None else "∞"
+        return f"₹{self.min_price}–{upper} → ₹{self.fee_amount}"

@@ -23,6 +23,30 @@ function connectOrderWebSocket() {
             showNotification(data.message, 'success');
             // Show token popup or refresh token page
             if (typeof showTokenUpdate === 'function') showTokenUpdate(data.token_no);
+        } else if (data.type === 'product_deactivated') {
+            showNotification(`⚠️ Product unavailable: ${data.product_name} has just been deactivated. Please do not proceed with payment.`, 'error');
+            
+            // If on cart/checkout page, disable checkout buttons and possibly remove the item
+            const checkoutBtn = document.getElementById('checkout-btn');
+            if (checkoutBtn) {
+                checkoutBtn.disabled = true;
+                checkoutBtn.textContent = 'Product Unavailable';
+                checkoutBtn.style.opacity = '0.5';
+                checkoutBtn.style.cursor = 'not-allowed';
+            }
+            
+            const rzpBtn = document.getElementById('rzp-button1');
+            if (rzpBtn) {
+                rzpBtn.disabled = true;
+                rzpBtn.textContent = 'Product Unavailable';
+                rzpBtn.style.opacity = '0.5';
+                rzpBtn.style.cursor = 'not-allowed';
+            }
+            
+            // Optionally refresh the page after a delay to reflect changes
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
         }
     };
 
@@ -51,7 +75,7 @@ function showNotification(message, type = 'info') {
         padding: 15px 25px;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        border-left: 5px solid ${type === 'success' ? '#10b981' : '#3b82f6'};
+        border-left: 5px solid ${type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : '#3b82f6')};
         z-index: 9999;
         display: flex;
         align-items: center;
@@ -59,7 +83,7 @@ function showNotification(message, type = 'info') {
         animation: slideInRight 0.3s ease-out forwards;
     `;
     
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+    const icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle');
     toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     
     document.body.appendChild(toast);

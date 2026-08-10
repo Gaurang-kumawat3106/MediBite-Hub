@@ -1756,3 +1756,202 @@ nav {
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .stat-value { font-size: 1.4rem; }
 }
+
+/* ☀️ LIGHT MODE THEME OVERRIDES FOR OUTLET ☀️ */
+body.light-theme {
+  --bg:          #fbf9f4;
+  --bg2:         #f3ede2;
+  --bg3:         #eae3d5;
+  --surface:     #ffffff;
+  --surface2:    #f9f6ef;
+  --border:      rgba(43,27,21,0.08);
+  --border2:     rgba(43,27,21,0.12);
+
+  --accent:      #ff6b35;
+  --accent-dim:  rgba(255,107,53,0.15);
+  --accent-glow: rgba(255,107,53,0.35);
+
+  --text:        #2b1b15;
+  --text-sec:    #6e6056;
+  --text-dim:    #9a8c82;
+}
+
+body.light-theme .nav-back,
+body.light-theme .cart-btn {
+  color: #fff;
+}
+
+body.light-theme .search-bar input {
+  color: #2b1b15;
+}
+
+body.light-theme .category-select {
+  color: #2b1b15;
+  background-color: #ffffff;
+}
+
+body.light-theme .add-cart-btn {
+  color: #ffffff;
+}
+
+/* ─── OUTLET ORDERS TABLE ─────────────────────────── */
+.orders-table-wrap {
+  margin-top: 1rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.orders-table thead {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.orders-table th {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-sec);
+  white-space: nowrap;
+}
+
+.orders-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.orders-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.orders-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.orders-table .row-cancelled {
+  opacity: 0.55;
+}
+
+.orders-table .cell-order-id {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.orders-table .cell-customer {
+  font-weight: 600;
+}
+
+.orders-table .cell-qty,
+.orders-table .cell-price,
+.orders-table .cell-total {
+  font-variant-numeric: tabular-nums;
+}
+
+.orders-table .cell-total {
+  font-weight: 700;
+}
+
+.orders-table .cell-datetime {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.orders-table .text-muted {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.orders-table .token-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.orders-table .action-group {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.orders-table .btn-table {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s;
+}
+
+.orders-table .btn-table:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.orders-table .btn-start {
+  background: var(--blue);
+  color: #fff;
+}
+
+.orders-table .btn-ready {
+  background: var(--orange);
+  color: #000;
+}
+
+.orders-table .btn-deliver {
+  background: var(--green);
+  color: #fff;
+}
+
+.orders-table .btn-cancel {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 0.4rem 0.55rem;
+}
+
+.orders-table .btn-disabled {
+  background: var(--surface2);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.orders-table .status-note {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.orders-table .status-note.cancelled {
+  color: var(--red);
+}
+
+.orders-table .status-note.delivered {
+  color: var(--green);
+}
+
+@media (max-width: 900px) {
+  .orders-table {
+    font-size: 0.82rem;
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: 0.6rem 0.65rem;
+  }
+}

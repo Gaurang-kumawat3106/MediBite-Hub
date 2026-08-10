@@ -60,7 +60,7 @@
           <div class="item-details">
             <div class="item-outlet">{{ item.product.outlet.name }}</div>
             <div class="item-name">{{ item.product.name }}</div>
-            <div class="item-price">₹{{ item.product.price }} each</div>
+            <div class="item-price">₹{{ item.product.customer_price }} each</div>
           </div>
 
           <!-- Qty Controls -->
@@ -271,7 +271,7 @@
           <div class="item-details">
             <div class="item-outlet">{{ item.product.outlet.name }}</div>
             <div class="item-name">{{ item.product.name }}</div>
-            <div class="item-price">₹{{ item.product.price }} each</div>
+            <div class="item-price">₹{{ item.product.customer_price }} each</div>
           </div>
 
           <!-- Qty Controls -->
@@ -308,11 +308,6 @@
         <div class="summary-row">
           <span>Subtotal</span>
           <span>₹{{ total }}</span>
-        </div>
-
-        <div class="summary-row">
-          <span>Taxes & Fees</span>
-          <span style="color: var(--accent); font-size: 0.85rem;">At outlet</span>
         </div>
 
         <div class="summary-divider"></div>

@@ -41,17 +41,21 @@
       <div class="token-cards">
         {% for t in tokens %}
           <div class="token-card" data-remaining-seconds="{{ t.remaining_seconds|default:0 }}">
-            <div class="token-card-outlet">{{ t.outlet.name }}</div>
-            <div class="token-card-no">Token #{{ t.token_no }}</div>
-            <div class="token-card-meta">
-              <span><i class="fa-regular fa-calendar"></i> {{ t.token_date|date:"M d, Y" }}</span>
-              <span class="token-visibility">
+            <div class="token-card-top">
+              <div class="token-card-outlet">{{ t.outlet.name }}</div>
+              <div class="token-card-no">{{ t.token_no }}</div>
+              <div class="token-visibility">
                 <i class="fa-solid fa-hourglass-half"></i>
                 Visible for: <strong class="token-countdown">--:--:--</strong>
-              </span>
+              </div>
             </div>
-            <div class="token-card-order">
-              For Order #{{ t.order.id }}
+            <div class="token-card-bottom">
+              <div class="token-card-order">
+                Order #{{ t.order.id }}
+              </div>
+              <div class="token-card-meta">
+                <span><i class="fa-regular fa-calendar"></i> {{ t.token_date|date:"M d, Y" }}</span>
+              </div>
             </div>
           </div>
         {% endfor %}

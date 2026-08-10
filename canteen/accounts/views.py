@@ -38,6 +38,7 @@ from .models import (
     Product
 )
 from .models import Cart, CartItem, Order, OrderItem, OrderToken
+import random
 
 TOKEN_VISIBLE_FOR = timedelta(hours=3)
 UserModel = get_user_model()
@@ -480,7 +481,9 @@ def customer_home(request):
 
 # ---------------- OUTLET HEAD DASHBOARD ----------------
 def get_order_stats(outlet):
+    from django.db.models import Sum
     now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -489,20 +492,17 @@ def get_order_stats(outlet):
         payment_status__in=['paid', 'SUCCESS', 'PAID']
     ).exclude(status='cancelled')
 
+    today_orders = valid_orders.filter(created_at__gte=today_start)
     week_orders = valid_orders.filter(created_at__gte=week_start)
     month_orders = valid_orders.filter(created_at__gte=month_start)
 
-    def group_by_amount(qs):
-        return {
-            'under_100': qs.filter(total_amount__lt=100).count(),
-            'under_200': qs.filter(total_amount__gte=100, total_amount__lt=200).count(),
-            'under_500': qs.filter(total_amount__gte=200, total_amount__lt=500).count(),
-            'above_500': qs.filter(total_amount__gte=500).count(),
-        }
+    def total_collection(qs):
+        return qs.aggregate(Sum('actual_amount'))['actual_amount__sum'] or 0
 
     return {
-        'week': group_by_amount(week_orders),
-        'month': group_by_amount(month_orders),
+        'today_collection': total_collection(today_orders),
+        'week_collection': total_collection(week_orders),
+        'month_collection': total_collection(month_orders),
     }
 
 @login_required
@@ -700,9 +700,9 @@ def add_to_cart(request, product_id):
 @login_required
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-    items = cart.items.all()
+    items = cart.items.select_related('product').all()
 
-    total = sum([item.total_price() for item in items])
+    total = sum(item.total_price() for item in items)
     can_order = all(item.product.is_available for item in items) and bool(items)
 
     return render(request, 'accounts/cart.html', {
@@ -715,7 +715,7 @@ def cart_view(request):
 @require_POST
 def create_razorpay_order(request):
     cart = get_object_or_404(Cart, user=request.user)
-    items = cart.items.all()
+    items = cart.items.select_related('product').all()
 
     if not items:
         return JsonResponse({"success": False, "error": "Cart is empty"}, status=400)
@@ -725,7 +725,9 @@ def create_razorpay_order(request):
             return JsonResponse({"success": False, "error": f"{item.product.name} is unavailable"}, status=400)
 
     outlet = items.first().product.outlet
-    total_amount = sum([item.total_price() for item in items])
+    actual_amount = sum(item.outlet_total() for item in items)
+    platform_fee = sum(item.platform_fee_total() for item in items)
+    total_amount = sum(item.total_price() for item in items)
     amount_in_paisa = int(total_amount * 100)
 
     # ✅ Create DB Order first
@@ -733,6 +735,8 @@ def create_razorpay_order(request):
         user=request.user,
         outlet=outlet,
         total_amount=total_amount,
+        actual_amount=actual_amount,
+        platform_fee=platform_fee,
         status="pending",
         payment_status="unpaid"
     )
@@ -905,11 +909,58 @@ def outlet_orders(request):
     orders = Order.objects.filter(
         outlet=outlet,
         payment_status__in=['paid', 'SUCCESS', 'PAID']
+    ).exclude(status='delivered').select_related('user').prefetch_related(
+        'items__product', 'token'
     ).order_by('-created_at')
 
     return render(request, 'accounts/outlet_orders.html', {
         'orders': orders
     }) 
+
+@login_required
+def outlet_delivered_orders(request):
+    if not request.user.is_outlet_head:
+        return redirect('login')
+    if _is_pending_outlet_user(request.user):
+        logout(request)
+        return redirect('login')
+        
+    outlet = request.user.outlet
+    now = timezone.now()
+    
+    filter_val = request.GET.get('time_filter', 'all')
+    orders = Order.objects.filter(
+        outlet=outlet,
+        status='delivered',
+        payment_status__in=['paid', 'SUCCESS', 'PAID']
+    ).select_related('user').prefetch_related(
+        'items__product', 'token'
+    ).order_by('-completed_at')
+    
+    if filter_val == '1h':
+        orders = orders.filter(completed_at__gte=now - timedelta(hours=1))
+    elif filter_val == '3h':
+        orders = orders.filter(completed_at__gte=now - timedelta(hours=3))
+    elif filter_val == '6h':
+        orders = orders.filter(completed_at__gte=now - timedelta(hours=6))
+    elif filter_val == 'today':
+        orders = orders.filter(completed_at__gte=now.replace(hour=0, minute=0, second=0, microsecond=0))
+    elif filter_val == 'yesterday':
+        yesterday = now - timedelta(days=1)
+        start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(completed_at__gte=start, completed_at__lt=end)
+    elif filter_val == 'week':
+        week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(completed_at__gte=week_start)
+    elif filter_val == 'month':
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(completed_at__gte=month_start)
+        
+    return render(request, 'accounts/outlet_delivered_orders.html', {
+        'orders': orders,
+        'filter_val': filter_val
+    })
 
 
 def generate_token_for_order(order):
@@ -928,12 +979,10 @@ def generate_token_for_order(order):
 
     for _ in range(5):
         with transaction.atomic():
-            latest = (
-                OrderToken.objects.filter(outlet=outlet, token_date=token_date)
-                .order_by('-token_no')
-                .first()
-            )
-            next_no = 1 if latest is None else (latest.token_no + 1)
+            next_no = random.randint(1, 999)
+            if OrderToken.objects.filter(outlet=outlet, token_date=token_date, token_no=next_no).exists():
+                continue
+            
             try:
                 token_obj = OrderToken.objects.create(
                     order=order,
@@ -956,7 +1005,7 @@ def generate_token_for_order(order):
                 )
                 return token_obj
             except IntegrityError:
-                # Likely a race condition; retry with the latest token number.
+                # Likely a race condition; retry with a new token number.
                 continue
 
     # If we reached here, something is wrong (repeated unique constraint collisions).
@@ -1092,7 +1141,20 @@ def toggle_availability(request, product_id):
     if request.method == 'POST':
         product.is_available = not product.is_available
         product.save()
-        
+
+        if not product.is_available:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "customers",
+                {
+                    "type": "product_deactivated",
+                    "product_id": product.id,
+                    "product_name": product.name,
+                }
+            )
+            
     return redirect('outlet_products')
 
 @login_required
@@ -1108,7 +1170,22 @@ def edit_product(request, product_id):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'delete':
+            product_id_str = product.id
+            product_name_str = product.name
             product.delete()
+            
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "customers",
+                {
+                    "type": "product_deactivated",
+                    "product_id": product_id_str,
+                    "product_name": product_name_str,
+                }
+            )
+            
             messages.success(request, f"Product deleted successfully.")
             return redirect('outlet_products')
         elif action == 'increase':

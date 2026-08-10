@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Orders — MediCanteen</title>
+    <title>Delivered Orders — MediCanteen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,14 +24,26 @@
     </nav>
 
     <div class="container">
-        <div class="page-header">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <h1 class="page-title">
-                <svg width="32" height="32" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                Manage Orders
+                <svg width="32" height="32" fill="none" stroke="var(--success)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Delivered Orders
             </h1>
-            <a href="{% url 'outlet_delivered_orders' %}" class="btn" style="background: var(--surface); border: 1px solid var(--border);">
-                View Delivered Orders
-            </a>
+            <div class="filters">
+                <form method="GET" action="{% url 'outlet_delivered_orders' %}" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <label for="time_filter" style="font-weight: 600;">Filter:</label>
+                    <select name="time_filter" id="time_filter" onchange="this.form.submit()" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
+                        <option value="all" {% if filter_val == 'all' %}selected{% endif %}>All Time</option>
+                        <option value="1h" {% if filter_val == '1h' %}selected{% endif %}>Last 1 Hour</option>
+                        <option value="3h" {% if filter_val == '3h' %}selected{% endif %}>Last 3 Hours</option>
+                        <option value="6h" {% if filter_val == '6h' %}selected{% endif %}>Last 6 Hours</option>
+                        <option value="today" {% if filter_val == 'today' %}selected{% endif %}>Today</option>
+                        <option value="yesterday" {% if filter_val == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                        <option value="week" {% if filter_val == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if filter_val == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                </form>
+            </div>
         </div>
 
         {% if orders %}
@@ -54,7 +66,7 @@
                     <tbody>
                         {% for order in orders %}
                             {% for item in order.items.all %}
-                                <tr class="{% if order.status == 'cancelled' %}row-cancelled{% elif order.status == 'delivered' %}row-delivered{% endif %}">
+                                <tr class="row-delivered">
                                     {% if forloop.first %}
                                         <td rowspan="{{ order.items.all|length }}" class="cell-order-id">#{{ order.id }}</td>
                                         <td rowspan="{{ order.items.all|length }}" class="cell-customer">{{ order.user.username }}</td>
@@ -68,8 +80,8 @@
                                             <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
                                         </td>
                                         <td rowspan="{{ order.items.all|length }}" class="cell-datetime">
-                                            {{ order.created_at|date:"M d, Y" }}<br>
-                                            <span class="text-muted">{{ order.created_at|time:"h:i A" }}</span>
+                                            {{ order.completed_at|date:"M d, Y" }}<br>
+                                            <span class="text-muted">{{ order.completed_at|time:"h:i A" }}</span>
                                         </td>
                                         <td rowspan="{{ order.items.all|length }}" class="cell-token">
                                             {% if order.token %}
@@ -79,36 +91,7 @@
                                             {% endif %}
                                         </td>
                                         <td rowspan="{{ order.items.all|length }}" class="cell-action">
-                                            {% if order.status == 'pending' %}
-                                                <div class="action-group">
-                                                    <form action="{% url 'update_order_status' order.id %}" method="POST">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="status" value="preparing">
-                                                        <button type="submit" class="btn-table btn-start">Start Preparing</button>
-                                                    </form>
-                                                    <form action="{% url 'update_order_status' order.id %}" method="POST">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="status" value="cancelled">
-                                                        <button type="submit" class="btn-table btn-cancel" title="Cancel">✕</button>
-                                                    </form>
-                                                </div>
-                                            {% elif order.status == 'preparing' %}
-                                                <form action="{% url 'update_order_status' order.id %}" method="POST">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="status" value="completed">
-                                                    <button type="submit" class="btn-table btn-ready">Mark Ready</button>
-                                                </form>
-                                            {% elif order.status == 'completed' %}
-                                                <form action="{% url 'update_order_status' order.id %}" method="POST">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="status" value="delivered">
-                                                    <button type="submit" class="btn-table btn-deliver">Handover</button>
-                                                </form>
-                                            {% elif order.status == 'cancelled' %}
-                                                <span class="status-note cancelled">Cancelled{% if order.cancelled_by %} ({{ order.get_cancelled_by_display }}){% endif %}</span>
-                                            {% else %}
-                                                <span class="status-note delivered">Handed Over</span>
-                                            {% endif %}
+                                            <button type="button" class="btn-table btn-disabled" disabled>Handover</button>
                                         </td>
                                     {% endif %}
                                 </tr>
@@ -121,8 +104,8 @@
             <div class="card">
                 <div class="empty-state">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                    <h3>No Orders Yet</h3>
-                    <p>When customers place orders, they will appear here.</p>
+                    <h3>No Delivered Orders Found</h3>
+                    <p>Try changing the time filter.</p>
                 </div>
             </div>
         {% endif %}
@@ -131,12 +114,5 @@
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/outlet.js' %}"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
-    <script>
-        function refreshOutletOrders() {
-            if (confirm("New order received! Reload page to see it?")) {
-                window.location.reload();
-            }
-        }
-    </script>
 </body>
 </html>
