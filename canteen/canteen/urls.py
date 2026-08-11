@@ -3,6 +3,14 @@ from django.urls import include, path
 from accounts import views as accounts_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.sitemaps.views import sitemap
+from accounts.sitemaps import StaticViewSitemap, OutletSitemap
+
+
+sitemaps = {
+    "static": StaticViewSitemap,
+    "outlets": OutletSitemap,
+}
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -11,6 +19,12 @@ urlpatterns = [
     # Application routes
     path('app/', include('accounts.urls')),
     path('', accounts_views.login_view, name='login'),
+    path(
+    "sitemap.xml",
+    sitemap,
+    {"sitemaps": sitemaps},
+    name="django.contrib.sitemaps.views.sitemap",
+),
 ]
 
 # ✅ STATIC + MEDIA dono serve karo

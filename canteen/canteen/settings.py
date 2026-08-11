@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'channels',
     'accounts.apps.AccountsConfig',
     'cloudinary',
+    'django.contrib.sitemaps',
     'cloudinary_storage',
     'anymail',
 ]
