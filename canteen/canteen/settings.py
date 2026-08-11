@@ -90,28 +90,9 @@ ASGI_APPLICATION = 'canteen.asgi.application'
 
 REDIS_URL = os.getenv('REDIS_URL')
 
-# if REDIS_URL:
-#     CHANNEL_LAYERS = {
-#         "default": {
-#             "BACKEND": "channels_redis.core.RedisChannelLayer",
-#             "CONFIG": {
-#                 "hosts": [os.getenv("REDIS_URL", "redis://127.0.0.1:6379")],
-#             },
-#         },
-#     }
-# else:
-#     CHANNEL_LAYERS = {
-#         "default": {
-#             "BACKEND": "channels.layers.InMemoryChannelLayer",
-#         },
-#     }
 
-# ==========================================
-# ✅ DATABASE CONFIGURATION FOR NEON POSTGRES
-# ==========================================
-
-# Safely get the URL, stripping any whitespace or accidental quotes
-# 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True 
 
 raw_db_url = os.environ.get("DATABASE_URL", "").strip().strip("'").strip('"')
 
