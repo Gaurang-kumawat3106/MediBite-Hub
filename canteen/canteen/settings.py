@@ -16,20 +16,29 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['medibite-hub.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['medibite-hub.onrender.com', 
+                 'localhost', 
+                 'bhukkadbox.in',
+                 'www.bhukkadbox.in',
+                 '127.0.0.1',]
 
 # For Render's external hostname
 RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+CSRF_TRUSTED_ORIGINS = [
+    'https://bhukkadbox.in',
+    'https://www.bhukkadbox.in',
+    'https://*.onrender.com',
+    ]
 
 # Use RENDER_EXTERNAL_HOSTNAME as fallback if SITE_URL is not explicitly set
 if RENDER_EXTERNAL_HOSTNAME and not os.getenv('SITE_URL'):
     SITE_URL = f"https://{RENDER_EXTERNAL_HOSTNAME}"
 else:
-    SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
+    SITE_URL = os.getenv('SITE_URL', 
+                         'http://127.0.0.1:8000')
 
 INSTALLED_APPS = [
     'daphne',
