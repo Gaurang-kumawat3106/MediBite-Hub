@@ -250,6 +250,28 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
+    # --- Price snapshot (captured at checkout, never changes) ---
+    # These fields store the exact prices at the moment the order was created.
+    # They are independent of future product price changes.
+    unit_price = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0,
+        help_text="Product base price at the time of order"
+    )
+    platform_fee = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0,
+        help_text="Platform fee per unit at the time of order"
+    )
+
+    @property
+    def customer_unit_price(self):
+        """Total price per unit (base + platform fee) at time of order."""
+        return self.unit_price + self.platform_fee
+
+    @property
+    def line_total(self):
+        """Total amount for this line item."""
+        return self.customer_unit_price * self.quantity
+
 
 # ---------------- ORDER TOKEN ----------------
 # Token is generated when the outlet marks an order as "completed".
