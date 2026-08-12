@@ -14,7 +14,7 @@ load_dotenv(env_path)
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['medibite-hub.onrender.com', 
                  'localhost', 
