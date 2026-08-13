@@ -8,7 +8,6 @@
   <meta name="description" content="Order fresh meals from {{ outlet.name }} on Bhukkad Box.">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <!-- Owl Carousel CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"/>
   <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}"/>
@@ -16,14 +15,13 @@
 </head>
 <body class="bb-theme">
 
-<!-- ─── Navbar ─────────────────────────────────── -->
+<!-- ─── Navbar ──────────────────────────────────────── -->
 <nav class="bb-outlet-nav">
   <a href="{% url 'customer_home' %}" class="bb-back-btn">
     <i class="fa-solid fa-arrow-left"></i> Home
   </a>
   <div class="bb-nav-title-center">{{ outlet.name }}</div>
 
-  <!-- Search FAB (minimal icon, opens overlay) -->
   <button class="bb-search-fab" id="bbSearchFab" title="Search">
     <i class="fa-solid fa-magnifying-glass"></i>
   </button>
@@ -33,7 +31,7 @@
   </a>
 </nav>
 
-<!-- Search overlay (shown when FAB clicked) -->
+<!-- Search overlay -->
 <div class="bb-search-overlay" id="bbSearchOverlay">
   <input type="text" id="bbSearchInput" placeholder="Search items, meals, drinks…" autocomplete="off"/>
   <button class="bb-search-close" id="bbSearchClose">
@@ -41,7 +39,7 @@
   </button>
 </div>
 
-<!-- ─── Outlet Hero ──────────────────────────── -->
+<!-- ─── Outlet Hero ────────────────────────────────── -->
 <div class="bb-outlet-hero">
   <div class="bb-outlet-logo-box">
     {% if outlet.logo %}
@@ -56,7 +54,7 @@
   </div>
 </div>
 
-<!-- ─── Category scroll strip ───────────────── -->
+<!-- ─── Category scroll strip ─────────────────────── -->
 <div class="bb-cat-strip" id="bbCatStrip">
   <button class="bb-cat-pill active" data-cat="all">All</button>
   {% for category in categories %}
@@ -64,48 +62,41 @@
   {% endfor %}
 </div>
 
-<!-- ─── Products ─────────────────────────────── -->
+<!-- ─── Products grid ─────────────────────────────── -->
 <div class="bb-products-wrap">
   <div class="bb-products-grid" id="bbProductsGrid">
-
-    {% comment %}
-      Build a flat list of available products with their category info,
-      then render them as bb-pcard elements.
-      On mobile, after every 4 cards we inject a 3-product owl carousel
-      (using JS below — we collect cards and splice them in).
-    {% endcomment %}
 
     {% for category in categories %}
       {% for product in category.products.all %}
         {% if product.is_available %}
+        <!--  data-available="1" marks this as a regular (non-clone) card -->
         <div class="bb-pcard"
              data-category="{{ category.name|lower }}"
-             data-name="{{ product.name|lower }}">
+             data-name="{{ product.name|lower }}"
+             data-available="1">
 
-          <!-- Image only on top -->
+          <!-- ── Image top ── -->
           <div class="bb-pcard-img">
             {% if product.image %}
               <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
             {% else %}
               <div class="bb-no-img"><i class="fa-solid fa-bowl-food"></i></div>
             {% endif %}
+
+            <!-- Price + add pill — overlaps image/card boundary -->
+            <a href="{% url 'add_to_cart' product.id %}"
+               class="bb-pcard-pill bb-ajax-cart"
+               data-product="{{ product.name|escapejs }}"
+               title="Add {{ product.name }} to cart">
+              <span class="bb-pcard-pill-price">₹{{ product.customer_price }}</span>
+              <span class="bb-pcard-pill-btn"><i class="fa-solid fa-plus"></i></span>
+            </a>
           </div>
 
-          <!-- Category + Name -->
+          <!-- ── White lower section ── -->
           <div class="bb-pcard-body">
             <div class="bb-pcard-cat">{{ category.name }}</div>
             <div class="bb-pcard-name" title="{{ product.name }}">{{ product.name }}</div>
-          </div>
-
-          <!-- Price + Cart button -->
-          <div class="bb-pcard-footer">
-            <div class="bb-pcard-price">₹{{ product.customer_price }}</div>
-            <a href="{% url 'add_to_cart' product.id %}"
-               class="bb-pcard-add bb-ajax-cart"
-               title="Add to cart"
-               data-product="{{ product.name|escapejs }}">
-              <i class="fa-solid fa-plus"></i>
-            </a>
           </div>
 
         </div>
@@ -113,7 +104,7 @@
       {% endfor %}
     {% endfor %}
 
-    <!-- Empty search state -->
+    <!-- Empty state -->
     <div class="bb-products-empty" id="bbEmpty">
       <i class="fa-solid fa-magnifying-glass"></i>
       <h3>No items found</h3>
@@ -125,188 +116,203 @@
 
 <!-- Toast container -->
 <div id="bb-toast-container"></div>
-
-<!-- ─── Cart URL for JS (hidden) ─── -->
 <a id="bbCartUrl" href="{% url 'cart' %}" style="display:none;"></a>
 
-<!-- jQuery (required for Owl) -->
+<!-- ─── Scripts ────────────────────────────────────── -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<!-- Owl Carousel JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
 <script src="{% static 'js/main.js' %}"></script>
 
 <script>
-(function () {
+/* ═══════════════════════════════════════════════════════
+   Bhukkad Box — Outlet Detail JS
+   Fixed: carousel on all viewports, per-category slider,
+          consistent card design, no stale event handlers.
+═══════════════════════════════════════════════════════ */
+(function ($) {
   'use strict';
 
-  const cartUrl = document.getElementById('bbCartUrl').href;
-  const grid = document.getElementById('bbProductsGrid');
-  const empty = document.getElementById('bbEmpty');
-  const searchOverlay = document.getElementById('bbSearchOverlay');
-  const searchInput = document.getElementById('bbSearchInput');
+  const cartUrl   = document.getElementById('bbCartUrl').href;
+  const grid      = document.getElementById('bbProductsGrid');
+  const emptyEl   = document.getElementById('bbEmpty');
+  const searchOvl = document.getElementById('bbSearchOverlay');
+  const searchIn  = document.getElementById('bbSearchInput');
   const searchFab = document.getElementById('bbSearchFab');
-  const searchClose = document.getElementById('bbSearchClose');
+  const searchX   = document.getElementById('bbSearchClose');
 
-  /* ── 1. Search FAB ───────────────────────────────────── */
-  searchFab.addEventListener('click', () => {
-    searchOverlay.classList.add('open');
-    searchFab.classList.add('active');
-    setTimeout(() => searchInput.focus(), 60);
-  });
-  searchClose.addEventListener('click', () => {
-    searchOverlay.classList.remove('open');
-    searchFab.classList.remove('active');
-    searchInput.value = '';
-    filterProducts();
-  });
-  searchInput.addEventListener('input', filterProducts);
-
-  /* ── 2. Category filter ──────────────────────────────── */
-  document.querySelectorAll('.bb-cat-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.bb-cat-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      filterProducts();
-    });
-  });
-
-  function filterProducts() {
-    const query = (searchInput.value || '').toLowerCase().trim();
-    const cat   = (document.querySelector('.bb-cat-pill.active') || {}).dataset?.cat || 'all';
-    let visible = 0;
-
-    document.querySelectorAll('.bb-pcard').forEach(card => {
-      const matchCat  = cat === 'all' || card.dataset.category === cat;
-      const matchName = !query || card.dataset.name.includes(query);
-      const show = matchCat && matchName;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-
-    // Also hide/show carousels
-    document.querySelectorAll('.bb-carousel-wrap').forEach(cw => {
-      cw.style.display = (cat === 'all' && !query) ? '' : 'none';
-    });
-
-    empty.classList.toggle('show', visible === 0);
-  }
-
-  /* ── 3. AJAX add-to-cart ─────────────────────────────── */
+  /* ── Helpers ──────────────────────────────────────── */
   function showToast(msg, type) {
-    const container = document.getElementById('bb-toast-container');
+    const c = document.getElementById('bb-toast-container');
     const t = document.createElement('div');
-    t.className = `bb-toast ${type}`;
-    t.innerHTML = `
-      <span>${msg}</span>
-      ${type === 'success' ? `<a href="${cartUrl}" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap;">View Cart</a>` : ''}
-      <button class="bb-toast-close" onclick="this.closest('.bb-toast').remove()"><i class="fa-solid fa-xmark"></i></button>
-    `;
-    container.appendChild(t);
-    setTimeout(() => { if (t.parentElement) t.remove(); }, 5000);
+    t.className = 'bb-toast ' + type;
+    t.innerHTML =
+      '<span>' + msg + '</span>' +
+      (type === 'success'
+        ? '<a href="' + cartUrl + '" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap;">View Cart</a>'
+        : '') +
+      '<button class="bb-toast-close" onclick="this.closest(\'.bb-toast\').remove()"><i class="fa-solid fa-xmark"></i></button>';
+    c.appendChild(t);
+    setTimeout(function () { if (t.parentElement) t.remove(); }, 5000);
   }
 
-  function attachCartHandlers(scope) {
-    (scope || document).querySelectorAll('.bb-ajax-cart').forEach(btn => {
+  function attachCartHandlers(root) {
+    (root || document).querySelectorAll('.bb-ajax-cart').forEach(function (btn) {
       if (btn._bbBound) return;
       btn._bbBound = true;
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         if (btn.classList.contains('adding')) return;
         btn.classList.add('adding');
+        var origHTML = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        try {
-          const res = await fetch(btn.getAttribute('href'), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        fetch(btn.getAttribute('href'), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              showToast((btn.dataset.product || 'Item') + ' added to cart!', 'success');
+            } else {
+              showToast(data.message || 'Could not add item.', 'error');
+            }
+          })
+          .catch(function () { showToast('Something went wrong.', 'error'); })
+          .finally(function () {
+            btn.classList.remove('adding');
+            btn.innerHTML = origHTML;
           });
-          const data = await res.json();
-          if (data.success) {
-            showToast(`${btn.dataset.product || 'Item'} added to cart!`, 'success');
-          } else {
-            showToast(data.message || 'Could not add item.', 'error');
-          }
-        } catch {
-          showToast('Something went wrong.', 'error');
-        } finally {
-          btn.classList.remove('adding');
-          btn.innerHTML = '<i class="fa-solid fa-plus"></i>';
-        }
       });
     });
   }
   attachCartHandlers();
 
-  /* ── 4. Mobile Owl Carousel — inject after every 4 cards ─ */
-  function buildCarousels() {
-    // Only on mobile
-    if (window.innerWidth >= 640) return;
-    if (!window.jQuery) return;
+  /* ── Search FAB ───────────────────────────────────── */
+  searchFab.addEventListener('click', function () {
+    searchOvl.classList.add('open');
+    searchFab.classList.add('active');
+    setTimeout(function () { searchIn.focus(); }, 60);
+  });
+  searchX.addEventListener('click', function () {
+    searchOvl.classList.remove('open');
+    searchFab.classList.remove('active');
+    searchIn.value = '';
+    renderView();
+  });
+  searchIn.addEventListener('input', renderView);
 
-    // Collect all visible normal cards (not inside a carousel)
-    const allCards = Array.from(grid.querySelectorAll('.bb-pcard:not(.bb-carousel-pcard)'));
-    if (allCards.length < 5) return; // not enough to bother
+  /* ── Category pills ───────────────────────────────── */
+  document.querySelectorAll('.bb-cat-pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      document.querySelectorAll('.bb-cat-pill').forEach(function (p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      renderView();
+    });
+  });
 
-    // Insert carousel wrappers after every 4 cards
-    let insertAfter = [];
-    allCards.forEach((card, i) => {
-      if ((i + 1) % 4 === 0 && i + 1 < allCards.length) {
-        insertAfter.push(card);
+  /* ── Core render: filter cards + rebuild carousel ── */
+  function renderView() {
+    var query   = (searchIn.value || '').toLowerCase().trim();
+    var catSlug = (document.querySelector('.bb-cat-pill.active') || { dataset: { cat: 'all' } }).dataset.cat;
+
+    /* 1 — Destroy and remove any existing carousel wrappers */
+    grid.querySelectorAll('.bb-trending-wrap').forEach(function (wrap) {
+      var owl = wrap.querySelector('.bb-trending-owl');
+      if (owl && $(owl).data('owl.carousel')) {
+        $(owl).owlCarousel('destroy');
+      }
+      wrap.remove();
+    });
+
+    /* 2 — Show/hide native cards; collect visible ones */
+    var visibleCards = [];
+    grid.querySelectorAll('.bb-pcard[data-available="1"]').forEach(function (card) {
+      var matchCat  = catSlug === 'all' || card.dataset.category === catSlug;
+      var matchName = !query || card.dataset.name.includes(query);
+      var show = matchCat && matchName;
+      card.style.display = show ? '' : 'none';
+      if (show) visibleCards.push(card);
+    });
+
+    /* 3 — Empty state */
+    emptyEl.classList.toggle('show', visibleCards.length === 0);
+
+    /* 4 — Build carousel only when jQuery + Owl are ready */
+    if (typeof $ === 'undefined' || typeof $.fn.owlCarousel === 'undefined') return;
+    if (visibleCards.length < 3) return;   /* not enough cards for a slider */
+
+    buildTrendingCarousel(visibleCards, catSlug, query);
+  }
+
+  /* ── Build the "Trending now" Owl carousel ─────────
+     Strategy:
+       • Pick up to 6 cards from the middle of the visible set
+         (avoids repeating what's already at the top).
+       • Clone them into an Owl container injected AFTER the
+         last visible card.
+       • Desktop: 2 items per slide; Mobile: 1 item per slide.
+  ─────────────────────────────────────────────────── */
+  function buildTrendingCarousel(cards, catSlug, query) {
+    /* Pick a slice — prefer middle section to avoid obvious repeats */
+    var total     = cards.length;
+    var sliceSize = Math.min(6, total);
+    var startIdx  = Math.floor((total - sliceSize) / 2);
+    var sliceCards = cards.slice(startIdx, startIdx + sliceSize);
+
+    /* Build wrapper */
+    var wrap = document.createElement('div');
+    wrap.className = 'bb-trending-wrap';
+
+    var label = document.createElement('div');
+    label.className = 'bb-trending-label';
+    label.textContent = 'Trending now';
+    wrap.appendChild(label);
+
+    var owlDiv = document.createElement('div');
+    owlDiv.className = 'bb-trending-owl owl-carousel';
+
+    sliceCards.forEach(function (card) {
+      var clone = card.cloneNode(true);
+      /* Mark clone so it doesn't participate in filtering */
+      clone.removeAttribute('data-available');
+      clone.style.display = '';
+      owlDiv.appendChild(clone);
+    });
+
+    wrap.appendChild(owlDiv);
+
+    /* Insert after the LAST visible native card */
+    var lastCard = cards[cards.length - 1];
+    lastCard.parentNode.insertBefore(wrap, lastCard.nextSibling);
+
+    /* Initialise Owl */
+    var isMobile = window.innerWidth < 640;
+    $(owlDiv).owlCarousel({
+      loop:       sliceCards.length > (isMobile ? 1 : 2),
+      margin:     12,
+      touchDrag:  true,
+      mouseDrag:  true,
+      dots:       true,
+      nav:        false,
+      autoplay:   false,
+      smartSpeed: 400,
+      responsive: {
+        0:   { items: 1 },
+        480: { items: 1 },
+        640: { items: 2, margin: 16 }
       }
     });
 
-    insertAfter.forEach((afterCard, ci) => {
-      // Pick the next 3 cards AFTER this one in the DOM
-      const startIdx = allCards.indexOf(afterCard) + 1;
-      const carouselCards = allCards.slice(startIdx, startIdx + 3);
-      if (carouselCards.length === 0) return;
-
-      // Build carousel wrapper
-      const wrap = document.createElement('div');
-      wrap.className = 'bb-carousel-wrap';
-      wrap.innerHTML = `<div class="bb-carousel-label">You might also like</div>`;
-      const owlDiv = document.createElement('div');
-      owlDiv.className = 'bb-owl owl-carousel';
-
-      carouselCards.forEach(card => {
-        // Clone the card into the carousel; hide original
-        const clone = card.cloneNode(true);
-        clone.classList.add('bb-carousel-pcard');
-        clone.style.display = '';
-        owlDiv.appendChild(clone);
-        card.style.display = 'none'; // hide original from grid
-      });
-
-      wrap.appendChild(owlDiv);
-
-      // Insert carousel after the "every 4th" card
-      afterCard.parentNode.insertBefore(wrap, afterCard.nextSibling);
-
-      // Init Owl on this carousel
-      jQuery(owlDiv).owlCarousel({
-        items: 2,
-        margin: 10,
-        loop: carouselCards.length > 2,
-        touchDrag: true,
-        mouseDrag: false,
-        dots: true,
-        nav: false,
-        autoplay: false,
-        responsive: {
-          0:   { items: 2 },
-          400: { items: 2.3 }
-        }
-      });
-
-      // Re-attach cart handlers on clones
-      attachCartHandlers(owlDiv);
-    });
+    /* Re-attach cart handlers on cloned pills */
+    attachCartHandlers(owlDiv);
   }
 
-  // Build carousels after a short delay (let DOM paint first)
-  window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(buildCarousels, 120);
+  /* ── Initial render (runs after page is fully loaded) ── */
+  /* Using window.load so jQuery and Owl are definitely ready */
+  window.addEventListener('load', function () {
+    renderView();
   });
 
-})();
+}(window.jQuery));
 </script>
 
 {% include 'footer.html' %}

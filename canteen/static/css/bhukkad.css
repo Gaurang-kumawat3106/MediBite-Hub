@@ -845,31 +845,85 @@ body.bb-theme::before {
 .bb-products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
-/* Single product card */
+/* ── Trending row (inserted by JS) ── */
+.bb-trending-wrap {
+  grid-column: 1 / -1;
+  margin: 6px 0 4px;
+}
+.bb-trending-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--bb-muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bb-trending-label::before, .bb-trending-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bb-border2);
+}
+
+/* Owl container — must NOT clip cards that use overflow:visible */
+.bb-trending-owl.owl-carousel {
+  /* Let the owl container sit at its natural height */
+}
+.bb-trending-owl .owl-stage-outer {
+  overflow: hidden;       /* clip slide movement */
+  padding-bottom: 12px;   /* room for card shadow/overlap */
+}
+.bb-trending-owl .owl-item {
+  padding: 4px 5px 4px 5px;
+}
+.bb-trending-owl .owl-dots {
+  margin-top: 6px;
+  text-align: center;
+}
+.bb-trending-owl .owl-dot span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--bb-border2);
+  display: inline-block;
+  margin: 0 3px;
+  transition: all 0.2s;
+}
+.bb-trending-owl .owl-dot.active span { background: var(--bb-orange); transform: scale(1.3); }
+
+/* ════════════════════════════════════════════════
+   PRODUCT CARD — matches screenshot
+   Image top (4:3), price+plus pill on image boundary,
+   white lower section with category pill + name.
+════════════════════════════════════════════════ */
 .bb-pcard {
   background: var(--bb-surface);
   border-radius: var(--bb-r-lg);
-  overflow: visible;
+  overflow: visible;          /* allow price pill to overflow */
   border: 1px solid var(--bb-border);
   box-shadow: var(--bb-shadow-sm);
-  transition: transform 0.3s var(--bb-ease), box-shadow 0.3s;
+  transition: transform 0.28s var(--bb-ease), box-shadow 0.28s;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .bb-pcard:hover {
   transform: translateY(-4px);
   box-shadow: var(--bb-shadow);
 }
 
-/* Image — top section */
+/* ── Image top ── */
 .bb-pcard-img {
   border-radius: var(--bb-r-lg) var(--bb-r-lg) 0 0;
   overflow: hidden;
   position: relative;
   aspect-ratio: 4 / 3;
   background: var(--bb-bg2);
+  flex-shrink: 0;
 }
 .bb-pcard-img img {
   width: 100%; height: 100%;
@@ -886,98 +940,102 @@ body.bb-theme::before {
   justify-content: center;
   font-size: 2rem;
   color: var(--bb-muted);
-  opacity: 0.35;
+  opacity: 0.4;
 }
 
-/* Lower section */
-.bb-pcard-body {
-  padding: 0.65rem 0.7rem 0.85rem;
-}
-.bb-pcard-cat {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--bb-orange);
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bb-pcard-name {
+/* ── Price+Add pill — sits on the image/card boundary ── */
+/* Positioned at bottom-right of the IMAGE section,       */
+/* translated down 50% so it straddles the boundary.      */
+.bb-pcard-pill {
+  position: absolute;
+  bottom: -18px;           /* half the pill height (36px/2) */
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2d6a4f;     /* dark green, as in screenshot  */
+  color: #fff;
+  border-radius: 99px;
+  padding: 5px 10px 5px 12px;
   font-family: 'Syne', sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--bb-brown);
-  line-height: 1.25;
   white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(45,106,79,0.40);
+  z-index: 5;
+  text-decoration: none;
+  transition: transform 0.2s var(--bb-ease), box-shadow 0.2s;
+  cursor: pointer;
+}
+.bb-pcard-pill:hover {
+  transform: scale(1.07);
+  box-shadow: 0 6px 20px rgba(45,106,79,0.50);
+}
+.bb-pcard-pill-price {
+  letter-spacing: -0.01em;
+}
+.bb-pcard-pill-btn {
+  /* The "+" circle within the pill */
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: none;
+  color: #fff;
+  flex-shrink: 0;
+  pointer-events: none;  /* pill as a whole handles the click */
+}
+
+/* ── Lower white section ── */
+.bb-pcard-body {
+  padding: 1.5rem 0.85rem 0.85rem;   /* extra top padding because pill overlaps */
+  background: var(--bb-surface);
+  border-radius: 0 0 var(--bb-r-lg) var(--bb-r-lg);
+  flex: 1;
+}
+
+/* Category pill chip */
+.bb-pcard-cat {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bb-bg2);
+  border: 1px solid var(--bb-border2);
+  border-radius: 99px;
+  padding: 2px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--bb-text2);
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Price + cart button row */
-.bb-pcard-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 0 0.7rem 0.85rem;
-}
-.bb-pcard-price {
+/* Product name */
+.bb-pcard-name {
   font-family: 'Syne', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 800;
   color: var(--bb-brown);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-/* Cart button — overlaps image/body boundary */
-.bb-pcard-add {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  background: var(--bb-orange);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  text-decoration: none;
-  flex-shrink: 0;
-  transition: all 0.2s var(--bb-ease);
-  box-shadow: 0 3px 12px rgba(232,93,32,0.40);
-  position: relative;
-}
-.bb-pcard-add:hover {
-  transform: scale(1.18) rotate(90deg);
-  box-shadow: 0 6px 20px rgba(232,93,32,0.50);
-}
-/* Pulse ring on hover */
-.bb-pcard-add::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: var(--bb-orange);
-  animation: bbAddPulse 1.8s ease-in-out infinite;
-  opacity: 0;
-  z-index: -1;
-}
-.bb-pcard-add:hover::after { opacity: 1; }
-@keyframes bbAddPulse {
-  0%   { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(2); opacity: 0; }
-}
+/* Legacy footer row (kept for back-compat, hidden now that pill is used) */
+.bb-pcard-footer { display: none; }
+.bb-pcard-price  { display: none; }
+.bb-pcard-add    { display: none; }
 
-/* Empty products */
-.bb-products-empty {
-  display: none;
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--bb-muted);
-  grid-column: 1 / -1;
-}
-.bb-products-empty.show { display: block; }
-.bb-products-empty i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.8rem; }
-.bb-products-empty h3 { font-family: 'Syne', sans-serif; color: var(--bb-brown); }
+
 
 /* Toast container */
 #bb-toast-container {
@@ -1011,40 +1069,7 @@ body.bb-theme::before {
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ── Owl Carousel tweaks for warm theme ── */
-.bb-carousel-wrap {
-  grid-column: 1 / -1;
-  margin: 4px 0;
-}
-.bb-carousel-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--bb-muted);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.bb-carousel-label::before, .bb-carousel-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--bb-border2);
-}
-
-.bb-owl .owl-item { padding: 0 5px; }
-.bb-owl .owl-dots { margin-top: 8px; text-align: center; }
-.bb-owl .owl-dot span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--bb-border2);
-  display: inline-block;
-  margin: 0 3px;
-  transition: all 0.2s;
-}
-.bb-owl .owl-dot.active span { background: var(--bb-orange); transform: scale(1.3); }
+/* (old .bb-carousel-wrap and .bb-owl replaced by .bb-trending-wrap and .bb-trending-owl above) */
 
 /* ── Outlet nav (detail page) ── */
 .bb-outlet-nav {
