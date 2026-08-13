@@ -326,1286 +326,1513 @@
 
 <head>
 
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>{{ outlet.name }} — Bhukkad Box</title>
+    <title>{{ outlet.name }} — Bhukkad Box</title>
 
-<meta
-    name="description"
-    content="Order fresh meals from {{ outlet.name }} on Bhukkad Box."
->
+    <meta
+        name="description"
+        content="Order fresh meals from {{ outlet.name }} on Bhukkad Box."
+    >
 
-<!-- =========================================================
-FONTS
-========================================================= -->
+    <!-- =========================================================
+    FONTS
+    ========================================================= -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap"
-    rel="stylesheet"
->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
 
-<!-- =========================================================
-FONT AWESOME
-========================================================= -->
+    <!-- =========================================================
+    FONT AWESOME
+    ========================================================= -->
 
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-/>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
 
-<!-- =========================================================
-OWL CAROUSEL
-========================================================= -->
+    <!-- =========================================================
+    OWL CAROUSEL
+    ========================================================= -->
 
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"
+    >
 
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"
->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"
+    >
 
-<!-- =========================================================
-EXISTING CSS
-========================================================= -->
+    <!-- =========================================================
+    EXISTING CSS
+    ========================================================= -->
 
-<link rel="stylesheet" href="{% static 'css/bhukkad.css' %}">
-<link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}">
 
-<style>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 
-/* =========================================================
-BHUKKAD BOX — OUTLET MENU
-UI ONLY
-BACKEND / DJANGO LOGIC UNCHANGED
-========================================================= */
 
-:root {
+    <style>
 
-    --bb-menu-bg: #F5F1E8;
-    --bb-menu-card: #FFFFFF;
-    --bb-menu-ink: #2B2420;
-    --bb-menu-soft: #6E655C;
-    --bb-menu-line: #E7E1D4;
+        /* =========================================================
+        BHUKKAD BOX — OUTLET MENU
+        UI ONLY
+        BACKEND / DJANGO LOGIC UNCHANGED
+        ========================================================= */
 
-    --bb-menu-green: #2F6B4F;
-    --bb-menu-green-soft: #E5F0EA;
+        :root {
 
-    --bb-menu-amber: #B8842B;
-    --bb-menu-amber-soft: #FAEEDA;
+            --bb-menu-bg: #F5F1E8;
+            --bb-menu-card: #FFFFFF;
+            --bb-menu-ink: #2B2420;
+            --bb-menu-soft: #6E655C;
+            --bb-menu-line: #E7E1D4;
 
-    --bb-menu-plum: #7A4A6B;
-    --bb-menu-plum-soft: #F3E8EF;
+            --bb-menu-green: #2F6B4F;
+            --bb-menu-green-soft: #E5F0EA;
 
-    --bb-menu-teal: #1D6E63;
-    --bb-menu-teal-soft: #E1F0ED;
-}
+            --bb-menu-amber: #B8842B;
+            --bb-menu-amber-soft: #FAEEDA;
 
+            --bb-menu-plum: #7A4A6B;
+            --bb-menu-plum-soft: #F3E8EF;
 
-/* =========================================================
-GLOBAL
-========================================================= */
+            --bb-menu-teal: #1D6E63;
+            --bb-menu-teal-soft: #E1F0ED;
 
-* {
-    box-sizing: border-box;
-}
+        }
 
-body.bb-theme {
 
-    margin: 0;
+        /* =========================================================
+        GLOBAL
+        ========================================================= */
 
-    background: var(--bb-menu-bg);
+        *,
+        *::before,
+        *::after {
 
-    color: var(--bb-menu-ink);
+            box-sizing: border-box;
 
-    font-family: 'Inter', sans-serif;
+        }
 
-    padding-bottom: 60px;
-}
 
+        body.bb-theme {
 
-/* =========================================================
-NAVBAR
-========================================================= */
+            margin: 0;
 
-.bb-outlet-nav {
+            background: var(--bb-menu-bg);
 
-    position: sticky;
+            color: var(--bb-menu-ink);
 
-    top: 0;
+            font-family: 'Inter', sans-serif;
 
-    z-index: 1000;
+            padding-bottom: 60px;
 
-    min-height: 64px;
+        }
 
-    padding: 10px 14px;
 
-    background: rgba(245, 241, 232, 0.96);
+        /* =========================================================
+        NAVBAR
+        ========================================================= */
 
-    backdrop-filter: blur(12px);
+        .bb-outlet-nav {
 
-    border-bottom: 1px solid var(--bb-menu-line);
+            position: sticky;
 
-    display: flex;
+            top: 0;
 
-    align-items: center;
+            z-index: 1000;
 
-    justify-content: space-between;
+            min-height: 64px;
 
-    gap: 10px;
-}
+            padding: 10px 14px;
 
-.bb-back-btn,
-.bb-cart-btn,
-.bb-search-fab {
+            background: rgba(245, 241, 232, 0.96);
 
-    color: var(--bb-menu-ink);
+            backdrop-filter: blur(12px);
 
-    text-decoration: none;
-}
+            border-bottom: 1px solid var(--bb-menu-line);
 
-.bb-back-btn {
+            display: flex;
 
-    display: flex;
+            align-items: center;
 
-    align-items: center;
+            justify-content: space-between;
 
-    gap: 7px;
+            gap: 10px;
 
-    font-size: 13px;
+        }
 
-    font-weight: 600;
-}
 
-.bb-nav-title-center {
+        .bb-back-btn,
+        .bb-cart-btn,
+        .bb-search-fab {
 
-    position: absolute;
+            color: var(--bb-menu-ink);
 
-    left: 50%;
+            text-decoration: none;
 
-    transform: translateX(-50%);
+        }
 
-    font-family: 'Fraunces', serif;
 
-    font-size: 20px;
+        .bb-back-btn {
 
-    font-weight: 700;
+            display: flex;
 
-    max-width: 42%;
+            align-items: center;
 
-    white-space: nowrap;
+            gap: 7px;
 
-    overflow: hidden;
+            font-size: 13px;
 
-    text-overflow: ellipsis;
-}
+            font-weight: 600;
 
+        }
 
-/* =========================================================
-SEARCH + CART
-========================================================= */
 
-.bb-search-fab,
-.bb-cart-btn {
+        .bb-nav-title-center {
 
-    border: 1px solid var(--bb-menu-line);
+            position: absolute;
 
-    background: var(--bb-menu-card);
+            left: 50%;
 
-    height: 38px;
+            transform: translateX(-50%);
 
-    border-radius: 12px;
+            font-family: 'Fraunces', serif;
 
-    display: flex;
+            font-size: 20px;
 
-    align-items: center;
+            font-weight: 700;
 
-    justify-content: center;
+            max-width: 42%;
 
-    box-shadow: none;
-}
+            white-space: nowrap;
 
-.bb-search-fab {
+            overflow: hidden;
 
-    width: 38px;
+            text-overflow: ellipsis;
 
-    margin-left: auto;
+        }
 
-    cursor: pointer;
-}
 
-.bb-cart-btn {
+        /* =========================================================
+        SEARCH + CART
+        ========================================================= */
 
-    padding: 0 13px;
+        .bb-search-fab,
+        .bb-cart-btn {
 
-    gap: 7px;
+            border: 1px solid var(--bb-menu-line) !important;
 
-    font-size: 13px;
+            background: var(--bb-menu-card) !important;
 
-    font-weight: 600;
-}
+            height: 38px !important;
 
-.bb-search-fab:hover,
-.bb-cart-btn:hover {
+            min-height: 38px !important;
 
-    border-color: var(--bb-menu-green);
+            border-radius: 12px !important;
 
-    color: var(--bb-menu-green);
-}
+            display: flex !important;
 
+            align-items: center !important;
 
-/* =========================================================
-SEARCH OVERLAY
-========================================================= */
+            justify-content: center !important;
 
-.bb-search-overlay {
+            box-shadow: none !important;
 
-    position: fixed;
+        }
 
-    top: 0;
 
-    left: 0;
+        .bb-search-fab {
 
-    right: 0;
+            width: 38px !important;
 
-    z-index: 2000;
+            margin-left: auto;
 
-    padding: 12px 14px;
+            cursor: pointer;
 
-    background: rgba(245, 241, 232, 0.98);
+        }
 
-    backdrop-filter: blur(14px);
 
-    border-bottom: 1px solid var(--bb-menu-line);
+        .bb-cart-btn {
 
-    display: none;
+            padding: 0 13px !important;
 
-    align-items: center;
+            gap: 7px;
 
-    gap: 10px;
-}
+            font-size: 13px;
 
-.bb-search-overlay.open {
+            font-weight: 600;
 
-    display: flex;
-}
+        }
 
-#bbSearchInput {
 
-    width: 100%;
+        .bb-search-fab:hover,
+        .bb-cart-btn:hover {
 
-    height: 46px;
+            border-color: var(--bb-menu-green) !important;
 
-    border: 1px solid var(--bb-menu-line);
+            color: var(--bb-menu-green) !important;
 
-    border-radius: 13px;
+        }
 
-    background: #fff;
 
-    padding: 0 15px;
+        /* =========================================================
+        SEARCH OVERLAY
+        ========================================================= */
 
-    outline: none;
+        .bb-search-overlay {
 
-    color: var(--bb-menu-ink);
+            position: fixed;
 
-    font-family: 'Inter', sans-serif;
+            top: 0;
 
-    font-size: 14px;
-}
+            left: 0;
 
-#bbSearchInput:focus {
+            right: 0;
 
-    border-color: var(--bb-menu-green);
-}
+            z-index: 2000;
 
-.bb-search-close {
+            padding: 12px 14px;
 
-    width: 42px;
+            background: rgba(245, 241, 232, 0.98);
 
-    height: 42px;
+            backdrop-filter: blur(14px);
 
-    flex: 0 0 42px;
+            border-bottom: 1px solid var(--bb-menu-line);
 
-    border-radius: 12px;
+            display: none;
 
-    border: 1px solid var(--bb-menu-line);
+            align-items: center;
 
-    background: #fff;
+            gap: 10px;
 
-    color: var(--bb-menu-ink);
+        }
 
-    cursor: pointer;
-}
 
+        .bb-search-overlay.open {
 
-/* =========================================================
-OUTLET HERO
-========================================================= */
+            display: flex;
 
-.bb-outlet-hero {
+        }
 
-    max-width: 1180px;
 
-    margin: 0 auto;
+        #bbSearchInput {
 
-    padding: 24px 14px 8px;
+            width: 100% !important;
 
-    display: flex;
+            height: 46px !important;
 
-    align-items: center;
+            border: 1px solid var(--bb-menu-line) !important;
 
-    gap: 13px;
-}
+            border-radius: 13px !important;
 
-.bb-outlet-logo-box {
+            background: #fff !important;
 
-    width: 50px;
+            padding: 0 15px !important;
 
-    height: 50px;
+            outline: none;
 
-    flex: 0 0 50px;
+            color: var(--bb-menu-ink);
 
-    border-radius: 14px;
+            font-family: 'Inter', sans-serif;
 
-    background: var(--bb-menu-green);
+            font-size: 14px;
 
-    color: #fff;
+        }
 
-    display: flex;
 
-    align-items: center;
+        #bbSearchInput:focus {
 
-    justify-content: center;
+            border-color: var(--bb-menu-green) !important;
 
-    overflow: hidden;
-}
+        }
 
-.bb-outlet-logo-box img {
 
-    width: 100%;
+        .bb-search-close {
 
-    height: 100%;
+            width: 42px !important;
 
-    object-fit: cover;
-}
+            height: 42px !important;
 
-.bb-outlet-logo-box i {
+            min-width: 42px !important;
 
-    font-size: 21px;
-}
+            min-height: 42px !important;
 
-.bb-outlet-hero-text h1 {
+            flex: 0 0 42px;
 
-    font-family: 'Fraunces', serif;
+            border-radius: 12px !important;
 
-    font-size: 23px;
+            border: 1px solid var(--bb-menu-line) !important;
 
-    line-height: 1.1;
+            background: #fff !important;
 
-    margin: 0 0 4px;
+            color: var(--bb-menu-ink);
 
-    color: var(--bb-menu-ink);
-}
+            cursor: pointer;
 
-.bb-outlet-hero-text p {
+        }
 
-    margin: 0;
 
-    font-size: 12.5px;
+        /* =========================================================
+        OUTLET HERO
+        ========================================================= */
 
-    color: var(--bb-menu-soft);
-}
+        .bb-outlet-hero {
 
+            max-width: 1220px;
 
-/* =========================================================
-CATEGORY STRIP
-========================================================= */
+            margin: 0 auto;
 
-.bb-cat-strip {
+            padding: 24px 14px 8px;
 
-    max-width: 1180px;
+            display: flex;
 
-    margin: 12px auto 0;
+            align-items: center;
 
-    padding: 6px 14px 13px;
+            gap: 13px;
 
-    display: flex;
+        }
 
-    gap: 8px;
 
-    overflow-x: auto;
+        .bb-outlet-logo-box {
 
-    scrollbar-width: none;
+            width: 50px;
 
-    border-bottom: 1px solid var(--bb-menu-line);
-}
+            height: 50px;
 
-.bb-cat-strip::-webkit-scrollbar {
+            flex: 0 0 50px;
 
-    display: none;
-}
+            border-radius: 14px;
 
-.bb-cat-pill {
+            background: var(--bb-menu-green);
 
-    flex: 0 0 auto;
+            color: #fff;
 
-    border: 1px solid var(--bb-menu-line);
+            display: flex;
 
-    background: rgba(255,255,255,.65);
+            align-items: center;
 
-    color: var(--bb-menu-soft);
+            justify-content: center;
 
-    border-radius: 22px;
+            overflow: hidden;
 
-    padding: 8px 14px;
+        }
 
-    font-family: 'Inter', sans-serif;
 
-    font-size: 12px;
+        .bb-outlet-logo-box img {
 
-    font-weight: 500;
+            width: 100%;
 
-    cursor: pointer;
+            height: 100%;
 
-    transition: all .18s ease;
-}
+            object-fit: cover;
 
-.bb-cat-pill:hover {
+        }
 
-    border-color: var(--bb-menu-green);
 
-    color: var(--bb-menu-green);
-}
+        .bb-outlet-logo-box i {
 
-.bb-cat-pill.active {
+            font-size: 21px;
 
-    background: var(--bb-menu-green);
+        }
 
-    border-color: var(--bb-menu-green);
 
-    color: #fff;
-}
+        .bb-outlet-hero-text h1 {
 
+            font-family: 'Fraunces', serif;
 
-/* =========================================================
-PRODUCTS WRAPPER
-========================================================= */
+            font-size: 23px;
 
-.bb-products-wrap {
+            line-height: 1.1;
 
-    max-width: 1180px;
+            margin: 0 0 4px;
 
-    margin: 0 auto;
+            color: var(--bb-menu-ink);
 
-    padding: 0 14px;
-}
+        }
 
 
-/* =========================================================
-PRODUCT GRID
+        .bb-outlet-hero-text p {
 
-IMPORTANT:
-ALWAYS 2 CARDS PER ROW
+            margin: 0;
 
-The JavaScript inserts a slider after
-every 4 visible products = 2 rows.
-========================================================= */
+            font-size: 12.5px;
 
-.bb-products-grid {
+            color: var(--bb-menu-soft);
 
-    display: grid;
+        }
 
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
 
-    gap: 16px 12px;
+        /* =========================================================
+        CATEGORY STRIP
+        ========================================================= */
 
-    padding-top: 18px;
+        .bb-cat-strip {
 
-    align-items: start;
-}
+            max-width: 1220px;
 
+            margin: 12px auto 0;
 
-/* =========================================================
-PRODUCT CARD
-========================================================= */
+            padding: 6px 14px 13px;
 
-.bb-pcard {
+            display: flex;
 
-    position: relative;
+            gap: 8px;
 
-    background: var(--bb-menu-card);
+            overflow-x: auto;
 
-    border: 1px solid var(--bb-menu-line);
+            scrollbar-width: none;
 
-    border-radius: 16px;
+            border-bottom: 1px solid var(--bb-menu-line);
 
-    overflow: visible;
+        }
 
-    min-width: 0;
 
-    width: 100%;
-}
+        .bb-cat-strip::-webkit-scrollbar {
 
+            display: none;
 
-/* =========================================================
-PRODUCT IMAGE
-========================================================= */
+        }
 
-.bb-pcard-img {
 
-    height: 145px;
+        .bb-cat-pill {
 
-    border-radius: 16px 16px 0 0;
+            flex: 0 0 auto;
 
-    overflow: hidden;
+            border: 1px solid var(--bb-menu-line) !important;
 
-    background: var(--bb-menu-green-soft);
+            background: rgba(255,255,255,.65) !important;
 
-    display: flex;
+            color: var(--bb-menu-soft) !important;
 
-    align-items: center;
+            border-radius: 22px !important;
 
-    justify-content: center;
+            padding: 8px 14px !important;
 
-    position: relative;
-}
+            font-family: 'Inter', sans-serif;
 
-.bb-pcard-img img {
+            font-size: 12px !important;
 
-    width: 100%;
+            font-weight: 500;
 
-    height: 100%;
+            cursor: pointer;
 
-    object-fit: cover;
+            transition: all .18s ease;
 
-    display: block;
-}
+        }
 
-.bb-no-img {
 
-    width: 100%;
+        .bb-cat-pill:hover {
 
-    height: 100%;
+            border-color: var(--bb-menu-green) !important;
 
-    display: flex;
+            color: var(--bb-menu-green) !important;
 
-    align-items: center;
+        }
 
-    justify-content: center;
 
-    background: var(--bb-menu-green-soft);
+        .bb-cat-pill.active {
 
-    color: var(--bb-menu-green);
-}
+            background: var(--bb-menu-green) !important;
 
-.bb-no-img i {
+            border-color: var(--bb-menu-green) !important;
 
-    font-size: 34px;
-}
+            color: #fff !important;
 
+        }
 
-/* =========================================================
-SMALL GREEN PRICE + ADD BUTTON
 
-VERY SMALL VERSION
-========================================================= */
+        /* =========================================================
+        PRODUCTS WRAPPER
+        ========================================================= */
 
-.bb-pcard-pill {
+        .bb-products-wrap {
 
-    position: absolute;
+            max-width: 1220px;
 
-    top: 126px;
+            margin: 0 auto;
 
-    right: 7px;
+            padding: 0 14px;
 
-    z-index: 20;
+        }
 
-    background: var(--bb-menu-green);
 
-    color: #fff;
+        /* =========================================================
+        IMPORTANT:
+        EXACTLY 2 CARDS PER ROW
+        ========================================================= */
 
-    border-radius: 18px;
+        .bb-products-grid {
 
-    padding: 3px 4px 3px 7px;
+            display: grid !important;
 
-    display: flex;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 
-    align-items: center;
+            gap: 20px 18px !important;
 
-    gap: 4px;
+            padding-top: 20px;
 
-    font-size: 10px;
+            align-items: start;
 
-    line-height: 1;
+        }
 
-    font-weight: 600;
 
-    text-decoration: none;
+        /* =========================================================
+        PRODUCT CARD
+        ========================================================= */
 
-    box-shadow:
-        0 2px 6px rgba(47,107,79,.22);
+        .bb-pcard {
 
-    border: 2px solid var(--bb-menu-bg);
+            position: relative !important;
 
-    cursor: pointer;
+            background: var(--bb-menu-card) !important;
 
-    user-select: none;
+            border: 1px solid var(--bb-menu-line) !important;
 
-    transition:
-        transform .12s ease,
-        box-shadow .12s ease;
-}
+            border-radius: 16px !important;
 
-.bb-pcard-pill:hover {
+            overflow: visible !important;
 
-    color: #fff;
+            min-width: 0 !important;
 
-    transform: translateY(-1px);
+            width: 100% !important;
 
-    box-shadow:
-        0 4px 8px rgba(47,107,79,.28);
-}
+            height: auto !important;
 
-.bb-pcard-pill:active {
+            box-shadow: 0 2px 8px rgba(43,36,32,.04);
 
-    transform: scale(.93);
-}
+        }
 
 
-/* =========================================================
-PRICE
-========================================================= */
+        /* =========================================================
+        PRODUCT IMAGE
+        ========================================================= */
 
-.bb-pcard-pill-price {
+        .bb-pcard-img {
 
-    white-space: nowrap;
-}
+            height: 165px !important;
 
+            min-height: 165px !important;
 
-/* =========================================================
-VERY SMALL PLUS CIRCLE
-========================================================= */
+            border-radius: 16px 16px 0 0 !important;
 
-.bb-pcard-pill-btn {
+            overflow: hidden !important;
 
-    width: 14px;
+            background: var(--bb-menu-green-soft) !important;
 
-    height: 14px;
+            display: flex !important;
 
-    min-width: 14px;
+            align-items: center !important;
 
-    border-radius: 50%;
+            justify-content: center !important;
 
-    background: rgba(255,255,255,.22);
+            position: relative !important;
 
-    display: flex;
+        }
 
-    align-items: center;
 
-    justify-content: center;
+        .bb-pcard-img img {
 
-    font-size: 8px;
+            width: 100% !important;
 
-    line-height: 1;
-}
+            height: 100% !important;
 
-.bb-pcard-pill-btn i {
+            object-fit: cover !important;
 
-    font-size: 8px;
-}
+            display: block !important;
 
-.bb-pcard-pill.adding {
+        }
 
-    pointer-events: none;
 
-    opacity: .75;
-}
+        .bb-no-img {
 
+            width: 100% !important;
 
-/* =========================================================
-PRODUCT INFO
-========================================================= */
+            height: 100% !important;
 
-.bb-pcard-body {
+            display: flex !important;
 
-    padding: 18px 12px 14px;
-}
+            align-items: center !important;
 
-.bb-pcard-cat {
+            justify-content: center !important;
 
-    display: inline-block;
+            background: var(--bb-menu-green-soft) !important;
 
-    font-size: 10px;
+            color: var(--bb-menu-green) !important;
 
-    font-weight: 500;
+        }
 
-    color: var(--bb-menu-soft);
 
-    background: var(--bb-menu-bg);
+        .bb-no-img i {
 
-    border: 1px solid var(--bb-menu-line);
+            font-size: 34px;
 
-    padding: 3px 8px;
+        }
 
-    border-radius: 20px;
 
-    margin-bottom: 7px;
-}
+        /* =========================================================
+        SMALL GREEN PRICE + ADD BUTTON
+        FIXED HEIGHT
+        ========================================================= */
 
-.bb-pcard-name {
+        .bb-pcard-pill {
 
-    font-family: 'Fraunces', serif;
+            position: absolute !important;
 
-    font-size: 16px;
+            top: 149px !important;
 
-    font-weight: 600;
+            right: 9px !important;
 
-    line-height: 1.3;
+            z-index: 20 !important;
 
-    margin: 0;
+            width: auto !important;
 
-    color: var(--bb-menu-ink);
+            min-width: 0 !important;
 
-    display: -webkit-box;
+            max-width: max-content !important;
 
-    -webkit-line-clamp: 2;
+            height: 34px !important;
 
-    -webkit-box-orient: vertical;
+            min-height: 34px !important;
 
-    overflow: hidden;
-}
+            max-height: 34px !important;
 
+            box-sizing: border-box !important;
 
-/* =========================================================
-TRENDING SECTION
+            background: var(--bb-menu-green) !important;
 
-FULL WIDTH
+            color: #fff !important;
 
-Inserted after every 4 products.
-========================================================= */
+            border-radius: 18px !important;
 
-.bb-trending-wrap {
+            padding: 4px 6px 4px 10px !important;
 
-    grid-column: 1 / -1;
+            margin: 0 !important;
 
-    width: 100%;
+            display: inline-flex !important;
 
-    min-width: 0;
+            flex-direction: row !important;
 
-    margin: 24px 0 8px;
+            align-items: center !important;
 
-    padding: 0;
+            justify-content: center !important;
 
-    overflow: visible;
-}
+            gap: 5px !important;
 
+            font-family: 'Inter', sans-serif !important;
 
-/* =========================================================
-TRENDING LABEL
-========================================================= */
+            font-size: 11px !important;
 
-.bb-trending-label {
+            line-height: 1 !important;
 
-    font-size: 12px;
+            font-weight: 600 !important;
 
-    letter-spacing: .03em;
+            text-decoration: none !important;
 
-    color: var(--bb-menu-soft);
+            box-shadow: 0 3px 8px rgba(47,107,79,.24) !important;
 
-    margin: 0 2px 12px;
+            border: 2px solid var(--bb-menu-bg) !important;
 
-    display: flex;
+            cursor: pointer !important;
 
-    align-items: center;
+            user-select: none;
 
-    gap: 8px;
+            transition:
+                transform .12s ease,
+                box-shadow .12s ease;
 
-    width: 100%;
-}
+        }
 
-.bb-trending-label::after {
 
-    content: "";
+        .bb-pcard-pill:hover {
 
-    flex: 1;
+            color: #fff !important;
 
-    height: 1px;
+            transform: translateY(-1px);
 
-    background: var(--bb-menu-line);
-}
+            box-shadow: 0 5px 11px rgba(47,107,79,.30) !important;
 
+        }
 
-/* =========================================================
-TRENDING OWL CAROUSEL
-========================================================= */
 
-.bb-trending-owl {
+        .bb-pcard-pill:active {
 
-    width: 100%;
+            transform: scale(.94);
 
-    display: block;
+        }
 
-    overflow: hidden;
-}
 
-.bb-trending-owl .owl-stage-outer {
+        .bb-pcard-pill-price {
 
-    overflow: hidden;
+            display: inline-block !important;
 
-    padding: 4px 2px 0;
-}
+            width: auto !important;
 
-.bb-trending-owl .owl-stage {
+            height: auto !important;
 
-    display: flex;
+            margin: 0 !important;
 
-    align-items: stretch;
-}
+            padding: 0 !important;
 
-.bb-trending-owl .owl-item {
+            line-height: 1 !important;
 
-    display: flex;
+            white-space: nowrap;
 
-    align-items: stretch;
-}
+        }
 
 
-/* =========================================================
-TRENDING CARD
+        .bb-pcard-pill-btn {
 
-3 CARDS WILL BE SHOWN
-========================================================= */
+            width: 18px !important;
 
-.bb-trending-owl .owl-item .bb-pcard {
+            height: 18px !important;
 
-    width: 100%;
+            min-width: 18px !important;
 
-    margin: 0 2px 30px;
+            min-height: 18px !important;
 
-    height: auto;
-}
+            max-width: 18px !important;
 
+            max-height: 18px !important;
 
-/* =========================================================
-TRENDING IMAGE
-========================================================= */
+            flex: 0 0 18px !important;
 
-.bb-trending-owl .bb-pcard-img {
+            border-radius: 50% !important;
 
-    height: 145px;
-}
+            background: rgba(255,255,255,.22) !important;
 
+            display: inline-flex !important;
 
-/* =========================================================
-TRENDING BUTTON
-========================================================= */
+            align-items: center !important;
 
-.bb-trending-owl .bb-pcard-pill {
+            justify-content: center !important;
 
-    top: 126px;
-}
+            font-size: 9px !important;
 
+            line-height: 1 !important;
 
-/* =========================================================
-OWL NAV
-========================================================= */
+            padding: 0 !important;
 
-.bb-trending-owl .owl-nav {
+            margin: 0 !important;
 
-    margin-top: -8px;
+        }
 
-    display: flex;
 
-    justify-content: center;
+        .bb-pcard-pill-btn i {
 
-    gap: 8px;
-}
+            font-size: 9px !important;
 
-.bb-trending-owl .owl-nav button {
+            line-height: 1 !important;
 
-    margin: 0 !important;
-}
+            margin: 0 !important;
 
-.bb-trending-owl .owl-nav [class*="owl-"] {
+        }
 
-    background: var(--bb-menu-card) !important;
 
-    border: 1px solid var(--bb-menu-line) !important;
+        .bb-pcard-pill.adding {
 
-    color: var(--bb-menu-ink) !important;
+            pointer-events: none;
 
-    width: 32px;
+            opacity: .75;
 
-    height: 32px;
+        }
 
-    border-radius: 50%;
 
-    display: inline-flex;
+        .bb-pcard-pill.adding i {
 
-    align-items: center;
+            font-size: 12px !important;
 
-    justify-content: center;
+        }
 
-    font-size: 15px;
 
-    transition: all .15s ease;
-}
+        /* =========================================================
+        PRODUCT INFO
+        ========================================================= */
 
-.bb-trending-owl .owl-nav [class*="owl-"]:hover {
+        .bb-pcard-body {
 
-    background: var(--bb-menu-green) !important;
+            padding: 20px 13px 15px !important;
 
-    border-color: var(--bb-menu-green) !important;
+            min-height: 86px;
 
-    color: #fff !important;
-}
+        }
 
 
-/* =========================================================
-OWL DOTS
-========================================================= */
+        .bb-pcard-cat {
 
-.bb-trending-owl .owl-dots {
+            display: inline-block;
 
-    margin-top: 4px;
+            font-size: 10px;
 
-    text-align: center;
-}
+            font-weight: 500;
 
-.bb-trending-owl .owl-dots .owl-dot span {
+            color: var(--bb-menu-soft);
 
-    width: 7px;
+            background: var(--bb-menu-bg);
 
-    height: 7px;
+            border: 1px solid var(--bb-menu-line);
 
-    margin: 5px 4px;
+            padding: 3px 8px;
 
-    background: var(--bb-menu-line);
-}
+            border-radius: 20px;
 
-.bb-trending-owl .owl-dots .owl-dot.active span {
+            margin-bottom: 7px;
 
-    background: var(--bb-menu-green);
-}
+        }
 
 
-/* =========================================================
-EMPTY STATE
-========================================================= */
+        .bb-pcard-name {
 
-.bb-products-empty {
+            font-family: 'Fraunces', serif;
 
-    grid-column: 1 / -1;
+            font-size: 16px;
 
-    display: none;
+            font-weight: 600;
 
-    text-align: center;
+            line-height: 1.3;
 
-    padding: 60px 20px;
+            margin: 0;
 
-    color: var(--bb-menu-soft);
-}
+            color: var(--bb-menu-ink);
 
-.bb-products-empty.show {
+            display: -webkit-box;
 
-    display: block;
-}
+            -webkit-line-clamp: 2;
 
-.bb-products-empty i {
+            -webkit-box-orient: vertical;
 
-    width: 54px;
+            overflow: hidden;
 
-    height: 54px;
+        }
 
-    border-radius: 50%;
 
-    background: var(--bb-menu-green-soft);
+        /* =========================================================
+        TRENDING SECTION
+        IMPORTANT:
+        ONE SLIDER AFTER EVERY 4 PRODUCTS
+        ========================================================= */
 
-    color: var(--bb-menu-green);
+        .bb-trending-wrap {
 
-    display: inline-flex;
+            grid-column: 1 / -1 !important;
 
-    align-items: center;
+            width: 100% !important;
 
-    justify-content: center;
+            min-width: 0 !important;
 
-    font-size: 20px;
+            margin: 10px 0 18px !important;
 
-    margin-bottom: 12px;
-}
+            padding: 0 !important;
 
-.bb-products-empty h3 {
+            overflow: visible !important;
 
-    font-family: 'Fraunces', serif;
+        }
 
-    color: var(--bb-menu-ink);
 
-    margin: 0 0 5px;
-}
+        .bb-trending-label {
 
-.bb-products-empty p {
+            font-size: 12px;
 
-    margin: 0;
+            letter-spacing: .03em;
 
-    font-size: .85rem;
+            color: var(--bb-menu-soft);
 
-    color: var(--bb-menu-soft);
-}
+            margin: 0 2px 10px;
 
+            display: flex;
 
-/* =========================================================
-TOAST
-========================================================= */
+            align-items: center;
 
-#bb-toast-container {
+            gap: 8px;
 
-    position: fixed;
+            width: 100%;
 
-    right: 14px;
+        }
 
-    bottom: 20px;
 
-    z-index: 3000;
+        .bb-trending-label::after {
 
-    display: flex;
+            content: "";
 
-    flex-direction: column;
+            flex: 1;
 
-    gap: 10px;
+            height: 1px;
 
-    max-width: calc(100vw - 28px);
-}
+            background: var(--bb-menu-line);
 
-.bb-toast {
+        }
 
-    min-width: 260px;
 
-    max-width: 380px;
+        /* =========================================================
+        OWL CAROUSEL
+        ========================================================= */
 
-    background: var(--bb-menu-ink);
+        .bb-trending-owl {
 
-    color: #fff;
+            width: 100% !important;
 
-    border-radius: 13px;
+            display: block !important;
 
-    padding: 12px 13px;
+            overflow: hidden !important;
 
-    display: flex;
+        }
 
-    align-items: center;
 
-    gap: 12px;
+        .bb-trending-owl .owl-stage-outer {
 
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+            overflow: hidden !important;
 
-    font-size: 13px;
-}
+            padding: 4px 2px 4px !important;
 
-.bb-toast > span {
+        }
 
-    flex: 1;
-}
 
-.bb-toast.success {
+        .bb-trending-owl .owl-stage {
 
-    background: var(--bb-menu-green);
-}
+            display: flex !important;
 
-.bb-toast.error {
+            align-items: stretch !important;
 
-    background: #8c3f3f;
-}
+        }
 
-.bb-toast-close {
 
-    border: 0;
+        .bb-trending-owl .owl-item {
 
-    background: transparent;
+            display: flex !important;
 
-    color: rgba(255,255,255,.8);
+            align-items: stretch !important;
 
-    cursor: pointer;
+        }
 
-    font-size: 14px;
-}
 
+        .bb-trending-owl .owl-item .bb-pcard {
 
-/* =========================================================
-TABLET
+            width: 100% !important;
 
-STILL 2 CARDS PER ROW
-========================================================= */
+            margin: 0 4px 12px !important;
 
-@media (min-width: 640px) {
+            height: auto !important;
 
-    .bb-products-grid {
+        }
 
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
 
-        gap: 18px 14px;
-    }
+        .bb-trending-owl .bb-pcard-img {
 
-    .bb-pcard-img {
+            height: 165px !important;
 
-        height: 155px;
-    }
+            min-height: 165px !important;
 
-    .bb-pcard-pill {
+        }
 
-        top: 136px;
-    }
 
-    .bb-trending-owl .bb-pcard-img {
+        .bb-trending-owl .bb-pcard-pill {
 
-        height: 145px;
-    }
+            top: 149px !important;
 
-    .bb-trending-owl .bb-pcard-pill {
+        }
 
-        top: 126px;
-    }
-}
 
+        /* =========================================================
+        OWL NAV
+        ========================================================= */
 
-/* =========================================================
-DESKTOP
+        .bb-trending-owl .owl-nav {
 
-STILL 2 CARDS PER ROW
-========================================================= */
+            margin-top: 2px !important;
 
-@media (min-width: 900px) {
+            display: flex !important;
 
-    .bb-products-grid {
+            justify-content: center !important;
 
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
 
-        gap: 20px 16px;
-    }
+        }
 
-    .bb-outlet-hero {
 
-        padding-top: 30px;
-    }
+        .bb-trending-owl .owl-nav button {
 
-    .bb-pcard-img {
+            margin: 0 !important;
 
-        height: 165px;
-    }
+            padding: 0 !important;
 
-    .bb-pcard-pill {
+            outline: none !important;
 
-        top: 146px;
-    }
+        }
 
-    .bb-trending-owl .bb-pcard-img {
 
-        height: 155px;
-    }
+        .bb-trending-owl .owl-nav [class*="owl-"] {
 
-    .bb-trending-owl .bb-pcard-pill {
+            background: var(--bb-menu-card) !important;
 
-        top: 136px;
-    }
-}
+            border: 1px solid var(--bb-menu-line) !important;
 
+            color: var(--bb-menu-ink) !important;
 
-/* =========================================================
-SMALL MOBILE
-========================================================= */
+            width: 32px !important;
 
-@media (max-width: 400px) {
+            height: 32px !important;
 
-    .bb-nav-title-center {
+            min-width: 32px !important;
 
-        font-size: 17px;
-    }
+            min-height: 32px !important;
 
-    .bb-back-btn {
+            border-radius: 50% !important;
 
-        font-size: 12px;
-    }
+            display: inline-flex !important;
 
-    .bb-cart-btn {
+            align-items: center !important;
 
-        padding: 0 10px;
+            justify-content: center !important;
 
-        font-size: 12px;
-    }
+            font-size: 14px !important;
 
-    .bb-products-grid {
+            line-height: 1 !important;
 
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            transition: all .15s ease;
 
-        gap: 13px 9px;
-    }
+        }
 
-    .bb-pcard-img {
 
-        height: 120px;
-    }
+        .bb-trending-owl .owl-nav [class*="owl-"]:hover {
 
-    .bb-pcard-pill {
+            background: var(--bb-menu-green) !important;
 
-        top: 101px;
+            border-color: var(--bb-menu-green) !important;
 
-        right: 6px;
+            color: #fff !important;
 
-        padding: 3px 4px 3px 6px;
+        }
 
-        font-size: 9px;
 
-        gap: 3px;
+        /* =========================================================
+        OWL DOTS
+        ========================================================= */
 
-        border-width: 2px;
-    }
+        .bb-trending-owl .owl-dots {
 
-    .bb-pcard-pill-btn {
+            margin-top: 2px !important;
 
-        width: 13px;
+            text-align: center;
 
-        height: 13px;
+        }
 
-        min-width: 13px;
 
-        font-size: 7px;
-    }
+        .bb-trending-owl .owl-dots .owl-dot {
 
-    .bb-pcard-pill-btn i {
+            outline: none !important;
 
-        font-size: 7px;
-    }
+        }
 
-    .bb-pcard-body {
 
-        padding: 17px 9px 11px;
-    }
+        .bb-trending-owl .owl-dots .owl-dot span {
 
-    .bb-pcard-name {
+            width: 7px !important;
 
-        font-size: 14px;
-    }
+            height: 7px !important;
 
-    .bb-trending-owl .bb-pcard-img {
+            margin: 5px 4px !important;
 
-        height: 120px;
-    }
+            background: var(--bb-menu-line) !important;
 
-    .bb-trending-owl .bb-pcard-pill {
+        }
 
-        top: 101px;
-    }
-}
 
-</style>
+        .bb-trending-owl .owl-dots .owl-dot.active span {
+
+            background: var(--bb-menu-green) !important;
+
+        }
+
+
+        /* =========================================================
+        EMPTY STATE
+        ========================================================= */
+
+        .bb-products-empty {
+
+            grid-column: 1 / -1 !important;
+
+            display: none;
+
+            text-align: center;
+
+            padding: 60px 20px;
+
+            color: var(--bb-menu-soft);
+
+        }
+
+
+        .bb-products-empty.show {
+
+            display: block;
+
+        }
+
+
+        .bb-products-empty i {
+
+            width: 54px;
+
+            height: 54px;
+
+            border-radius: 50%;
+
+            background: var(--bb-menu-green-soft);
+
+            color: var(--bb-menu-green);
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 20px;
+
+            margin-bottom: 12px;
+
+        }
+
+
+        .bb-products-empty h3 {
+
+            font-family: 'Fraunces', serif;
+
+            color: var(--bb-menu-ink);
+
+            margin: 0 0 5px;
+
+        }
+
+
+        .bb-products-empty p {
+
+            margin: 0;
+
+            font-size: .85rem;
+
+            color: var(--bb-menu-soft);
+
+        }
+
+
+        /* =========================================================
+        TOAST
+        ========================================================= */
+
+        #bb-toast-container {
+
+            position: fixed;
+
+            right: 14px;
+
+            bottom: 20px;
+
+            z-index: 3000;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 10px;
+
+            max-width: calc(100vw - 28px);
+
+        }
+
+
+        .bb-toast {
+
+            min-width: 260px;
+
+            max-width: 380px;
+
+            background: var(--bb-menu-ink);
+
+            color: #fff;
+
+            border-radius: 13px;
+
+            padding: 12px 13px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            box-shadow: 0 10px 30px rgba(0,0,0,.18);
+
+            font-size: 13px;
+
+        }
+
+
+        .bb-toast > span {
+
+            flex: 1;
+
+        }
+
+
+        .bb-toast.success {
+
+            background: var(--bb-menu-green);
+
+        }
+
+
+        .bb-toast.error {
+
+            background: #8c3f3f;
+
+        }
+
+
+        .bb-toast-close {
+
+            border: 0;
+
+            background: transparent;
+
+            color: rgba(255,255,255,.8);
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+        }
+
+
+        /* =========================================================
+        MOBILE
+        ========================================================= */
+
+        @media (max-width: 639px) {
+
+            .bb-products-grid {
+
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+                gap: 14px 10px !important;
+
+            }
+
+
+            .bb-pcard-img {
+
+                height: 125px !important;
+
+                min-height: 125px !important;
+
+            }
+
+
+            .bb-pcard-pill {
+
+                top: 109px !important;
+
+                right: 7px !important;
+
+                height: 31px !important;
+
+                min-height: 31px !important;
+
+                max-height: 31px !important;
+
+                padding: 4px 5px 4px 8px !important;
+
+                font-size: 9.5px !important;
+
+                gap: 4px !important;
+
+            }
+
+
+            .bb-pcard-pill-btn {
+
+                width: 16px !important;
+
+                height: 16px !important;
+
+                min-width: 16px !important;
+
+                min-height: 16px !important;
+
+                max-width: 16px !important;
+
+                max-height: 16px !important;
+
+                flex-basis: 16px !important;
+
+            }
+
+
+            .bb-pcard-pill-btn i {
+
+                font-size: 8px !important;
+
+            }
+
+
+            .bb-pcard-body {
+
+                padding: 18px 9px 12px !important;
+
+                min-height: 78px;
+
+            }
+
+
+            .bb-pcard-name {
+
+                font-size: 14px;
+
+            }
+
+
+            .bb-trending-owl .bb-pcard-img {
+
+                height: 125px !important;
+
+                min-height: 125px !important;
+
+            }
+
+
+            .bb-trending-owl .bb-pcard-pill {
+
+                top: 109px !important;
+
+            }
+
+        }
+
+
+        /* =========================================================
+        SMALL MOBILE
+        ========================================================= */
+
+        @media (max-width: 400px) {
+
+            .bb-nav-title-center {
+
+                font-size: 17px;
+
+            }
+
+
+            .bb-back-btn {
+
+                font-size: 12px;
+
+            }
+
+
+            .bb-cart-btn {
+
+                padding: 0 10px !important;
+
+                font-size: 12px;
+
+            }
+
+
+            .bb-products-grid {
+
+                gap: 12px 8px !important;
+
+            }
+
+
+            .bb-pcard-img {
+
+                height: 115px !important;
+
+                min-height: 115px !important;
+
+            }
+
+
+            .bb-pcard-pill {
+
+                top: 99px !important;
+
+                right: 6px !important;
+
+                height: 29px !important;
+
+                min-height: 29px !important;
+
+                max-height: 29px !important;
+
+                padding: 3px 4px 3px 7px !important;
+
+                font-size: 9px !important;
+
+            }
+
+
+            .bb-pcard-pill-btn {
+
+                width: 15px !important;
+
+                height: 15px !important;
+
+                min-width: 15px !important;
+
+                min-height: 15px !important;
+
+                max-width: 15px !important;
+
+                max-height: 15px !important;
+
+                flex-basis: 15px !important;
+
+            }
+
+
+            .bb-pcard-body {
+
+                padding: 17px 8px 11px !important;
+
+            }
+
+
+            .bb-pcard-name {
+
+                font-size: 13.5px;
+
+            }
+
+
+            .bb-trending-owl .bb-pcard-img {
+
+                height: 115px !important;
+
+                min-height: 115px !important;
+
+            }
+
+
+            .bb-trending-owl .bb-pcard-pill {
+
+                top: 99px !important;
+
+            }
+
+        }
+
+    </style>
 
 </head>
 
@@ -1613,300 +1840,123 @@ SMALL MOBILE
 <body class="bb-theme">
 
 
-<!-- =========================================================
-NAVBAR
-========================================================= -->
+    <!-- =========================================================
+    NAVBAR
+    ========================================================= -->
 
-<nav class="bb-outlet-nav">
+    <nav class="bb-outlet-nav">
 
-    <a
-        href="{% url 'customer_home' %}"
-        class="bb-back-btn"
-    >
+        <a
+            href="{% url 'customer_home' %}"
+            class="bb-back-btn"
+        >
 
-        <i class="fa-solid fa-arrow-left"></i>
+            <i class="fa-solid fa-arrow-left"></i>
 
-        Home
+            Home
 
-    </a>
-
-
-    <div class="bb-nav-title-center">
-
-        {{ outlet.name }}
-
-    </div>
+        </a>
 
 
-    <button
-        class="bb-search-fab"
-        id="bbSearchFab"
-        title="Search"
-        type="button"
-    >
-
-        <i class="fa-solid fa-magnifying-glass"></i>
-
-    </button>
-
-
-    <a
-        href="{% url 'cart' %}"
-        class="bb-cart-btn"
-    >
-
-        <i class="fa-solid fa-cart-shopping"></i>
-
-        <span>Cart</span>
-
-    </a>
-
-</nav>
-
-
-<!-- =========================================================
-SEARCH OVERLAY
-========================================================= -->
-
-<div
-    class="bb-search-overlay"
-    id="bbSearchOverlay"
->
-
-    <input
-        type="text"
-        id="bbSearchInput"
-        placeholder="Search items, meals, drinks…"
-        autocomplete="off"
-    >
-
-
-    <button
-        class="bb-search-close"
-        id="bbSearchClose"
-        type="button"
-    >
-
-        <i class="fa-solid fa-xmark"></i>
-
-    </button>
-
-</div>
-
-
-<!-- =========================================================
-OUTLET HERO
-========================================================= -->
-
-<div class="bb-outlet-hero">
-
-    <div class="bb-outlet-logo-box">
-
-        {% if outlet.logo %}
-
-            <img
-                src="{{ outlet.logo.url }}"
-                alt="{{ outlet.name }} logo"
-            >
-
-        {% else %}
-
-            <i class="fa-solid fa-store"></i>
-
-        {% endif %}
-
-    </div>
-
-
-    <div class="bb-outlet-hero-text">
-
-        <h1>
+        <div class="bb-nav-title-center">
 
             {{ outlet.name }}
 
-        </h1>
+        </div>
 
-
-        <p>
-
-            Order your favourite meals, freshly prepared.
-
-        </p>
-
-    </div>
-
-</div>
-
-
-<!-- =========================================================
-CATEGORY STRIP
-========================================================= -->
-
-<div
-    class="bb-cat-strip"
-    id="bbCatStrip"
->
-
-    <button
-        class="bb-cat-pill active"
-        data-cat="all"
-    >
-
-        All
-
-    </button>
-
-
-    {% for category in categories %}
 
         <button
-            class="bb-cat-pill"
-            data-cat="{{ category.name|lower }}"
-        >
-
-            {{ category.name }}
-
-        </button>
-
-    {% endfor %}
-
-</div>
-
-
-<!-- =========================================================
-PRODUCTS
-========================================================= -->
-
-<div class="bb-products-wrap">
-
-    <div
-        class="bb-products-grid"
-        id="bbProductsGrid"
-    >
-
-
-        <!-- =================================================
-        EXISTING DJANGO PRODUCT LOOP
-        BACKEND LOGIC UNCHANGED
-        ================================================= -->
-
-        {% for category in categories %}
-
-            {% for product in category.products.all %}
-
-                {% if product.is_available %}
-
-                    <div
-                        class="bb-pcard"
-                        data-category="{{ category.name|lower }}"
-                        data-name="{{ product.name|lower }}"
-                        data-available="1"
-                    >
-
-
-                        <!-- PRODUCT IMAGE -->
-
-                        <div class="bb-pcard-img">
-
-                            {% if product.image %}
-
-                                <img
-                                    src="{{ product.image.url }}"
-                                    alt="{{ product.name }}"
-                                    loading="lazy"
-                                >
-
-                            {% else %}
-
-                                <div class="bb-no-img">
-
-                                    <i class="fa-solid fa-bowl-food"></i>
-
-                                </div>
-
-                            {% endif %}
-
-                        </div>
-
-
-                        <!-- PRICE + ADD TO CART -->
-
-                        <a
-                            href="{% url 'add_to_cart' product.id %}"
-                            class="bb-pcard-pill bb-ajax-cart"
-                            data-product="{{ product.name|escapejs }}"
-                            title="Add {{ product.name }} to cart"
-                        >
-
-                            <span class="bb-pcard-pill-price">
-
-                                ₹{{ product.customer_price }}
-
-                            </span>
-
-
-                            <span class="bb-pcard-pill-btn">
-
-                                <i class="fa-solid fa-plus"></i>
-
-                            </span>
-
-                        </a>
-
-
-                        <!-- PRODUCT INFORMATION -->
-
-                        <div class="bb-pcard-body">
-
-                            <div class="bb-pcard-cat">
-
-                                {{ category.name }}
-
-                            </div>
-
-
-                            <div
-                                class="bb-pcard-name"
-                                title="{{ product.name }}"
-                            >
-
-                                {{ product.name }}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                {% endif %}
-
-            {% endfor %}
-
-        {% endfor %}
-
-
-        <!-- =================================================
-        EMPTY STATE
-        ================================================= -->
-
-        <div
-            class="bb-products-empty"
-            id="bbEmpty"
+            class="bb-search-fab"
+            id="bbSearchFab"
+            title="Search"
+            type="button"
         >
 
             <i class="fa-solid fa-magnifying-glass"></i>
 
+        </button>
 
-            <h3>
 
-                No items found
+        <a
+            href="{% url 'cart' %}"
+            class="bb-cart-btn"
+        >
 
-            </h3>
+            <i class="fa-solid fa-cart-shopping"></i>
+
+            <span>Cart</span>
+
+        </a>
+
+    </nav>
+
+
+    <!-- =========================================================
+    SEARCH OVERLAY
+    ========================================================= -->
+
+    <div
+        class="bb-search-overlay"
+        id="bbSearchOverlay"
+    >
+
+        <input
+            type="text"
+            id="bbSearchInput"
+            placeholder="Search items, meals, drinks…"
+            autocomplete="off"
+        >
+
+
+        <button
+            class="bb-search-close"
+            id="bbSearchClose"
+            type="button"
+        >
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+    </div>
+
+
+    <!-- =========================================================
+    OUTLET HERO
+    ========================================================= -->
+
+    <div class="bb-outlet-hero">
+
+        <div class="bb-outlet-logo-box">
+
+            {% if outlet.logo %}
+
+                <img
+                    src="{{ outlet.logo.url }}"
+                    alt="{{ outlet.name }} logo"
+                >
+
+            {% else %}
+
+                <i class="fa-solid fa-store"></i>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="bb-outlet-hero-text">
+
+            <h1>
+
+                {{ outlet.name }}
+
+            </h1>
 
 
             <p>
 
-                Try a different search or change the category.
+                Order your favourite meals, freshly prepared.
 
             </p>
 
@@ -1914,1236 +1964,1228 @@ PRODUCTS
 
     </div>
 
-</div>
 
+    <!-- =========================================================
+    CATEGORY STRIP
+    ========================================================= -->
 
-<!-- =========================================================
-TOAST
-========================================================= -->
+    <div
+        class="bb-cat-strip"
+        id="bbCatStrip"
+    >
 
-<div id="bb-toast-container"></div>
+        <button
+            class="bb-cat-pill active"
+            data-cat="all"
+            type="button"
+        >
 
+            All
 
-<a
-    id="bbCartUrl"
-    href="{% url 'cart' %}"
-    style="display:none;"
-></a>
+        </button>
 
 
-<!-- =========================================================
-JQUERY
-========================================================= -->
+        {% for category in categories %}
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+            <button
+                class="bb-cat-pill"
+                data-cat="{{ category.name|lower }}"
+                type="button"
+            >
 
+                {{ category.name }}
 
-<!-- =========================================================
-OWL CAROUSEL
-========================================================= -->
+            </button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+        {% endfor %}
 
+    </div>
 
-<!-- =========================================================
-EXISTING MAIN JS
-========================================================= -->
 
-<script src="{% static 'js/main.js' %}"></script>
+    <!-- =========================================================
+    PRODUCTS
+    ========================================================= -->
 
+    <div class="bb-products-wrap">
 
-<script>
+        <div
+            class="bb-products-grid"
+            id="bbProductsGrid"
+        >
 
-(function ($) {
 
-    'use strict';
+            <!-- =================================================
+            EXISTING DJANGO PRODUCT LOOP
+            DO NOT CHANGE
+            ================================================== -->
 
+            {% for category in categories %}
 
-    /* =====================================================
-       ELEMENTS
-    ===================================================== */
+                {% for product in category.products.all %}
 
-    const cartUrl =
-        document.getElementById('bbCartUrl').href;
+                    {% if product.is_available %}
 
-    const grid =
-        document.getElementById('bbProductsGrid');
+                        <div
+                            class="bb-pcard"
+                            data-category="{{ category.name|lower }}"
+                            data-name="{{ product.name|lower }}"
+                            data-available="1"
+                        >
 
-    const emptyEl =
-        document.getElementById('bbEmpty');
 
-    const searchOvl =
-        document.getElementById('bbSearchOverlay');
+                            <!-- PRODUCT IMAGE -->
 
-    const searchIn =
-        document.getElementById('bbSearchInput');
+                            <div class="bb-pcard-img">
 
-    const searchFab =
-        document.getElementById('bbSearchFab');
+                                {% if product.image %}
 
-    const searchX =
-        document.getElementById('bbSearchClose');
+                                    <img
+                                        src="{{ product.image.url }}"
+                                        alt="{{ product.name }}"
+                                        loading="lazy"
+                                    >
 
+                                {% else %}
 
-    /* =====================================================
-       TOAST
-    ===================================================== */
+                                    <div class="bb-no-img">
 
-    function showToast(msg, type) {
+                                        <i class="fa-solid fa-bowl-food"></i>
 
-        const c =
-            document.getElementById(
-                'bb-toast-container'
-            );
+                                    </div>
 
+                                {% endif %}
 
-        const t =
-            document.createElement('div');
+                            </div>
 
 
-        t.className =
-            'bb-toast ' + type;
+                            <!-- PRICE + ADD TO CART -->
 
+                            <a
+                                href="{% url 'add_to_cart' product.id %}"
+                                class="bb-pcard-pill bb-ajax-cart"
+                                data-product="{{ product.name|escapejs }}"
+                                title="Add {{ product.name }} to cart"
+                            >
 
-        t.innerHTML =
+                                <span class="bb-pcard-pill-price">
 
-            '<span>' +
-                msg +
-            '</span>' +
+                                    ₹{{ product.customer_price }}
 
-            (
-                type === 'success'
+                                </span>
 
-                ?
 
-                '<a href="' +
-                    cartUrl +
-                    '" ' +
-                    'style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap;">' +
-                    'View Cart' +
-                '</a>'
+                                <span class="bb-pcard-pill-btn">
 
-                :
+                                    <i class="fa-solid fa-plus"></i>
 
-                ''
-            ) +
+                                </span>
 
-            '<button class="bb-toast-close">' +
+                            </a>
 
-                '<i class="fa-solid fa-xmark"></i>' +
 
-            '</button>';
+                            <!-- PRODUCT INFORMATION -->
 
+                            <div class="bb-pcard-body">
 
-        const closeBtn =
-            t.querySelector(
-                '.bb-toast-close'
-            );
+                                <div class="bb-pcard-cat">
 
+                                    {{ category.name }}
 
-        closeBtn.addEventListener(
-            'click',
-            function () {
+                                </div>
 
-                t.remove();
 
-            }
-        );
+                                <div
+                                    class="bb-pcard-name"
+                                    title="{{ product.name }}"
+                                >
 
+                                    {{ product.name }}
 
-        c.appendChild(t);
+                                </div>
 
+                            </div>
 
-        setTimeout(
-            function () {
 
-                if (t.parentElement) {
+                        </div>
 
-                    t.remove();
+                    {% endif %}
 
-                }
+                {% endfor %}
 
-            },
-            5000
-        );
+            {% endfor %}
 
-    }
 
+            <!-- =================================================
+            EMPTY STATE
+            ================================================== -->
 
-    /* =====================================================
-       AJAX ADD TO CART
-       BACKEND URL SAME
-    ===================================================== */
+            <div
+                class="bb-products-empty"
+                id="bbEmpty"
+            >
 
-    function attachCartHandlers(root) {
+                <i class="fa-solid fa-magnifying-glass"></i>
 
-        (root || document)
 
-            .querySelectorAll(
-                '.bb-ajax-cart'
-            )
+                <h3>
 
-            .forEach(
-                function (btn) {
+                    No items found
 
+                </h3>
 
-                    if (btn._bbBound) {
 
-                        return;
+                <p>
+
+                    Try a different search or change the category.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+    TOAST
+    ========================================================= -->
+
+    <div id="bb-toast-container"></div>
+
+
+    <a
+        id="bbCartUrl"
+        href="{% url 'cart' %}"
+        style="display:none;"
+    ></a>
+
+
+    <!-- =========================================================
+    JQUERY
+    ========================================================= -->
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+
+    <!-- =========================================================
+    OWL CAROUSEL
+    ========================================================= -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+
+
+    <!-- =========================================================
+    EXISTING MAIN JS
+    ========================================================= -->
+
+    <script src="{% static 'js/main.js' %}"></script>
+
+
+    <script>
+
+        (function ($) {
+
+            'use strict';
+
+
+            /* =====================================================
+               ELEMENTS
+            ===================================================== */
+
+            const cartUrl =
+                document.getElementById('bbCartUrl').href;
+
+
+            const grid =
+                document.getElementById('bbProductsGrid');
+
+
+            const emptyEl =
+                document.getElementById('bbEmpty');
+
+
+            const searchOvl =
+                document.getElementById('bbSearchOverlay');
+
+
+            const searchIn =
+                document.getElementById('bbSearchInput');
+
+
+            const searchFab =
+                document.getElementById('bbSearchFab');
+
+
+            const searchX =
+                document.getElementById('bbSearchClose');
+
+
+            /* =====================================================
+               TOAST
+            ===================================================== */
+
+            function showToast(msg, type) {
+
+                const c =
+                    document.getElementById('bb-toast-container');
+
+
+                const t =
+                    document.createElement('div');
+
+
+                t.className =
+                    'bb-toast ' + type;
+
+
+                t.innerHTML =
+
+                    '<span>' +
+                        msg +
+                    '</span>' +
+
+                    (
+                        type === 'success'
+
+                        ?
+
+                        '<a href="' +
+                            cartUrl +
+                            '" ' +
+                            'style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap;">' +
+                            'View Cart' +
+                        '</a>'
+
+                        :
+
+                        ''
+                    ) +
+
+                    '<button class="bb-toast-close">' +
+
+                        '<i class="fa-solid fa-xmark"></i>' +
+
+                    '</button>';
+
+
+                const closeBtn =
+                    t.querySelector('.bb-toast-close');
+
+
+                closeBtn.addEventListener(
+                    'click',
+                    function () {
+
+                        t.remove();
 
                     }
+                );
 
 
-                    btn._bbBound = true;
+                c.appendChild(t);
 
 
-                    btn.addEventListener(
-                        'click',
-                        function (e) {
+                setTimeout(
+                    function () {
 
-                            e.preventDefault();
+                        if (t.parentElement) {
+
+                            t.remove();
+
+                        }
+
+                    },
+                    5000
+                );
+
+            }
 
 
-                            if (
-                                btn.classList.contains(
-                                    'adding'
+            /* =====================================================
+               AJAX ADD TO CART
+               BACKEND URL SAME
+            ===================================================== */
+
+            function attachCartHandlers(root) {
+
+                (root || document)
+
+                    .querySelectorAll('.bb-ajax-cart')
+
+                    .forEach(function (btn) {
+
+
+                        if (btn._bbBound) {
+
+                            return;
+
+                        }
+
+
+                        btn._bbBound = true;
+
+
+                        btn.addEventListener(
+                            'click',
+                            function (e) {
+
+                                e.preventDefault();
+
+
+                                if (
+                                    btn.classList.contains('adding')
+                                ) {
+
+                                    return;
+
+                                }
+
+
+                                btn.classList.add('adding');
+
+
+                                const origHTML =
+                                    btn.innerHTML;
+
+
+                                btn.innerHTML =
+                                    '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+
+                                fetch(
+                                    btn.getAttribute('href'),
+                                    {
+                                        headers: {
+
+                                            'X-Requested-With':
+                                                'XMLHttpRequest',
+
+                                            'Accept':
+                                                'application/json'
+
+                                        }
+                                    }
                                 )
-                            ) {
-
-                                return;
-
-                            }
 
 
-                            btn.classList.add(
-                                'adding'
-                            );
+                                .then(
+                                    function (r) {
 
-
-                            const origHTML =
-                                btn.innerHTML;
-
-
-                            btn.innerHTML =
-                                '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-
-                            fetch(
-                                btn.getAttribute(
-                                    'href'
-                                ),
-                                {
-                                    headers: {
-
-                                        'X-Requested-With':
-                                            'XMLHttpRequest',
-
-                                        'Accept':
-                                            'application/json'
+                                        return r.json();
 
                                     }
-                                }
-                            )
+                                )
 
 
-                            .then(
-                                function (r) {
-
-                                    return r.json();
-
-                                }
-                            )
+                                .then(
+                                    function (data) {
 
 
-                            .then(
-                                function (data) {
+                                        if (data.success) {
 
 
-                                    if (
-                                        data.success
-                                    ) {
+                                            showToast(
 
+                                                (
+                                                    btn.dataset.product ||
+                                                    'Item'
+                                                ) +
+                                                ' added to cart!',
+
+                                                'success'
+
+                                            );
+
+
+                                        } else {
+
+
+                                            showToast(
+
+                                                data.message ||
+                                                'Could not add item.',
+
+                                                'error'
+
+                                            );
+
+                                        }
+
+                                    }
+                                )
+
+
+                                .catch(
+                                    function () {
 
                                         showToast(
 
-                                            (
-                                                btn.dataset.product ||
-                                                'Item'
-                                            ) +
-                                            ' added to cart!',
-
-                                            'success'
-
-                                        );
-
-
-                                    } else {
-
-
-                                        showToast(
-
-                                            data.message ||
-                                            'Could not add item.',
+                                            'Something went wrong.',
 
                                             'error'
 
                                         );
 
                                     }
-
-                                }
-                            )
+                                )
 
 
-                            .catch(
-                                function () {
+                                .finally(
+                                    function () {
 
-                                    showToast(
-
-                                        'Something went wrong.',
-
-                                        'error'
-
-                                    );
-
-                                }
-                            )
+                                        btn.classList.remove(
+                                            'adding'
+                                        );
 
 
-                            .finally(
-                                function () {
+                                        btn.innerHTML =
+                                            origHTML;
 
-                                    btn.classList.remove(
-                                        'adding'
-                                    );
+                                    }
+                                );
+
+                            }
+                        );
+
+                    });
+
+            }
 
 
-                                    btn.innerHTML =
-                                        origHTML;
+            /* =====================================================
+               INITIAL AJAX HANDLERS
+            ===================================================== */
 
-                                }
-                            );
+            attachCartHandlers();
 
-                        }
+
+            /* =====================================================
+               SEARCH
+            ===================================================== */
+
+            searchFab.addEventListener(
+                'click',
+                function () {
+
+                    searchOvl.classList.add('open');
+
+                    searchFab.classList.add('active');
+
+
+                    setTimeout(
+                        function () {
+
+                            searchIn.focus();
+
+                        },
+                        60
                     );
 
                 }
             );
 
-    }
 
-
-    /* =====================================================
-       INITIAL AJAX HANDLERS
-    ===================================================== */
-
-    attachCartHandlers();
-
-
-    /* =====================================================
-       SEARCH OPEN
-    ===================================================== */
-
-    searchFab.addEventListener(
-        'click',
-        function () {
-
-            searchOvl.classList.add(
-                'open'
-            );
-
-            searchFab.classList.add(
-                'active'
-            );
-
-
-            setTimeout(
+            searchX.addEventListener(
+                'click',
                 function () {
 
-                    searchIn.focus();
+                    searchOvl.classList.remove('open');
 
-                },
-                60
+                    searchFab.classList.remove('active');
+
+                    searchIn.value = '';
+
+                    renderView();
+
+                }
             );
 
-        }
-    );
 
-
-    /* =====================================================
-       SEARCH CLOSE
-    ===================================================== */
-
-    searchX.addEventListener(
-        'click',
-        function () {
-
-            searchOvl.classList.remove(
-                'open'
+            searchIn.addEventListener(
+                'input',
+                renderView
             );
 
-            searchFab.classList.remove(
-                'active'
-            );
 
-            searchIn.value = '';
+            /* =====================================================
+               CATEGORY FILTER
+            ===================================================== */
 
-            renderView();
+            document
+                .querySelectorAll('.bb-cat-pill')
+                .forEach(
+                    function (pill) {
 
-        }
-    );
-
-
-    /* =====================================================
-       SEARCH INPUT
-    ===================================================== */
-
-    searchIn.addEventListener(
-        'input',
-        renderView
-    );
+                        pill.addEventListener(
+                            'click',
+                            function () {
 
 
-    /* =====================================================
-       CATEGORY FILTER
-    ===================================================== */
+                                document
+                                    .querySelectorAll(
+                                        '.bb-cat-pill'
+                                    )
+                                    .forEach(
+                                        function (p) {
 
-    document
-        .querySelectorAll(
-            '.bb-cat-pill'
-        )
-        .forEach(
-            function (pill) {
+                                            p.classList.remove(
+                                                'active'
+                                            );
 
-                pill.addEventListener(
-                    'click',
-                    function () {
-
-
-                        document
-                            .querySelectorAll(
-                                '.bb-cat-pill'
-                            )
-                            .forEach(
-                                function (p) {
-
-                                    p.classList.remove(
-                                        'active'
+                                        }
                                     );
 
-                                }
-                            );
+
+                                pill.classList.add(
+                                    'active'
+                                );
 
 
-                        pill.classList.add(
-                            'active'
+                                renderView();
+
+                            }
                         );
-
-
-                        renderView();
 
                     }
                 );
 
+
+            /* =====================================================
+               DESTROY ALL TRENDING CAROUSELS
+            ===================================================== */
+
+            function destroyTrending() {
+
+                grid
+                    .querySelectorAll(
+                        '.bb-trending-wrap'
+                    )
+                    .forEach(
+                        function (wrap) {
+
+
+                            const owl =
+                                wrap.querySelector(
+                                    '.bb-trending-owl'
+                                );
+
+
+                            if (
+                                owl &&
+                                $(owl).hasClass(
+                                    'owl-loaded'
+                                )
+                            ) {
+
+                                try {
+
+                                    $(owl).trigger(
+                                        'destroy.owl.carousel'
+                                    );
+
+                                } catch (e) {
+
+                                    console.log(
+                                        'Owl destroy skipped.'
+                                    );
+
+                                }
+
+                            }
+
+
+                            wrap.remove();
+
+                        }
+                    );
+
             }
-        );
 
 
-    /* =====================================================
-       DESTROY ALL TRENDING CAROUSELS
-    ===================================================== */
+            /* =====================================================
+               GET VISIBLE PRODUCTS
+            ===================================================== */
 
-    function destroyTrending() {
+            function getVisibleProducts() {
 
-        grid
-            .querySelectorAll(
-                '.bb-trending-wrap'
-            )
-            .forEach(
-                function (wrap) {
+                const query =
+
+                    (searchIn.value || '')
+                        .toLowerCase()
+                        .trim();
 
 
-                    const owl =
-                        wrap.querySelector(
-                            '.bb-trending-owl'
+                const activePill =
+
+                    document.querySelector(
+                        '.bb-cat-pill.active'
+                    );
+
+
+                const catSlug =
+
+                    activePill
+                        ? activePill.dataset.cat
+                        : 'all';
+
+
+                const visibleCards = [];
+
+
+                grid
+                    .querySelectorAll(
+                        '.bb-pcard[data-available="1"]'
+                    )
+                    .forEach(
+                        function (card) {
+
+
+                            const matchCat =
+
+                                catSlug === 'all' ||
+
+                                card.dataset.category ===
+                                    catSlug;
+
+
+                            const matchName =
+
+                                !query ||
+
+                                card.dataset.name.includes(
+                                    query
+                                );
+
+
+                            const show =
+
+                                matchCat &&
+                                matchName;
+
+
+                            card.style.display =
+                                show ? '' : 'none';
+
+
+                            if (show) {
+
+                                visibleCards.push(
+                                    card
+                                );
+
+                            }
+
+                        }
+                    );
+
+
+                return visibleCards;
+
+            }
+
+
+            /* =====================================================
+               RENDER VIEW
+
+               IMPORTANT:
+
+               4 PRODUCTS = 2 ROWS
+
+               THEN TRENDING SLIDER
+
+               Example:
+
+               Product 1 | Product 2
+               Product 3 | Product 4
+
+               TRENDING SLIDER
+
+               Product 5 | Product 6
+               Product 7 | Product 8
+
+               TRENDING SLIDER
+
+               ...
+            ===================================================== */
+
+            function renderView() {
+
+
+                destroyTrending();
+
+
+                const visibleCards =
+                    getVisibleProducts();
+
+
+                /* =================================================
+                   EMPTY STATE
+                ================================================= */
+
+                emptyEl.classList.toggle(
+                    'show',
+                    visibleCards.length === 0
+                );
+
+
+                if (
+                    visibleCards.length === 0
+                ) {
+
+                    return;
+
+                }
+
+
+                /* =================================================
+                   REMOVE EMPTY STATE FROM NORMAL FLOW
+                ================================================= */
+
+                emptyEl.style.display = 'none';
+
+
+                /* =================================================
+                   BUILD SLIDER AFTER EVERY 4 PRODUCTS
+
+                   4 = 2 rows x 2 cards
+                ================================================= */
+
+                for (
+                    let i = 4;
+                    i < visibleCards.length;
+                    i += 4
+                ) {
+
+
+                    const cardsBeforeSlider =
+
+                        visibleCards.slice(
+                            i - 4,
+                            i
                         );
+
+
+                    /*
+                     Only create slider if there
+                     are products after these 4.
+                    */
+
+                    const remainingCards =
+
+                        visibleCards.slice(i);
 
 
                     if (
-                        owl &&
-                        $(owl).hasClass(
-                            'owl-loaded'
-                        )
+                        remainingCards.length === 0
                     ) {
 
-                        try {
-
-                            $(owl).trigger(
-                                'destroy.owl.carousel'
-                            );
-
-                        } catch (e) {
-
-                            console.log(
-                                'Owl destroy skipped.'
-                            );
-
-                        }
+                        continue;
 
                     }
 
 
-                    wrap.remove();
+                    buildTrendingCarousel(
+                        cardsBeforeSlider,
+                        visibleCards,
+                        i
+                    );
 
                 }
-            );
 
-    }
 
+                /*
+                 If there are exactly 4 products,
+                 we still want a trending slider
+                 after those 2 rows only if there
+                 are more products to show.
 
-    /* =====================================================
-       GET VISIBLE PRODUCT CARDS
-    ===================================================== */
+                 The normal logic above handles it.
+                */
 
-    function getVisibleCards() {
-
-        const query =
-
-            (searchIn.value || '')
-                .toLowerCase()
-                .trim();
-
-
-        const activePill =
-
-            document.querySelector(
-                '.bb-cat-pill.active'
-            );
-
-
-        const catSlug =
-
-            activePill
-                ? activePill.dataset.cat
-                : 'all';
-
-
-        const visibleCards = [];
-
-
-        grid
-            .querySelectorAll(
-                '.bb-pcard[data-available="1"]'
-            )
-            .forEach(
-                function (card) {
-
-
-                    const matchCat =
-
-                        catSlug === 'all' ||
-
-                        card.dataset.category ===
-                            catSlug;
-
-
-                    const matchName =
-
-                        !query ||
-
-                        card.dataset.name.includes(
-                            query
-                        );
-
-
-                    const show =
-
-                        matchCat &&
-                        matchName;
-
-
-                    card.style.display =
-                        show ? '' : 'none';
-
-
-                    if (show) {
-
-                        visibleCards.push(
-                            card
-                        );
-
-                    }
-
-                }
-            );
-
-
-        return visibleCards;
-
-    }
-
-
-    /* =====================================================
-       RENDER VIEW
-
-       LAYOUT:
-
-       2 cards
-       2 cards
-       SLIDER
-
-       2 cards
-       2 cards
-       SLIDER
-
-       2 cards
-       2 cards
-       SLIDER
-    ===================================================== */
-
-    function renderView() {
-
-
-        /*
-         First destroy old sliders.
-        */
-
-        destroyTrending();
-
-
-        /*
-         Get products matching
-         category + search.
-        */
-
-        const visibleCards =
-            getVisibleCards();
-
-
-        /*
-         Empty state.
-        */
-
-        emptyEl.classList.toggle(
-            'show',
-            visibleCards.length === 0
-        );
-
-
-        /*
-         Remove any previously
-         generated layout wrappers.
-        */
-
-        grid
-            .querySelectorAll(
-                '.bb-layout-spacer'
-            )
-            .forEach(
-                function (el) {
-
-                    el.remove();
-
-                }
-            );
-
-
-        /*
-         If no products,
-         stop here.
-        */
-
-        if (
-            visibleCards.length === 0
-        ) {
-
-            return;
-
-        }
-
-
-        /*
-         Build layout.
-
-         Every 4 products:
-
-         1
-         2
-         3
-         4
-         SLIDER
-
-         5
-         6
-         7
-         8
-         SLIDER
-        */
-
-        buildProductSections(
-            visibleCards
-        );
-
-    }
-
-
-    /* =====================================================
-       BUILD PRODUCT SECTIONS
-
-       Every 4 products gets a slider
-       after them.
-    ===================================================== */
-
-    function buildProductSections(
-        cards
-    ) {
-
-
-        /*
-         Remove all normal cards
-         temporarily from visual flow.
-
-         We don't remove them from DOM.
-         We simply reorder them.
-        */
-
-        cards.forEach(
-            function (card) {
-
-                card.style.display =
-                    '';
+                emptyEl.style.display = 'none';
 
             }
-        );
 
 
-        /*
-         Empty state must stay at
-         the end.
-        */
+            /* =====================================================
+               BUILD TRENDING CAROUSEL
 
-        emptyEl.style.display =
-            'none';
+               The slider gets products from the
+               complete visible list.
 
+               It is inserted after every 4 products.
+            ===================================================== */
 
-        /*
-         Create chunks of 4.
-
-         Example:
-
-         [1,2,3,4]
-         [5,6,7,8]
-         [9,10]
-        */
-
-        const chunks = [];
-
-
-        for (
-            let i = 0;
-            i < cards.length;
-            i += 4
-        ) {
-
-            chunks.push(
-                cards.slice(
-                    i,
-                    i + 4
-                )
-            );
-
-        }
-
-
-        /*
-         Insert each chunk in order.
-        */
-
-        chunks.forEach(
-            function (
-                chunk,
-                chunkIndex
+            function buildTrendingCarousel(
+                rowCards,
+                allCards,
+                insertIndex
             ) {
 
 
+                if (
+                    typeof $ === 'undefined' ||
+                    typeof $.fn.owlCarousel ===
+                        'undefined'
+                ) {
+
+                    console.warn(
+                        'Owl Carousel is not loaded.'
+                    );
+
+                    return;
+
+                }
+
+
+                /* =================================================
+                   SELECT SLIDER PRODUCTS
+
+                   We use up to 6 cards.
+
+                   This is important because:
+                   3 visible cards + 6 total cards
+                   = actual sliding.
+                ================================================= */
+
+                const total =
+                    allCards.length;
+
+
+                let sliderCards = [];
+
+
                 /*
-                 First put 4 normal
-                 product cards.
+                 Start from the products after
+                 the current 4-card block.
                 */
 
-                chunk.forEach(
-                    function (card) {
+                for (
+                    let x = insertIndex;
+                    x < total && sliderCards.length < 6;
+                    x++
+                ) {
 
-                        grid.appendChild(
-                            card
-                        );
+                    sliderCards.push(
+                        allCards[x]
+                    );
 
-                    }
-                );
+                }
 
 
                 /*
-                 Slider should appear
-                 after EVERY 4 products.
-
-                 If last chunk contains
-                 fewer than 4 products,
-                 don't create slider.
-
-                 This avoids a useless slider
-                 at the very bottom.
+                 If there are fewer than 4 remaining
+                 products, take some products from
+                 the beginning so the carousel still
+                 has enough items to slide.
                 */
 
                 if (
-                    chunk.length === 4 &&
-                    chunkIndex <
-                        chunks.length
+                    sliderCards.length < 4
                 ) {
 
-                    /*
-                     Create slider using
-                     products from current
-                     visible list.
-
-                     Slider has EXACTLY
-                     3 cards.
-                    */
-
-                    const sliderCards =
-                        getSliderCards(
-                            cards,
-                            chunkIndex
-                        );
-
-
-                    if (
-                        sliderCards.length === 3
+                    for (
+                        let x = 0;
+                        x < total &&
+                        sliderCards.length < 6;
+                        x++
                     ) {
 
-                        buildTrendingCarousel(
-                            sliderCards
-                        );
+                        if (
+                            !sliderCards.includes(
+                                allCards[x]
+                            )
+                        ) {
+
+                            sliderCards.push(
+                                allCards[x]
+                            );
+
+                        }
 
                     }
 
                 }
 
-            }
-        );
-
-
-        /*
-         Put empty state back
-         at the end.
-        */
-
-        grid.appendChild(
-            emptyEl
-        );
-
-    }
-
-
-    /* =====================================================
-       GET EXACTLY 3 SLIDER CARDS
-
-       IMPORTANT:
-
-       Slider cards are cloned.
-
-       They do NOT affect the
-       normal 2-column product rows.
-    ===================================================== */
-
-    function getSliderCards(
-        cards,
-        sectionIndex
-    ) {
-
-
-        const total =
-            cards.length;
-
-
-        /*
-         We need exactly 3 cards.
-        */
-
-        if (
-            total < 3
-        ) {
-
-            return [];
-
-        }
-
-
-        /*
-         Rotate starting position
-         for different sliders.
-
-         This makes the slider
-         content different after
-         each 2 rows.
-        */
-
-        const start =
-            (
-                sectionIndex * 3
-            ) % total;
-
-
-        const result = [];
-
-
-        for (
-            let i = 0;
-            i < 3;
-            i++
-        ) {
-
-            const index =
-                (
-                    start + i
-                ) % total;
-
-
-            result.push(
-                cards[index]
-            );
-
-        }
-
-
-        return result;
-
-    }
-
-
-    /* =====================================================
-       BUILD TRENDING CAROUSEL
-
-       EXACTLY 3 ITEMS
-    ===================================================== */
-
-    function buildTrendingCarousel(
-        cards
-    ) {
-
-
-        /*
-         Safety check.
-        */
-
-        if (
-            cards.length !== 3
-        ) {
-
-            return;
-
-        }
-
-
-        /*
-         Create outer wrapper.
-        */
-
-        const wrap =
-            document.createElement(
-                'div'
-            );
-
-
-        wrap.className =
-            'bb-trending-wrap';
-
-
-        /*
-         Trending label.
-        */
-
-        const label =
-            document.createElement(
-                'div'
-            );
-
-
-        label.className =
-            'bb-trending-label';
-
-
-        label.textContent =
-            'Trending now';
-
-
-        wrap.appendChild(
-            label
-        );
-
-
-        /*
-         Create Owl container.
-        */
-
-        const owlDiv =
-            document.createElement(
-                'div'
-            );
-
-
-        owlDiv.className =
-            'bb-trending-owl owl-carousel owl-theme';
-
-
-        /*
-         Clone exactly 3 cards.
-        */
-
-        cards.forEach(
-            function (card) {
-
-
-                const clone =
-                    card.cloneNode(
-                        true
-                    );
-
 
                 /*
-                 VERY IMPORTANT:
-
-                 Remove data-available.
-
-                 Otherwise cloned cards
-                 could get picked up by
-                 the filtering system.
+                 Need at least 4 cards for a meaningful
+                 3-card carousel.
                 */
 
-                clone.removeAttribute(
-                    'data-available'
-                );
+                if (
+                    sliderCards.length < 4
+                ) {
 
-
-                /*
-                 Remove any previous
-                 display style.
-                */
-
-                clone.style.display =
-                    '';
-
-
-                /*
-                 Mark as slider clone.
-                */
-
-                clone.setAttribute(
-                    'data-trending-clone',
-                    '1'
-                );
-
-
-                owlDiv.appendChild(
-                    clone
-                );
-
-            }
-        );
-
-
-        wrap.appendChild(
-            owlDiv
-        );
-
-
-        /*
-         Add slider to grid.
-
-         Because .bb-trending-wrap has:
-
-         grid-column: 1 / -1
-
-         it occupies full width.
-        */
-
-        grid.appendChild(
-            wrap
-        );
-
-
-        /*
-         Check Owl.
-        */
-
-        if (
-            typeof $ === 'undefined' ||
-            typeof $.fn.owlCarousel ===
-                'undefined'
-        ) {
-
-            console.warn(
-                'Owl Carousel is not loaded.'
-            );
-
-            return;
-
-        }
-
-
-        /*
-         Initialize Owl.
-
-         IMPORTANT:
-
-         items: 3
-
-         means EXACTLY 3 cards
-         are visible.
-        */
-
-        $(owlDiv).owlCarousel({
-
-            loop: true,
-
-            margin: 12,
-
-            nav: true,
-
-            dots: true,
-
-            autoplay: false,
-
-            smartSpeed: 400,
-
-            touchDrag: true,
-
-            mouseDrag: true,
-
-            pullDrag: true,
-
-            freeDrag: false,
-
-            /*
-             EXACTLY 3 ITEMS
-            */
-
-            items: 3,
-
-            responsive: {
-
-                0: {
-
-                    items: 3
-
-                },
-
-                480: {
-
-                    items: 3
-
-                },
-
-                768: {
-
-                    items: 3
-
-                },
-
-                1024: {
-
-                    items: 3
+                    return;
 
                 }
 
+
+                /* =================================================
+                   OUTER WRAPPER
+                ================================================= */
+
+                const wrap =
+                    document.createElement('div');
+
+
+                wrap.className =
+                    'bb-trending-wrap';
+
+
+                /* =================================================
+                   LABEL
+                ================================================= */
+
+                const label =
+                    document.createElement('div');
+
+
+                label.className =
+                    'bb-trending-label';
+
+
+                label.textContent =
+                    'Trending now';
+
+
+                wrap.appendChild(
+                    label
+                );
+
+
+                /* =================================================
+                   OWL CONTAINER
+                ================================================= */
+
+                const owlDiv =
+                    document.createElement('div');
+
+
+                owlDiv.className =
+                    'bb-trending-owl owl-carousel owl-theme';
+
+
+                /* =================================================
+                   CLONE PRODUCTS
+                ================================================= */
+
+                sliderCards.forEach(
+                    function (card) {
+
+
+                        const clone =
+                            card.cloneNode(true);
+
+
+                        /*
+                         Remove original availability
+                         marker so cloned cards never
+                         participate in filtering.
+                        */
+
+                        clone.removeAttribute(
+                            'data-available'
+                        );
+
+
+                        clone.style.display =
+                            '';
+
+
+                        owlDiv.appendChild(
+                            clone
+                        );
+
+                    }
+                );
+
+
+                wrap.appendChild(
+                    owlDiv
+                );
+
+
+                /* =================================================
+                   INSERT AFTER CURRENT 4-CARD BLOCK
+                ================================================= */
+
+                const previousCard =
+                    rowCards[rowCards.length - 1];
+
+
+                if (
+                    previousCard &&
+                    previousCard.parentNode === grid
+                ) {
+
+                    previousCard.after(
+                        wrap
+                    );
+
+                }
+
+
+                /* =================================================
+                   INITIALIZE OWL
+
+                   EXACTLY 3 CARDS VISIBLE
+                ================================================= */
+
+                $(owlDiv).owlCarousel({
+
+                    loop: true,
+
+                    rewind: false,
+
+                    margin: 10,
+
+                    nav: true,
+
+                    dots: true,
+
+                    autoplay: true,
+
+                    autoplayTimeout: 3500,
+
+                    autoplayHoverPause: true,
+
+                    smartSpeed: 550,
+
+                    slideBy: 1,
+
+                    touchDrag: true,
+
+                    mouseDrag: true,
+
+                    pullDrag: true,
+
+                    freeDrag: false,
+
+                    responsive: {
+
+                        0: {
+
+                            items: 3
+
+                        },
+
+                        480: {
+
+                            items: 3
+
+                        },
+
+                        768: {
+
+                            items: 3
+
+                        },
+
+                        1024: {
+
+                            items: 3
+
+                        },
+
+                        1400: {
+
+                            items: 3
+
+                        }
+
+                    }
+
+                });
+
+
+                /* =================================================
+                   AJAX HANDLERS FOR CLONED PRODUCTS
+                ================================================= */
+
+                attachCartHandlers(
+                    owlDiv
+                );
+
             }
 
-        });
+
+            /* =====================================================
+               INITIAL LOAD
+            ===================================================== */
+
+            function initializePage() {
 
 
-        /*
-         Attach AJAX handler
-         to cloned cards.
-        */
+                if (
+                    typeof $ === 'undefined'
+                ) {
 
-        attachCartHandlers(
-            owlDiv
-        );
+                    console.error(
+                        'jQuery is not loaded.'
+                    );
 
-    }
+                    return;
 
-
-    /* =====================================================
-       INITIAL LOAD
-    ===================================================== */
-
-    function initializePage() {
+                }
 
 
-        if (
-            typeof $ === 'undefined'
-        ) {
+                if (
+                    typeof $.fn.owlCarousel ===
+                        'undefined'
+                ) {
 
-            console.error(
-                'jQuery is not loaded.'
-            );
+                    console.error(
+                        'Owl Carousel is not loaded.'
+                    );
 
-            return;
+                    return;
 
-        }
-
-
-        if (
-            typeof $.fn.owlCarousel ===
-                'undefined'
-        ) {
-
-            console.error(
-                'Owl Carousel is not loaded.'
-            );
-
-            return;
-
-        }
+                }
 
 
-        renderView();
+                renderView();
 
-    }
-
-
-    /* =====================================================
-       DOM READY / WINDOW LOAD
-    ===================================================== */
-
-    if (
-        document.readyState ===
-        'complete'
-    ) {
-
-        initializePage();
-
-    } else {
-
-        window.addEventListener(
-            'load',
-            initializePage
-        );
-
-    }
+            }
 
 
-})(window.jQuery);
+            /* =====================================================
+               DOM READY
+            ===================================================== */
 
-</script>
+            if (
+                document.readyState ===
+                'complete'
+            ) {
+
+                initializePage();
+
+            } else {
+
+                window.addEventListener(
+                    'load',
+                    initializePage
+                );
+
+            }
 
 
-<!-- =========================================================
-FOOTER
-========================================================= -->
+        })(window.jQuery);
 
-{% include 'footer.html' %}
+    </script>
 
-<script src="{% static 'js/footer.js' %}"></script>
+
+    <!-- =========================================================
+    FOOTER
+    ========================================================= -->
+
+    {% include 'footer.html' %}
+
+    <script src="{% static 'js/footer.js' %}"></script>
+
 
 </body>
 
