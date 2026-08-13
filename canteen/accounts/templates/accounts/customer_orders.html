@@ -4,605 +4,212 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Products — Bhukkad Box</title>
+  <title>My Orders — Bhukkad Box</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
   <link rel="stylesheet" href="{% static 'css/customer_token.css' %}"/>
-  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-  <style>
-    /* New Styles for Product Layout */
-    .category-list {
-      display: flex;
-      overflow-x: auto;
-      gap: 10px;
-      padding: 15px;
-      scrollbar-width: none; /* Firefox */
-      -webkit-overflow-scrolling: touch;
-      margin-top: 60px; /* Space for fixed nav */
-    }
-    .category-list::-webkit-scrollbar {
-      display: none; /* Safari/Chrome */
-    }
-    .category-item {
-      padding: 8px 20px;
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      border-radius: 25px;
-      white-space: nowrap;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #4b5563;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .category-item.active {
-      background: #3b82f6; /* App Accent Color */
-      color: #fff;
-      border-color: #3b82f6;
-      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-    }
-
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      padding: 0 15px 15px 15px;
-    }
-
-    .product-card {
-      background: #fff;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #f3f4f6;
-    }
-
-    .product-upper {
-      position: relative;
-      width: 100%;
-      padding-top: 100%; /* 1:1 Aspect ratio for image */
-      background: #f9fafb;
-    }
-
-    .product-upper img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* Add to Cart Button overlapping upper and lower */
-    .add-to-cart-btn {
-      position: absolute;
-      bottom: -18px; /* Pulls button down to overlap */
-      right: 12px;
-      background: #fff;
-      color: #111827;
-      border: none;
-      border-radius: 25px;
-      padding: 6px 6px 6px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-      font-weight: 700;
-      font-size: 0.9rem;
-      z-index: 10;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-    }
-    
-    .add-to-cart-btn .plus-icon {
-      background: #10b981; /* Green Plus */
-      color: #fff;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-    }
-
-    .product-lower {
-      padding: 24px 12px 16px 12px; /* Top padding leaves space for overlapping button */
-      background: #fff;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .product-category {
-      font-size: 0.75rem;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-
-    .product-name {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #1f2937;
-      line-height: 1.3;
-      font-family: 'Syne', sans-serif;
-    }
-
-    /* Horizontal Carousels */
-    .carousel-section {
-      margin: 10px 0 25px 0;
-    }
-    .carousel-section h3 {
-      padding: 0 15px;
-      margin-bottom: 12px;
-      font-family: 'Syne', sans-serif;
-      font-size: 1.2rem;
-      color: #111827;
-    }
-    .carousel-container {
-      width: 100%;
-      overflow-x: auto;
-      padding: 5px 15px 15px 15px;
-      display: flex;
-      gap: 15px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .carousel-container::-webkit-scrollbar {
-      display: none;
-    }
-    .carousel-container .product-card {
-      min-width: 160px; /* Fixed width so they scroll horizontally */
-      flex-shrink: 0;
-      scroll-snap-align: start;
-    }
-  </style>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body style="background-color: #fcfcfc;">
+<body>
 
   <div class="ambient-glow"></div>
 
   <!-- ─── NAVBAR ─────────────────────────────────── -->
-  <nav style="position: fixed; top: 0; width: 100%; z-index: 100;">
+  <nav>
     <a href="{% url 'customer_home' %}" class="nav-back">
       <i class="fa-solid fa-arrow-left"></i> Home
     </a>
     <div class="nav-page-title">
-      <i class="fa-solid fa-utensils"></i> Menu
+      <i class="fa-solid fa-box-open"></i> My Orders
     </div>
     <div class="nav-spacer"></div>
-    <a href="{% url 'cart' %}" class="nav-back">
-      <i class="fa-solid fa-cart-shopping"></i> Cart
+    <a href="{% url 'customer_token' %}" class="nav-back">
+      <i class="fa-solid fa-ticket"></i> Token
     </a>
   </nav>
 
-  <!-- ─── CATEGORY SCROLL ────────────────────────── -->
-  <div class="category-list">
-    <div class="category-item active">All Items</div>
-    <div class="category-item">Fast Food</div>
-    <div class="category-item">Beverages</div>
-    <div class="category-item">Desserts</div>
-    <div class="category-item">Snacks</div>
-    <div class="category-item">Healthy</div>
+  <div class="container">
+
+    <div class="orders-header">
+      <h1>My Orders <span>📦</span></h1>
+    </div>
+
+    {% if orders %}
+    <div class="orders-list">
+      {% for order in orders %}
+
+      <div class="order-card"
+           data-status="{{ order.status }}"
+           style="animation-delay: {{ forloop.counter0 }}00ms">
+
+        <!-- Clickable Header -->
+        <div class="order-card-header">
+          <div class="order-meta">
+            <span class="order-id">#{{ order.id }}</span>
+            <span class="order-outlet">{{ order.outlet.name }}</span>
+            <span class="order-date">
+              <i class="fa-regular fa-clock"></i>
+              {{ order.created_at|date:"M d, Y · h:i A" }}
+            </span>
+          </div>
+
+          <div class="order-right">
+            <!-- Status Badge -->
+            {% if order.status == 'pending' %}
+              <span class="status-badge status-pending">
+                <i class="fa-solid fa-hourglass-half"></i> Pending
+              </span>
+            {% elif order.status == 'preparing' %}
+              <span class="status-badge status-preparing">
+                <i class="fa-solid fa-fire-burner"></i> Preparing
+              </span>
+            {% elif order.status == 'completed' %}
+              <span class="status-badge status-completed">
+                <i class="fa-solid fa-circle-check"></i> Completed
+              </span>
+            {% elif order.status == 'cancelled' %}
+              <span class="status-badge status-cancelled">
+                <i class="fa-solid fa-ban"></i> Cancelled {% if order.cancelled_by %}(By {{ order.get_cancelled_by_display }}){% endif %}
+              </span>
+            {% endif %}
+
+            <span class="order-total">₹{{ order.total_amount }}</span>
+            <i class="fa-solid fa-chevron-down order-chevron"></i>
+          </div>
+        </div>
+
+        <!-- Expandable Body -->
+        <div class="order-body">
+          <div class="order-items-list">
+            {% for item in order.items.all %}
+            <div class="order-item-row">
+              <div>
+                
+                <span class="order-item-qty">×{{ item.quantity }}</span>
+                <span class="order-item-name">{{ item.product.name }}</span>
+              </div>
+              <span>₹{{ item.product.customer_price }} each</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="order-actions" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+            {% if order.status == 'pending' %}
+            <form action="{% url 'cancel_order' order.id %}" method="POST" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="cancel-btn">
+                <i class="fa-solid fa-xmark"></i> Cancel Order
+              </button>
+            </form>
+            {% endif %}
+            
+            <form action="{% url 'reorder' order.id %}" method="POST" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="reorder-btn" style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; border: none; padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 600; font-family: inherit; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(74, 222, 128, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(74, 222, 128, 0.3)';">
+                <i class="fa-solid fa-rotate-right"></i> Reorder
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="no-orders">
+      <i class="fa-solid fa-box-open"></i>
+      <h2>No orders yet</h2>
+      <p>You haven't placed any orders. Start exploring outlets!</p>
+      <a href="{% url 'customer_home' %}" class="btn-browse" style="margin-top: 1.25rem;">
+        <i class="fa-solid fa-utensils"></i> Browse Outlets
+      </a>
+    </div>
+    {% endif %}
+
   </div>
 
-  <div class="container" style="padding-top: 0; max-width: 100%;">
-
-    <!-- ─── FIRST 4 ROWS (8 CARDS) ─────────────────── -->
-    <div class="products-grid">
-      <!-- Card 1 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" alt="Burger">
-          <button class="add-to-cart-btn">
-            <span>₹149</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Fast Food</div>
-          <div class="product-name">Classic Cheese Burger</div>
-        </div>
+  {% if popup_token %}
+  <div class="token-modal-overlay" id="tokenModalOverlay" role="dialog" aria-modal="true">
+    <div class="token-modal" data-remaining-seconds="{{ popup_token.remaining_seconds|default:0 }}">
+      <div class="token-modal-title">
+        {{ popup_token.outlet.name }}
       </div>
-      <!-- Card 2 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=400&fit=crop" alt="Pizza">
-          <button class="add-to-cart-btn">
-            <span>₹299</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Italian</div>
-          <div class="product-name">Margherita Pizza</div>
-        </div>
+      <div class="token-modal-token">
+        Token #{{ popup_token.token_no }}
       </div>
-      <!-- Card 3 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1605333317769-906d27453472?w=400&h=400&fit=crop" alt="Fries">
-          <button class="add-to-cart-btn">
-            <span>₹99</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Snacks</div>
-          <div class="product-name">Crispy French Fries</div>
-        </div>
+      <div class="token-modal-sub">
+        Please show this token at the outlet.
       </div>
-      <!-- Card 4 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop" alt="Donut">
-          <button class="add-to-cart-btn">
-            <span>₹120</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Desserts</div>
-          <div class="product-name">Chocolate Glazed Donut</div>
-        </div>
+      <div class="token-modal-countdown">
+        Visible for: <strong class="token-countdown">--:--:--</strong>
       </div>
-      <!-- Card 5 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=400&h=400&fit=crop" alt="Shake">
-          <button class="add-to-cart-btn">
-            <span>₹150</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Beverages</div>
-          <div class="product-name">Oreo Milkshake</div>
-        </div>
-      </div>
-      <!-- Card 6 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=400&fit=crop" alt="Sandwich">
-          <button class="add-to-cart-btn">
-            <span>₹180</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Fast Food</div>
-          <div class="product-name">Grilled Club Sandwich</div>
-        </div>
-      </div>
-      <!-- Card 7 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1544148103-0773bf10d330?w=400&h=400&fit=crop" alt="Wrap">
-          <button class="add-to-cart-btn">
-            <span>₹160</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Snacks</div>
-          <div class="product-name">Paneer Tikka Wrap</div>
-        </div>
-      </div>
-      <!-- Card 8 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1559715745-e1b33a271c8f?w=400&h=400&fit=crop" alt="Coffee">
-          <button class="add-to-cart-btn">
-            <span>₹110</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Beverages</div>
-          <div class="product-name">Iced Caramel Latte</div>
-        </div>
-      </div>
+      <button class="token-modal-close" id="tokenModalClose" type="button">OK</button>
     </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const overlay = document.getElementById('tokenModalOverlay');
+      const closeBtn = document.getElementById('tokenModalClose');
+      if (!overlay) return;
+      overlay.classList.add('active');
+      closeBtn?.addEventListener('click', () => overlay.classList.remove('active'));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+  </script>
+  {% endif %}
 
-    <!-- ─── CAROUSEL AFTER 4 ROWS (3 CARDS) ────────── -->
-    <div class="carousel-section">
-      <h3>Recommended for you</h3>
-      <div class="carousel-container">
-        <!-- Carousel Card 1 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=400&fit=crop" alt="Taco">
-            <button class="add-to-cart-btn">
-              <span>₹130</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Mexican</div>
-            <div class="product-name">Spicy Veggie Tacos</div>
-          </div>
-        </div>
-        <!-- Carousel Card 2 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1626074353765-517a681e40be?w=400&h=400&fit=crop" alt="Nuggets">
-            <button class="add-to-cart-btn">
-              <span>₹150</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Snacks</div>
-            <div class="product-name">Chicken Nuggets</div>
-          </div>
-        </div>
-        <!-- Carousel Card 3 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" alt="Burger">
-            <button class="add-to-cart-btn">
-              <span>₹149</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Fast Food</div>
-            <div class="product-name">Classic Cheese Burger</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <script>
+    function formatHMS(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const ss = String(sec).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
 
-    <!-- ─── NEXT 6 ROWS (12 CARDS) ─────────────────── -->
-    <div class="products-grid">
-      <!-- Card 9 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=400&h=400&fit=crop" alt="Pasta">
-          <button class="add-to-cart-btn">
-            <span>₹220</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Italian</div>
-          <div class="product-name">Creamy White Pasta</div>
-        </div>
-      </div>
-      <!-- Card 10 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1627042633145-b780d842ba45?w=400&h=400&fit=crop" alt="Salad">
-          <button class="add-to-cart-btn">
-            <span>₹190</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Healthy</div>
-          <div class="product-name">Fresh Greek Salad</div>
-        </div>
-      </div>
-      <!-- Card 11 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1541592102775-7b565500e5ee?w=400&h=400&fit=crop" alt="Brownie">
-          <button class="add-to-cart-btn">
-            <span>₹140</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Desserts</div>
-          <div class="product-name">Fudge Brownie</div>
-        </div>
-      </div>
-      <!-- Card 12 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=400&fit=crop" alt="Cookie">
-          <button class="add-to-cart-btn">
-            <span>₹60</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Desserts</div>
-          <div class="product-name">Choco Chip Cookie</div>
-        </div>
-      </div>
-      <!-- Card 13 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1590981921387-9861e6878bc3?w=400&h=400&fit=crop" alt="Waffles">
-          <button class="add-to-cart-btn">
-            <span>₹210</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Breakfast</div>
-          <div class="product-name">Belgian Waffles</div>
-        </div>
-      </div>
-      <!-- Card 14 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1522804555027-e435e0544f12?w=400&h=400&fit=crop" alt="Sushi">
-          <button class="add-to-cart-btn">
-            <span>₹350</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Asian</div>
-          <div class="product-name">Veg Sushi Roll</div>
-        </div>
-      </div>
-      <!-- Card 15 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1544510807-62f4b005e836?w=400&h=400&fit=crop" alt="Juice">
-          <button class="add-to-cart-btn">
-            <span>₹100</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Beverages</div>
-          <div class="product-name">Fresh Orange Juice</div>
-        </div>
-      </div>
-      <!-- Card 16 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" alt="Pizza">
-          <button class="add-to-cart-btn">
-            <span>₹320</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Italian</div>
-          <div class="product-name">Pepperoni Pizza</div>
-        </div>
-      </div>
-      <!-- Card 17 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=400&h=400&fit=crop" alt="Steak">
-          <button class="add-to-cart-btn">
-            <span>₹450</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Main Course</div>
-          <div class="product-name">Grilled Steak</div>
-        </div>
-      </div>
-      <!-- Card 18 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=400&h=400&fit=crop" alt="Soup">
-          <button class="add-to-cart-btn">
-            <span>₹120</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Starters</div>
-          <div class="product-name">Tomato Basil Soup</div>
-        </div>
-      </div>
-      <!-- Card 19 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=400&fit=crop" alt="Toast">
-          <button class="add-to-cart-btn">
-            <span>₹160</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Breakfast</div>
-          <div class="product-name">Avocado Toast</div>
-        </div>
-      </div>
-      <!-- Card 20 -->
-      <div class="product-card">
-        <div class="product-upper">
-          <img src="https://images.unsplash.com/photo-1555507036-ab1e4006a2a1?w=400&h=400&fit=crop" alt="Cupcake">
-          <button class="add-to-cart-btn">
-            <span>₹90</span>
-            <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-          </button>
-        </div>
-        <div class="product-lower">
-          <div class="product-category">Desserts</div>
-          <div class="product-name">Vanilla Cupcake</div>
-        </div>
-      </div>
-    </div>
+    function startTokenCountdown(el) {
+      const raw = el.getAttribute('data-remaining-seconds');
+      let remaining = Number(raw || 0);
+      const out = el.querySelector('.token-countdown');
+      if (!out) return;
 
-    <!-- ─── CAROUSEL AFTER 6 ROWS (4 CARDS) ────────── -->
-    <div class="carousel-section">
-      <h3>Best Sellers</h3>
-      <div class="carousel-container">
-        <!-- Carousel Card 1 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1541592102775-7b565500e5ee?w=400&h=400&fit=crop" alt="Brownie">
-            <button class="add-to-cart-btn">
-              <span>₹140</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Desserts</div>
-            <div class="product-name">Fudge Brownie</div>
-          </div>
-        </div>
-        <!-- Carousel Card 2 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=400&fit=crop" alt="Pizza">
-            <button class="add-to-cart-btn">
-              <span>₹299</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Italian</div>
-            <div class="product-name">Margherita Pizza</div>
-          </div>
-        </div>
-        <!-- Carousel Card 3 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop" alt="Donut">
-            <button class="add-to-cart-btn">
-              <span>₹120</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Desserts</div>
-            <div class="product-name">Chocolate Glazed Donut</div>
-          </div>
-        </div>
-        <!-- Carousel Card 4 -->
-        <div class="product-card">
-          <div class="product-upper">
-            <img src="https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=400&h=400&fit=crop" alt="Shake">
-            <button class="add-to-cart-btn">
-              <span>₹150</span>
-              <span class="plus-icon"><i class="fa-solid fa-plus"></i></span>
-            </button>
-          </div>
-          <div class="product-lower">
-            <div class="product-category">Beverages</div>
-            <div class="product-name">Oreo Milkshake</div>
-          </div>
-        </div>
-      </div>
-    </div>
+      const tick = () => {
+        if (remaining <= 0) {
+          out.textContent = '00:00:00';
+          const overlay = document.getElementById('tokenModalOverlay');
+          overlay?.classList.remove('active');
+          return false;
+        }
+        out.textContent = formatHMS(remaining);
+        remaining -= 1;
+        return true;
+      };
 
-  </div> <!-- End Container -->
+      tick();
+      const id = setInterval(() => {
+        const keep = tick();
+        if (!keep) clearInterval(id);
+      }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-remaining-seconds]').forEach(startTokenCountdown);
+    });
+  </script>
 
   <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main_.js' %}"></script>
   <script src="{% static 'js/notifications.js' %}"></script>
-  {% include 'footer.html' %}
-  <script src="{% static 'js/footer.js' %}"></script>
+    {% include 'footer.html' %}
+    <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

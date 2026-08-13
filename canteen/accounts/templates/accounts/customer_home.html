@@ -2,124 +2,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Customer Dashboard — Bhukkad Box</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="{% static 'css/customer_home.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/mobile_ui.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Home — Bhukkad Box</title>
+  <meta name="description" content="Browse top outlets and order your favourite fresh meals on Bhukkad Box.">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}">
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body>
+<body class="bb-theme">
 
-    <!-- ── Navbar ───────────────────────────────────── -->
-    <nav>
-        <a class="nav-brand" href="{% url 'customer_home' %}">
-            <i class="fa-solid fa-utensils"></i>
-            Bhukkad Box
-        </a>
+  <!-- ── Top Navbar ─────────────────────────────── -->
+  <nav class="bb-nav">
+    <a class="bb-nav-brand" href="{% url 'customer_home' %}">
+      <i class="fa-solid fa-utensils"></i> Bhukkad Box
+    </a>
+    <div class="bb-nav-right">
+      <!-- Username pill -->
+      <span class="bb-user-pill">
+        {{ request.user.username }}
+      </span>
+      <!-- Settings icon (placeholder for future) -->
+      <button class="bb-icon-btn" title="Settings" style="background:none;border:none;cursor:pointer;padding:0;">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </div>
+  </nav>
 
-        <div class="nav-links">
-            <div class="nav-btn" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); margin-right: auto; cursor: default;">
-                <i class="fa-solid fa-user-circle" style="color: var(--accent);"></i>
-                <span style="font-weight: 700; color: #fff;">{{ request.user.username }}</span>
-            </div>
-            <a class="nav-btn" href="{% url 'customer_orders' %}">
-                <i class="fa-solid fa-box"></i>
-                <span>My Orders</span>
-            </a>
-            <a class="nav-btn" href="{% url 'customer_token' %}">
-                <i class="fa-solid fa-ticket"></i>
-                <span>My Token</span>
-            </a>
-            <a class="nav-btn primary" href="{% url 'cart' %}">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Cart</span>
-            </a>
-            <form action="{% url 'logout' %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button class="nav-btn" type="submit">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Logout</span>
-                </button>
-            </form>
+  <!-- ── Action buttons row ─────────────────────── -->
+  <div class="bb-nav-actions">
+    <a href="{% url 'customer_orders' %}" class="bb-action-btn">
+      <i class="fa-solid fa-box"></i> My Orders
+    </a>
+    <a href="{% url 'customer_token' %}" class="bb-action-btn">
+      <i class="fa-regular fa-credit-card"></i> My Token
+    </a>
+    <form action="{% url 'logout' %}" method="post" style="display:inline;">
+      {% csrf_token %}
+      <button class="bb-action-btn" type="submit">
+        <i class="fa-solid fa-code"></i> Logout
+      </button>
+    </form>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="bb-messages">
+    {% for message in messages %}
+    <div class="bb-message">
+      <i class="fa-solid fa-circle-info"></i> {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Hero ───────────────────────────────────── -->
+  <div class="bb-hero">
+    <div class="bb-live-badge">
+      <span class="live-dot"></span> Live ordering
+    </div>
+    <div class="bb-hero-greeting">
+      Hey, <span class="bb-name">{{ request.user.username }}</span>! 👋
+    </div>
+    <p class="bb-hero-sub">Craving something delicious? Browse top outlets and get your favourite meals delivered fresh.</p>
+  </div>
+
+  <!-- ── Outlets ─────────────────────────────────── -->
+  <div class="bb-section-title">
+    <i class="fa-solid fa-store-slash" style="opacity:.5;font-size:.9rem;"></i>
+    🏪 Available outlets
+  </div>
+
+  <div class="bb-outlets">
+    {% if outlets %}
+      {% for outlet in outlets %}
+      <a class="bb-outlet-card" href="{% url 'outlet_detail' outlet.id %}">
+
+        <div class="bb-outlet-img" style="position:relative;">
+          {% if outlet.logo %}
+            <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }}"/>
+          {% else %}
+            <div class="placeholder-icon"><i class="fa-solid fa-store"></i></div>
+          {% endif %}
+          <span class="bb-open-badge">Open</span>
+
+          <!-- Cart FAB overlapping bottom of image -->
+          <a href="{% url 'cart' %}" class="bb-outlet-cart-fab" title="Cart" onclick="event.stopPropagation();">
+            <i class="fa-solid fa-cart-shopping"></i>
+            {% comment %} Cart count badge — rendered via JS if available {% endcomment %}
+            <span class="bb-cart-count-badge" id="cartBadge" style="display:none;">0</span>
+          </a>
         </div>
-    </nav>
 
-    <div class="container">
-        {% if messages %}
-        <div class="messages" style="margin-top: 1rem;">
-          {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}" style="padding: 1rem; border-radius: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: #fff; margin-bottom: 1rem;">
-            <i class="fa-solid fa-circle-info"></i> {{ message }}
+        <div class="bb-outlet-info">
+          <div class="bb-outlet-name">{{ outlet.name }}</div>
+          <div class="bb-outlet-meta">
+            <i class="fa-regular fa-clock"></i> 15–25 min
           </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- ── Hero ─────────────────────────────────────── -->
-    <div class="hero">
-        <div class="hero-tag">
-            <i class="fa-solid fa-circle" style="font-size:0.45rem;"></i>
-            Live Ordering
-        </div>
-        <h1>
-            Hey, <span class="highlight">{{ request.user.username }}</span>! 👋
-        </h1>
-        <p>Craving something delicious? Browse top outlets and get your favourite meals delivered fresh.</p>
-    </div>
-
-    <!-- ── Outlets ───────────────────────────────────── -->
-    <div class="container">
-        <h2 class="section-title">
-            <i class="fa-solid fa-store"></i>
-            Available Outlets
-        </h2>
-
-        {% if outlets %}
-        <div class="grid">
-            {% for outlet in outlets %}
-            <a class="card reveal" href="{% url 'outlet_detail' outlet.id %}">
-
-                <div class="card-img-wrapper">
-                    {% if outlet.logo %}
-                        <img alt="{{ outlet.name }}" src="{{ outlet.logo.url }}"/>
-                    {% else %}
-                        <i class="fa-solid fa-shop placeholder"></i>
-                    {% endif %}
-                    <span class="card-badge">Open</span>
-                </div>
-
-                <div class="card-content">
-                    <div class="card-title">{{ outlet.name }}</div>
-                    <div class="card-meta">
-                        <i class="fa-solid fa-clock"></i> 15–25 min
-                    </div>
-                    <div class="card-action">
-                        View Menu <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                </div>
-
-            </a>
-            {% endfor %}
+          <div class="bb-view-menu">
+            View menu <i class="fa-solid fa-arrow-right" style="font-size:.7rem;"></i>
+          </div>
         </div>
 
-        {% else %}
-        <div class="empty-state">
-            <i class="fa-solid fa-shop-slash"></i>
-            <h3>No outlets available</h3>
-            <p>Check back soon for new delicious options!</p>
-        </div>
-        {% endif %}
-    </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="bb-empty">
+        <i class="fa-solid fa-shop-slash"></i>
+        <h3>No outlets available</h3>
+        <p>Check back soon for new delicious options!</p>
+      </div>
+    {% endif %}
+  </div>
 
-    <script src="{% static 'js/main.js' %}"></script>
-    <script src="{% static 'js/customer_home.js' %}"></script>
-    <script src="{% static 'js/notifications.js' %}"></script>
-    {% include 'footer.html' %}
-    <script src="{% static 'js/footer.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/customer_home.js' %}"></script>
+  <script src="{% static 'js/notifications.js' %}"></script>
+
+  <script>
+    // Persist username for login page personalisation
+    localStorage.setItem('bb_username', '{{ request.user.username|escapejs }}');
+
+    // Show cart count badge if cart_count is provided by context
+    {% if cart_count %}
+    document.querySelectorAll('#cartBadge').forEach(el => {
+      el.textContent = '{{ cart_count }}';
+      el.style.display = 'flex';
+    });
+    {% endif %}
+  </script>
+
+  {% include 'footer.html' %}
+  <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

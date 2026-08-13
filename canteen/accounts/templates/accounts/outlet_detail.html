@@ -5,207 +5,311 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{{ outlet.name }} — Bhukkad Box</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+  <meta name="description" content="Order fresh meals from {{ outlet.name }} on Bhukkad Box.">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
-  <link rel="stylesheet" href="{% static 'css/style_.css' %}"/>
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <!-- Owl Carousel CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}"/>
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body>
+<body class="bb-theme">
 
-  <div class="ambient-glow"></div>
-
-  <!-- ─── NAVBAR ─────────────────────────────────── -->
-  <nav>
-    <a href="{% url 'customer_home' %}" class="nav-back">
-      <i class="fa-solid fa-arrow-left"></i> Home
-    </a>
-
-    <div class="nav-controls">
-      <div class="category-select-wrapper">
-        <select class="category-select" id="categorySelect">
-          <option value="all">All Categories</option>
-          {% for category in categories %}
-            <option value="{{ category.name|lower }}">{{ category.name }}</option>
-          {% endfor %}
-        </select>
-        <i class="fa-solid fa-chevron-down"></i>
-      </div>
-      <div class="search-bar">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Search items, meals, drinks…"/>
-      </div>
-    </div>
-
-    <a href="{% url 'cart' %}" class="cart-btn">
-      <i class="fa-solid fa-cart-shopping"></i> My Cart
-    </a>
-  </nav>
-
-  <!-- Floating Cart (mobile) -->
-  <a href="{% url 'cart' %}" class="floating-cart" aria-label="Cart">
-    <i class="fa-solid fa-cart-shopping"></i>
+<!-- ─── Navbar ─────────────────────────────────── -->
+<nav class="bb-outlet-nav">
+  <a href="{% url 'customer_home' %}" class="bb-back-btn">
+    <i class="fa-solid fa-arrow-left"></i> Home
   </a>
+  <div class="bb-nav-title-center">{{ outlet.name }}</div>
 
-  <!-- ─── OUTLET HERO ──────────────────────────── -->
-  <div class="outlet-header">
-    <div class="outlet-info-row">
-      <div class="outlet-logo">
-        {% if outlet.logo %}
-          <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }} logo"/>
-        {% else %}
-          <i class="fa-solid fa-store"></i>
-        {% endif %}
-      </div>
-      <div class="outlet-details">
-        <h1>{{ outlet.name }}</h1>
-        <p>Order your favourite meals, freshly prepared.</p>
-      </div>
-    </div>
+  <!-- Search FAB (minimal icon, opens overlay) -->
+  <button class="bb-search-fab" id="bbSearchFab" title="Search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+
+  <a href="{% url 'cart' %}" class="bb-cart-btn">
+    <i class="fa-solid fa-cart-shopping"></i> Cart
+  </a>
+</nav>
+
+<!-- Search overlay (shown when FAB clicked) -->
+<div class="bb-search-overlay" id="bbSearchOverlay">
+  <input type="text" id="bbSearchInput" placeholder="Search items, meals, drinks…" autocomplete="off"/>
+  <button class="bb-search-close" id="bbSearchClose">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+</div>
+
+<!-- ─── Outlet Hero ──────────────────────────── -->
+<div class="bb-outlet-hero">
+  <div class="bb-outlet-logo-box">
+    {% if outlet.logo %}
+      <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }} logo"/>
+    {% else %}
+      <i class="fa-solid fa-store"></i>
+    {% endif %}
   </div>
+  <div class="bb-outlet-hero-text">
+    <h1>{{ outlet.name }}</h1>
+    <p>Order your favourite meals, freshly prepared.</p>
+  </div>
+</div>
 
-  <!-- ─── PRODUCTS ─────────────────────────────── -->
-  <div class="container">
-    <div class="products-grid" id="productsGrid">
-      {% for category in categories %}
-        {% for product in category.products.all %}
-          {% if product.is_available %}
-          <div class="product-card"
-               data-category="{{ category.name|lower }}"
-               data-name="{{ product.name|lower }}">
-            <div class="img-wrapper" style="position: relative; width: 100%; aspect-ratio: 4/3; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <!-- Category Badge -->
-                <div class="product-category" style="position: absolute; top: 0.8rem; left: 0.8rem; z-index: 3; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; color: #fff; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); margin: 0;">{{ category.name }}</div>
+<!-- ─── Category scroll strip ───────────────── -->
+<div class="bb-cat-strip" id="bbCatStrip">
+  <button class="bb-cat-pill active" data-cat="all">All</button>
+  {% for category in categories %}
+  <button class="bb-cat-pill" data-cat="{{ category.name|lower }}">{{ category.name }}</button>
+  {% endfor %}
+</div>
 
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img" style="width: 100%; height: 100%; object-fit: cover;">
-                {% else %}
-                    <div class="product-img" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1a1a1a;"><i class="fa-solid fa-bowl-food" style="font-size: 3rem; opacity: 0.2;"></i></div>
-                {% endif %}
-                
-                <!-- Gradient Overlay -->
-                <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%); z-index: 1; pointer-events: none;"></div>
-                
-                <!-- Text on Image -->
-                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1.2rem; z-index: 2; display: flex; flex-direction: column;">
-                    <h3 class="product-name" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">{{ product.name }}</h3>
-                    <div class="product-price" style="margin-top: 0.3rem; font-size: 1.35rem; font-weight: 800; color: #4ade80; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">₹{{ product.customer_price }}</div>
-                </div>
-            </div>
+<!-- ─── Products ─────────────────────────────── -->
+<div class="bb-products-wrap">
+  <div class="bb-products-grid" id="bbProductsGrid">
 
-            <!-- Action Bar -->
-            <div class="product-actions" style="padding: 1rem 1.2rem; display: flex; justify-content: flex-end; align-items: center; background: var(--surface);">
-                <a href="{% url 'add_to_cart' product.id %}" class="add-cart-btn" title="Add to cart" style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3); border: none; outline: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                    <i class="fa-solid fa-plus" style="font-size: 1.1rem;"></i>
-                </a>
-            </div>
+    {% comment %}
+      Build a flat list of available products with their category info,
+      then render them as bb-pcard elements.
+      On mobile, after every 4 cards we inject a 3-product owl carousel
+      (using JS below — we collect cards and splice them in).
+    {% endcomment %}
+
+    {% for category in categories %}
+      {% for product in category.products.all %}
+        {% if product.is_available %}
+        <div class="bb-pcard"
+             data-category="{{ category.name|lower }}"
+             data-name="{{ product.name|lower }}">
+
+          <!-- Image only on top -->
+          <div class="bb-pcard-img">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+              <div class="bb-no-img"><i class="fa-solid fa-bowl-food"></i></div>
+            {% endif %}
           </div>
-          {% endif %}
-        {% endfor %}
+
+          <!-- Category + Name -->
+          <div class="bb-pcard-body">
+            <div class="bb-pcard-cat">{{ category.name }}</div>
+            <div class="bb-pcard-name" title="{{ product.name }}">{{ product.name }}</div>
+          </div>
+
+          <!-- Price + Cart button -->
+          <div class="bb-pcard-footer">
+            <div class="bb-pcard-price">₹{{ product.customer_price }}</div>
+            <a href="{% url 'add_to_cart' product.id %}"
+               class="bb-pcard-add bb-ajax-cart"
+               title="Add to cart"
+               data-product="{{ product.name|escapejs }}">
+              <i class="fa-solid fa-plus"></i>
+            </a>
+          </div>
+
+        </div>
+        {% endif %}
       {% endfor %}
+    {% endfor %}
 
-      <!-- Empty Search State -->
-      <div class="empty-state" id="emptyState">
-        <i class="fa-solid fa-magnifying-glass empty-icon"></i>
-        <h2 class="empty-title">No items found</h2>
-        <p class="empty-subtitle">Try a different search or change the category filter.</p>
-      </div>
+    <!-- Empty search state -->
+    <div class="bb-products-empty" id="bbEmpty">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <h3>No items found</h3>
+      <p style="font-size:.85rem;color:var(--bb-muted);">Try a different search or change the category.</p>
     </div>
-  </div>
 
-  <script src="{% static 'js/main.js' %}"></script>
-  <script src="{% static 'js/main_.js' %}"></script>
-  
-  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+  </div><!-- /grid -->
+</div><!-- /wrap -->
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const addCartBtns = document.querySelectorAll('.add-cart-btn');
-      
-      addCartBtns.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          if (btn.classList.contains('adding')) return;
-          
-          btn.classList.add('adding');
-          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-          
-          const url = btn.getAttribute('href');
-          
-          try {
-            const response = await fetch(url, {
-              method: 'GET', // or POST if changed, but url is a GET endpoint currently
-              headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-              }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-              showToast('Product added to cart successfully.', 'success');
-              // Optionally update cart count if there's a badge
-              const cartBadge = document.querySelector('.cart-badge'); // Assuming there might be a cart badge somewhere
-              if (cartBadge && data.cart_count) {
-                 cartBadge.textContent = data.cart_count;
-              }
-            } else {
-              showToast(data.message || 'Failed to add product.', 'error');
-            }
-          } catch (error) {
-            console.error('Error adding to cart:', error);
-            showToast('An error occurred.', 'error');
-          } finally {
-            btn.classList.remove('adding');
-            btn.innerHTML = '<i class="fa-solid fa-plus" style="font-size: 1.1rem;"></i>';
+<!-- Toast container -->
+<div id="bb-toast-container"></div>
+
+<!-- ─── Cart URL for JS (hidden) ─── -->
+<a id="bbCartUrl" href="{% url 'cart' %}" style="display:none;"></a>
+
+<!-- jQuery (required for Owl) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Owl Carousel JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  const cartUrl = document.getElementById('bbCartUrl').href;
+  const grid = document.getElementById('bbProductsGrid');
+  const empty = document.getElementById('bbEmpty');
+  const searchOverlay = document.getElementById('bbSearchOverlay');
+  const searchInput = document.getElementById('bbSearchInput');
+  const searchFab = document.getElementById('bbSearchFab');
+  const searchClose = document.getElementById('bbSearchClose');
+
+  /* ── 1. Search FAB ───────────────────────────────────── */
+  searchFab.addEventListener('click', () => {
+    searchOverlay.classList.add('open');
+    searchFab.classList.add('active');
+    setTimeout(() => searchInput.focus(), 60);
+  });
+  searchClose.addEventListener('click', () => {
+    searchOverlay.classList.remove('open');
+    searchFab.classList.remove('active');
+    searchInput.value = '';
+    filterProducts();
+  });
+  searchInput.addEventListener('input', filterProducts);
+
+  /* ── 2. Category filter ──────────────────────────────── */
+  document.querySelectorAll('.bb-cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.bb-cat-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      filterProducts();
+    });
+  });
+
+  function filterProducts() {
+    const query = (searchInput.value || '').toLowerCase().trim();
+    const cat   = (document.querySelector('.bb-cat-pill.active') || {}).dataset?.cat || 'all';
+    let visible = 0;
+
+    document.querySelectorAll('.bb-pcard').forEach(card => {
+      const matchCat  = cat === 'all' || card.dataset.category === cat;
+      const matchName = !query || card.dataset.name.includes(query);
+      const show = matchCat && matchName;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // Also hide/show carousels
+    document.querySelectorAll('.bb-carousel-wrap').forEach(cw => {
+      cw.style.display = (cat === 'all' && !query) ? '' : 'none';
+    });
+
+    empty.classList.toggle('show', visible === 0);
+  }
+
+  /* ── 3. AJAX add-to-cart ─────────────────────────────── */
+  function showToast(msg, type) {
+    const container = document.getElementById('bb-toast-container');
+    const t = document.createElement('div');
+    t.className = `bb-toast ${type}`;
+    t.innerHTML = `
+      <span>${msg}</span>
+      ${type === 'success' ? `<a href="${cartUrl}" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap;">View Cart</a>` : ''}
+      <button class="bb-toast-close" onclick="this.closest('.bb-toast').remove()"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    container.appendChild(t);
+    setTimeout(() => { if (t.parentElement) t.remove(); }, 5000);
+  }
+
+  function attachCartHandlers(scope) {
+    (scope || document).querySelectorAll('.bb-ajax-cart').forEach(btn => {
+      if (btn._bbBound) return;
+      btn._bbBound = true;
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (btn.classList.contains('adding')) return;
+        btn.classList.add('adding');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        try {
+          const res = await fetch(btn.getAttribute('href'), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`${btn.dataset.product || 'Item'} added to cart!`, 'success');
+          } else {
+            showToast(data.message || 'Could not add item.', 'error');
           }
-        });
+        } catch {
+          showToast('Something went wrong.', 'error');
+        } finally {
+          btn.classList.remove('adding');
+          btn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        }
       });
-      
-      function showToast(message, type) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        
-        toast.style.background = type === 'success' ? '#22c55e' : '#ef4444';
-        toast.style.color = '#fff';
-        toast.style.padding = '12px 20px';
-        toast.style.borderRadius = '8px';
-        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-        toast.style.display = 'flex';
-        toast.style.alignItems = 'center';
-        toast.style.gap = '15px';
-        toast.style.animation = 'slideIn 0.3s ease forwards';
-        toast.style.fontFamily = 'inherit';
-        toast.style.fontWeight = '500';
-        
-        toast.innerHTML = `
-          <span>${message}</span>
-          ${type === 'success' ? `<a href="{% url 'cart' %}" style="color: #fff; text-decoration: underline; font-weight: 700; white-space: nowrap;">Continue to Cart</a>` : ''}
-          <button style="background:none; border:none; color:white; cursor:pointer; margin-left: auto;" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
-        `;
-        
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-          if(toast.parentElement) {
-            toast.style.animation = 'slideOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-          }
-        }, 5000);
+    });
+  }
+  attachCartHandlers();
+
+  /* ── 4. Mobile Owl Carousel — inject after every 4 cards ─ */
+  function buildCarousels() {
+    // Only on mobile
+    if (window.innerWidth >= 640) return;
+    if (!window.jQuery) return;
+
+    // Collect all visible normal cards (not inside a carousel)
+    const allCards = Array.from(grid.querySelectorAll('.bb-pcard:not(.bb-carousel-pcard)'));
+    if (allCards.length < 5) return; // not enough to bother
+
+    // Insert carousel wrappers after every 4 cards
+    let insertAfter = [];
+    allCards.forEach((card, i) => {
+      if ((i + 1) % 4 === 0 && i + 1 < allCards.length) {
+        insertAfter.push(card);
       }
     });
-    
-    // Add keyframes for toast
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-      @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-    `;
-    document.head.appendChild(style);
-  </script>
 
-  {% include 'footer.html' %}
-    <script src="{% static 'js/footer.js' %}"></script>
+    insertAfter.forEach((afterCard, ci) => {
+      // Pick the next 3 cards AFTER this one in the DOM
+      const startIdx = allCards.indexOf(afterCard) + 1;
+      const carouselCards = allCards.slice(startIdx, startIdx + 3);
+      if (carouselCards.length === 0) return;
+
+      // Build carousel wrapper
+      const wrap = document.createElement('div');
+      wrap.className = 'bb-carousel-wrap';
+      wrap.innerHTML = `<div class="bb-carousel-label">You might also like</div>`;
+      const owlDiv = document.createElement('div');
+      owlDiv.className = 'bb-owl owl-carousel';
+
+      carouselCards.forEach(card => {
+        // Clone the card into the carousel; hide original
+        const clone = card.cloneNode(true);
+        clone.classList.add('bb-carousel-pcard');
+        clone.style.display = '';
+        owlDiv.appendChild(clone);
+        card.style.display = 'none'; // hide original from grid
+      });
+
+      wrap.appendChild(owlDiv);
+
+      // Insert carousel after the "every 4th" card
+      afterCard.parentNode.insertBefore(wrap, afterCard.nextSibling);
+
+      // Init Owl on this carousel
+      jQuery(owlDiv).owlCarousel({
+        items: 2,
+        margin: 10,
+        loop: carouselCards.length > 2,
+        touchDrag: true,
+        mouseDrag: false,
+        dots: true,
+        nav: false,
+        autoplay: false,
+        responsive: {
+          0:   { items: 2 },
+          400: { items: 2.3 }
+        }
+      });
+
+      // Re-attach cart handlers on clones
+      attachCartHandlers(owlDiv);
+    });
+  }
+
+  // Build carousels after a short delay (let DOM paint first)
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(buildCarousels, 120);
+  });
+
+})();
+</script>
+
+{% include 'footer.html' %}
+<script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>

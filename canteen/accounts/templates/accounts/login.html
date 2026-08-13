@@ -2,120 +2,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Bhukkad BOx</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
-   
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-   
-
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Bhukkad Box</title>
+  <meta name="description" content="Login to Bhukkad Box and start ordering fresh meals from your favourite outlets.">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}">
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
-<body>
+<body class="bb-theme">
 
-    <!-- Background Animation -->
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
+  <!-- Fullscreen loader -->
+  <div id="bbLoader" style="display:none; position:fixed; inset:0; background:rgba(245,239,230,0.92); backdrop-filter:blur(6px); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:1rem;">
+    <div style="width:46px; height:46px; border:4px solid rgba(232,93,32,0.15); border-top-color:#e85d20; border-radius:50%; animation:bbSpin 0.9s linear infinite;"></div>
+    <div style="font-family:'Syne',sans-serif; font-weight:700; color:#2b1b10; font-size:1rem;">Authenticating…</div>
+  </div>
+  <style>@keyframes bbSpin { to { transform: rotate(360deg); } }</style>
+
+  <div class="bb-login-page">
+
+    <!-- Dark brown header block -->
+    <div class="bb-login-header" style="max-width:420px; width:100%; margin-bottom:0; border-radius:0 0 var(--bb-r-xl) var(--bb-r-xl);">
+      <div class="bb-brand-title">Bhukkad <span>Box</span></div>
+      <div class="bb-brand-sub">Fresh Meals, Freshly Ordered</div>
+
+      <!-- Floating cutlery icon sits on the boundary -->
+      <div class="bb-hero-icon">
+        <i class="fa-solid fa-utensils"></i>
+      </div>
     </div>
 
-    <!-- Fullscreen Loader -->
-    <div class="fullscreen-loader" id="pageLoader">
-        <div class="spinner"></div>
-        <div class="loader-text" id="loaderText">Authenticating...</div>
-    </div>
+    <!-- White card -->
+    <div class="bb-login-card" style="max-width:420px;">
 
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <i class="fa-solid fa-utensils auth-logo"></i>
-                <h1 class="auth-title" id="welcomeText">Welcome Back, <span>Guest</span></h1>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Login to access your account</p>
-            </div>
+      <h1 class="bb-card-title">Welcome back, <span id="bbWelcomeName">Guest</span></h1>
+      <p class="bb-card-sub">Log in to access your account</p>
 
-            {% if msg %}
-            <div class="alert-error">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                {{ msg }}
-            </div>
-            {% endif %}
+      <!-- Errors -->
+      {% if msg %}
+      <div class="bb-error">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ msg }}
+      </div>
+      {% endif %}
 
-            {% if messages %}
-            <div class="messages-container" style="margin-bottom: 15px;">
-                {% for message in messages %}
-                <div class="alert-{{ message.tags }}" style="padding: 10px; border-radius: 8px; font-size: 0.95rem; margin-bottom: 10px; background-color: {% if message.tags == 'success' %}rgba(40,167,69,0.1){% else %}rgba(220,53,69,0.1){% endif %}; color: {% if message.tags == 'success' %}#28a745{% else %}#dc3545{% endif %}; border: 1px solid {% if message.tags == 'success' %}rgba(40,167,69,0.2){% else %}rgba(220,53,69,0.2){% endif %};">
-                    <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% else %}fa-circle-exclamation{% endif %}"></i>
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            {% if form.errors %}
-            <div class="alert-error" style="text-align: left; margin-bottom: 15px;">
-                <ul style="list-style-type: none; padding: 0; margin: 0;">
-                {% for field, errors in form.errors.items %}
-                    {% for error in errors %}
-                        <li><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</li>
-                {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
+      {% if messages %}
+      {% for message in messages %}
+      <div class="bb-error" style="{% if message.tags == 'success' %}background:rgba(22,163,74,0.08); border-color:rgba(22,163,74,0.25); color:#166534;{% endif %}">
+        <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% else %}fa-circle-exclamation{% endif %}"></i>
+        {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
 
-            <form method="POST" action="{% url 'login' %}" id="loginForm">
-                {% csrf_token %}
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label class="form-label">Username</label>
-                    <i class="fa-solid fa-user form-icon" style="padding-top: 23px;"></i>
-                    {{ form.username }}
-                </div>
-                <div class="form-group" style="margin-bottom: 25px;">
-                    <label class="form-label">Password</label>
-                    <i class="fa-solid fa-lock form-icon" style="padding-top: 23px;" ></i>
-                    {{ form.password }}
-                </div>
-                
-                <div class="form-group remember-me-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        {{ form.remember_me }}
-                        <label class="form-label" style="margin: 0; cursor: pointer;" for="id_remember_me">Remember Me</label>
-                    </div>
-                    <a href="{% url 'password_reset' %}" style="font-size: 0.9rem; text-decoration: none; color: var(--primary);">Forgot Password?</a>
-                </div>
-
-                <input type="hidden" name="next" value="{{ next }}">
-                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Log In</button>
-            </form>
-
-            <div class="auth-links" style="margin-top: 15px; font-size: 0.9rem;">
-                <p style="margin-bottom: 10px;"><a href="{% url 'resend_verification_email' %}" style="text-decoration: none; color: var(--text-muted);">Haven't received verification link?</a></p>
-                <p style="margin-bottom: 15px;">New user?</p>
-                <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                    <a href="{% url 'customer_register' %}">Customer Register</a>
-                    <span style="opacity: 0.3;">|</span>
-                    <a href="{% url 'outlet_register' %}">Outlet Head Register</a>
-                </div>
-            </div>
-
+      {% if form.errors %}
+      <div class="bb-error">
+        <i class="fa-solid fa-circle-exclamation" style="flex-shrink:0;"></i>
+        <div>
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
         </div>
-    </div>
+      </div>
+      {% endif %}
 
-    <script src="{% static 'js/main.js' %}"></script>
-    {% if show_approval_popup %}
-    <script>
-        window.addEventListener('load', function () {
-            alert('Wait until the admin approves your outlet account.');
-        });
-    </script>
-    {% endif %}
-    {% include 'footer.html' %}
-    <script src="{% static 'js/footer.js' %}"></script>
+      <form method="POST" action="{% url 'login' %}" id="bbLoginForm">
+        {% csrf_token %}
+
+        <!-- Username -->
+        <label class="bb-field-label" for="id_username">Username</label>
+        <div class="bb-input-wrap">
+          <i class="fa-solid fa-user"></i>
+          {{ form.username }}
+        </div>
+
+        <!-- Password -->
+        <label class="bb-field-label" for="id_password">Password</label>
+        <div class="bb-input-wrap">
+          <i class="fa-solid fa-lock"></i>
+          {{ form.password }}
+        </div>
+
+        <!-- Remember + Forgot -->
+        <div class="bb-form-row">
+          <div class="bb-remember">
+            {{ form.remember_me }}
+            <label for="id_remember_me">Remember me</label>
+          </div>
+          <a href="{% url 'password_reset' %}" class="bb-forgot">Forgot password?</a>
+        </div>
+
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="bb-btn-login" id="bbSubmitBtn">Log in</button>
+      </form>
+
+      <!-- Bottom links -->
+      <div class="bb-auth-bottom">
+        <a href="{% url 'resend_verification_email' %}" class="bb-resend-link">Haven't received verification link?</a>
+        <div class="bb-new-here">New here?</div>
+        <div class="bb-register-links">
+          <a href="{% url 'customer_register' %}" class="bb-register-btn">Customer register</a>
+          <a href="{% url 'outlet_register' %}" class="bb-register-btn">Outlet head register</a>
+        </div>
+      </div>
+
+    </div><!-- /card -->
+  </div><!-- /page -->
+
+  <script>
+    // Personalise welcome name from localStorage if it exists
+    const savedName = localStorage.getItem('bb_username');
+    if (savedName) {
+      document.getElementById('bbWelcomeName').textContent = savedName;
+    }
+
+    // Show loader on submit
+    const form = document.getElementById('bbLoginForm');
+    const loader = document.getElementById('bbLoader');
+    form.addEventListener('submit', () => {
+      loader.style.display = 'flex';
+    });
+  </script>
+
+  {% if show_approval_popup %}
+  <script>
+    window.addEventListener('load', function () {
+      alert('Wait until the admin approves your outlet account.');
+    });
+  </script>
+  {% endif %}
+
+  {% include 'footer.html' %}
+  <script src="{% static 'js/footer.js' %}"></script>
 </body>
 </html>
