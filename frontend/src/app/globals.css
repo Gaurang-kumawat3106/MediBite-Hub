@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans";
+  --font-heading: "Syne";
+  
+  --color-brand: #e85d20;
+  --color-brand-dark: #c94c14;
+  --color-brand-light: rgba(232, 93, 32, 0.15);
+  
+  --color-bg-main: #f5efe6;
+  --color-text-main: #2b1b10;
+  --color-text-sub: #6b5c51;
+}
+
+body {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+  font-family: var(--font-sans), sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), sans-serif;
+}
+
+/* Base Form Input Styles */
+@layer components {
+  .bb-input {
+    @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all duration-200 placeholder:text-gray-400 text-gray-800;
+  }
+  
+  .bb-btn {
+    @apply w-full flex items-center justify-center bg-brand text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-brand-dark hover:shadow-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+}

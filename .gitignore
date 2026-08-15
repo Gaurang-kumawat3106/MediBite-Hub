@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 # Python
 __pycache__/
 *.py[cod]
@@ -15,8 +14,10 @@ env/
 media/
 staticfiles/
 
-# Environment variables (NEVER upload this!)
+# Environment variables
 .env
+.env.*
+!.env.example
 
 # Mac
 .DS_Store
@@ -25,4 +26,20 @@ staticfiles/
 .vscode/
 .idea/
 
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
 
+# Next.js environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Debug / temporary files
+*.tmp
+
+# Temporary frontend/debug scripts
+frontend/patch_*.py
+frontend/test_*.mjs
+frontend/**/*.swp
