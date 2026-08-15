@@ -467,17 +467,47 @@ def password_reset_confirm(request, uidb64, token):
 
 
 # ---------------- CUSTOMER DASHBOARD ----------------
+# @login_required
+# def customer_home(request):
+#     if not request.user.is_customer:
+#         return redirect('login')
+
+#     outlets = Outlet.objects.filter(is_approved=True)
+
+#     return render(request, 'accounts/customer_home.html', {
+#         'outlets': outlets
+#     })
+import time
+
 @login_required
 def customer_home(request):
+    total_start = time.perf_counter()
+
     if not request.user.is_customer:
         return redirect('login')
 
+    t1 = time.perf_counter()
+
     outlets = Outlet.objects.filter(is_approved=True)
 
-    return render(request, 'accounts/customer_home.html', {
+    outlets = list(outlets)
+
+    t2 = time.perf_counter()
+
+    response = render(request, 'accounts/customer_home.html', {
         'outlets': outlets
     })
 
+    t3 = time.perf_counter()
+
+    print("=" * 60)
+    print(f"AUTH CHECK: {t1 - total_start:.4f}s")
+    print(f"DB QUERY:   {t2 - t1:.4f}s")
+    print(f"TEMPLATE:   {t3 - t2:.4f}s")
+    print(f"TOTAL:      {t3 - total_start:.4f}s")
+    print("=" * 60)
+
+    return response
 
 # ---------------- OUTLET HEAD DASHBOARD ----------------
 def get_order_stats(outlet):
