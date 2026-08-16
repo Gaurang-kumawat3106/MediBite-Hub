@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { fetchWithCache } from "@/lib/apiCache";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
@@ -111,7 +112,7 @@ export default function OutletDetailPage() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/add-to-cart/${productId}/`, {
+      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/add-to-cart/${productId}/`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

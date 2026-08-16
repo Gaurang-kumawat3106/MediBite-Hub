@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import AuthLayout from "@/components/AuthLayout";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function LoginPage() {
         formData.append("remember_me", "on");
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, {
+      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

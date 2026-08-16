@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
@@ -35,7 +36,7 @@ export default function OutletProducts() {
 
   const toggleAvailability = async (productId: number) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/product/${productId}/toggle/`, {
+      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/product/${productId}/toggle/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { fetchWithCache, prefetchAPI } from "@/lib/apiCache";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
@@ -35,7 +36,7 @@ export default function CustomerHomePage() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/logout/`, {
+      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/logout/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"

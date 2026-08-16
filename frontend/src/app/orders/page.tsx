@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { fetchWithCache } from "@/lib/apiCache";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 interface Order {
   id: number;
@@ -60,7 +61,7 @@ export default function OrdersPage() {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
       setLoading(true);
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/cancel/`, {
+      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/cancel/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -75,7 +76,7 @@ export default function OrdersPage() {
   const handleReorder = async (orderId: number) => {
     try {
       setLoading(true);
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/reorder/`, {
+      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/reorder/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"

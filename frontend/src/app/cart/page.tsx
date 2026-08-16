@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import Footer from "@/components/Footer";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
@@ -122,7 +123,7 @@ export default function CartPage() {
     };
     
     try {
-      await fetch(urlMap[action], {
+      await fetchWithCSRF(urlMap[action], {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -138,7 +139,7 @@ export default function CartPage() {
   const handleCheckout = async () => {
     setProcessing(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/create/`, {
+      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/create/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -165,7 +166,7 @@ export default function CartPage() {
             formData.append("razorpay_order_id", response.razorpay_order_id);
             formData.append("razorpay_signature", response.razorpay_signature);
 
-            const verifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/callback/`, {
+            const verifyRes = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/callback/`, {
               method: "POST",
               headers: { 
                 "Accept": "application/json",

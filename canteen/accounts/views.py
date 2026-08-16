@@ -9,10 +9,18 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from datetime import timedelta
 from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.middleware.csrf import get_token
 import razorpay
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.middleware.csrf import get_token
+
+@ensure_csrf_cookie
+def csrf_token_view(request):
+    return JsonResponse({'csrfToken': get_token(request)})
+
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.template.loader import render_to_string

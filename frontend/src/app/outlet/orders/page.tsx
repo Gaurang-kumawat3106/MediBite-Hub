@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache } from "@/lib/apiCache";
+import { fetchWithCSRF } from "@/lib/csrf";
 
 export default function OutletOrders() {
   const [data, setData] = useState<any>(null);
@@ -31,7 +32,7 @@ export default function OutletOrders() {
     try {
       const formData = new URLSearchParams();
       formData.append("status", status);
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/order/${orderId}/update/`, {
+      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/order/${orderId}/update/`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         credentials: "include"

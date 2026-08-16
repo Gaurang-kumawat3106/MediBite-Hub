@@ -27,11 +27,31 @@ RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://medi-bite-hub.vercel.app",
+#     'https://bhukkadbox.in',
+#     'https://www.bhukkadbox.in',
+#     'https://*.onrender.com',
+#     ]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://medi-bite-hub.vercel.app",
+    "https://bhukkadbox.in",
+    "https://www.bhukkadbox.in",
+]
+
 CSRF_TRUSTED_ORIGINS = [
-    'https://bhukkadbox.in',
-    'https://www.bhukkadbox.in',
-    'https://*.onrender.com',
-    ]
+    "https://medi-bite-hub.vercel.app",
+    "https://bhukkadbox.in",
+    "https://www.bhukkadbox.in",
+    "http://localhost:3000",
+    "https://*.onrender.com",
+]
+
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
 
 # Use RENDER_EXTERNAL_HOSTNAME as fallback if SITE_URL is not explicitly set
 if RENDER_EXTERNAL_HOSTNAME and not os.getenv('SITE_URL'):
@@ -54,19 +74,30 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'cloudinary_storage',
     'anymail',
+    'corsheaders',
 ]
 
+# MIDDLEWARE = [
+#     'django.middleware.security.SecurityMiddleware',
+#     'whitenoise.middleware.WhiteNoiseMiddleware',
+#     'django.contrib.sessions.middleware.SessionMiddleware',
+#     'django.middleware.common.CommonMiddleware',
+#     'django.middleware.csrf.CsrfViewMiddleware',
+#     'django.contrib.auth.middleware.AuthenticationMiddleware',
+#     'django.contrib.messages.middleware.MessageMiddleware',
+#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+# ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 ROOT_URLCONF = 'canteen.urls'
 
 TEMPLATES = [
