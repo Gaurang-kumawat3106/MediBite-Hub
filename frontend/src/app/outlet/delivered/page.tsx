@@ -12,7 +12,7 @@ export default function DeliveredOrders() {
   const fetchOrders = async (currentFilter: string) => {
     try {
       setLoading(true);
-      const json = await fetchWithCache<any>("http://localhost:8000/app/outlet/orders/delivered/?time_filter=${currentFilter}");
+      const json = await fetchWithCache<any>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/orders/delivered/?time_filter=${currentFilter}`);
       if (json.success) {
         setData(json);
       }

@@ -34,7 +34,7 @@ export default function CustomerRegisterPage() {
       data.append("password1", formData.password1);
       data.append("password2", formData.password2);
 
-      const res = await fetch("http://localhost:8000/app/register/customer/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/register/customer/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

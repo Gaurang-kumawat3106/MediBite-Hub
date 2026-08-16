@@ -37,7 +37,7 @@ export default function LoginPage() {
         formData.append("remember_me", "on");
       }
 
-      const res = await fetch("http://localhost:8000/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -148,7 +148,7 @@ export default function LoginPage() {
             />
             Remember me
           </label>
-          <a href="http://localhost:8000/password-reset/" className="text-brand font-semibold hover:text-brand-dark transition-colors">
+          <a href={`${process.env.NEXT_PUBLIC_API_URL}/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
             Forgot password?
           </a>
         </div>
@@ -159,7 +159,7 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <a href="http://localhost:8000/resend-verification/" className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
+        <a href={`${process.env.NEXT_PUBLIC_API_URL}/resend-verification/`} className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
           Haven't received verification link?
         </a>
         <div className="text-sm text-gray-400 font-medium">New here?</div>

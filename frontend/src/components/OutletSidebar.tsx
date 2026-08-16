@@ -8,7 +8,7 @@ export default function OutletSidebar() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8000/app/logout/", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/logout/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"

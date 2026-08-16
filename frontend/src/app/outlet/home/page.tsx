@@ -11,7 +11,7 @@ export default function OutletDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const json = await fetchWithCache<any>("http://localhost:8000/app/outlet/home/");
+        const json = await fetchWithCache<any>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/home/`);
         if (json.success) {
           setData(json);
         }
@@ -40,7 +40,7 @@ export default function OutletDashboard() {
           <div className="flex items-center gap-4 mb-8">
             <div className="w-16 h-16 bg-white rounded-2xl border border-gray-100 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
               {data?.outlet?.logo_url ? (
-                <img src={`http://localhost:8000${data.outlet.logo_url}`} alt="Logo" className="w-full h-full object-cover" />
+                <img src={`${process.env.NEXT_PUBLIC_API_URL}${data.outlet.logo_url}`} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 <i className="fa-solid fa-store text-2xl text-gray-300"></i>
               )}

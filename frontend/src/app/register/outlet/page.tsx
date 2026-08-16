@@ -49,7 +49,7 @@ export default function OutletRegisterPage() {
         data.append("logo", logoFile);
       }
 
-      const res = await fetch("http://localhost:8000/app/register/outlet/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/register/outlet/`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

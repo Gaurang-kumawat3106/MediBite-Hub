@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:8000${url}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
 };
 
 interface CartItem {
@@ -48,7 +48,7 @@ export default function CartPage() {
   const fetchCart = async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const res = await fetch("http://localhost:8000/app/cart/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/cart/`, {
         headers: {
           "Accept": "application/json",
         },
@@ -116,9 +116,9 @@ export default function CartPage() {
     }
     
     const urlMap = {
-      'increase': `http://localhost:8000/app/cart/increase/${itemId}/`,
-      'decrease': `http://localhost:8000/app/cart/decrease/${itemId}/`,
-      'remove': `http://localhost:8000/app/remove-from-cart/${itemId}/`
+      'increase': `${process.env.NEXT_PUBLIC_API_URL}/app/cart/increase/${itemId}/`,
+      'decrease': `${process.env.NEXT_PUBLIC_API_URL}/app/cart/decrease/${itemId}/`,
+      'remove': `${process.env.NEXT_PUBLIC_API_URL}/app/remove-from-cart/${itemId}/`
     };
     
     try {
@@ -138,7 +138,7 @@ export default function CartPage() {
   const handleCheckout = async () => {
     setProcessing(true);
     try {
-      const res = await fetch("http://localhost:8000/app/payment/create/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/create/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -165,7 +165,7 @@ export default function CartPage() {
             formData.append("razorpay_order_id", response.razorpay_order_id);
             formData.append("razorpay_signature", response.razorpay_signature);
 
-            const verifyRes = await fetch("http://localhost:8000/app/payment/callback/", {
+            const verifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/callback/`, {
               method: "POST",
               headers: { 
                 "Accept": "application/json",

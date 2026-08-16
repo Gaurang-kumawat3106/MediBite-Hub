@@ -29,7 +29,7 @@ export default function TokenPage() {
 
   const fetchTokens = async () => {
     try {
-      const json = await fetchWithCache<TokenData>("http://localhost:8000/app/customer/token/");
+      const json = await fetchWithCache<TokenData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/token/`);
       if (json.success) {
         setData(json);
         

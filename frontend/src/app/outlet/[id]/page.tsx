@@ -18,7 +18,7 @@ const getOptimizedImageUrl = (url: string | null, width = 500) => {
     }
   }
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:8000${url}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
 };
 
 interface Product {
@@ -67,7 +67,7 @@ export default function OutletDetailPage() {
 
     async function fetchData() {
       try {
-        const json = await fetchWithCache<OutletData>(`http://localhost:8000/app/outlet/${id}/`);
+        const json = await fetchWithCache<OutletData>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/${id}/`);
         if (json.success) {
           setData(json);
         } else {
@@ -111,7 +111,7 @@ export default function OutletDetailPage() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-      const res = await fetch(`http://localhost:8000/app/add-to-cart/${productId}/`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/add-to-cart/${productId}/`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

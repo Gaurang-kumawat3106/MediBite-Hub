@@ -10,7 +10,7 @@ export default function OutletOrders() {
 
   const fetchOrders = async () => {
     try {
-      const json = await fetchWithCache<any>("http://localhost:8000/app/outlet/orders/");
+      const json = await fetchWithCache<any>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/orders/`);
       if (json.success) {
         setData(json);
       }
@@ -31,7 +31,7 @@ export default function OutletOrders() {
     try {
       const formData = new URLSearchParams();
       formData.append("status", status);
-      await fetch(`http://localhost:8000/app/outlet/order/${orderId}/update/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/order/${orderId}/update/`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         credentials: "include"

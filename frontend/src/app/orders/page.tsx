@@ -35,7 +35,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const json = await fetchWithCache<OrdersData>("http://localhost:8000/app/customer/orders/");
+      const json = await fetchWithCache<OrdersData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/orders/`);
       if (json.success) {
         setData(json);
         if (json.popup_token) {
@@ -60,7 +60,7 @@ export default function OrdersPage() {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
       setLoading(true);
-      await fetch(`http://localhost:8000/app/customer/order/${orderId}/cancel/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/cancel/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -75,7 +75,7 @@ export default function OrdersPage() {
   const handleReorder = async (orderId: number) => {
     try {
       setLoading(true);
-      await fetch(`http://localhost:8000/app/customer/order/${orderId}/reorder/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/reorder/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"

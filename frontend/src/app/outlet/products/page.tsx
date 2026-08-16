@@ -7,7 +7,7 @@ import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `http://localhost:8000${url}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
 };
 
 export default function OutletProducts() {
@@ -17,7 +17,7 @@ export default function OutletProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const json = await fetchWithCache<any>("http://localhost:8000/app/outlet/products/");
+      const json = await fetchWithCache<any>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/products/`);
       if (json.success) {
         setData(json);
       }
@@ -29,18 +29,18 @@ export default function OutletProducts() {
   };
 
   useEffect(() => {
-    invalidateCache("http://localhost:8000/app/outlet/products/");
+    invalidateCache(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/products/`);
       fetchProducts();
   }, []);
 
   const toggleAvailability = async (productId: number) => {
     try {
-      await fetch(`http://localhost:8000/app/outlet/product/${productId}/toggle/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/product/${productId}/toggle/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      invalidateCache("http://localhost:8000/app/outlet/products/");
+      invalidateCache(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/products/`);
       fetchProducts();
     } catch (e) {
       console.error(e);

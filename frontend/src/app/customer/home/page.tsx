@@ -11,7 +11,7 @@ const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:8000${url}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
 };
 
 interface Outlet {
@@ -35,7 +35,7 @@ export default function CustomerHomePage() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8000/app/logout/", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/logout/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -53,7 +53,7 @@ export default function CustomerHomePage() {
 
     async function fetchData() {
       try {
-        const json = await fetchWithCache<HomeData>("http://localhost:8000/app/customer/home/");
+        const json = await fetchWithCache<HomeData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/home/`);
         if (json.success) {
           setData(json);
         } else {
@@ -148,7 +148,7 @@ export default function CustomerHomePage() {
               <Link 
                 href={`/outlet/${outlet.id}`} 
                 key={outlet.id}
-                onMouseEnter={() => prefetchAPI(`http://localhost:8000/app/outlet/${outlet.id}/`)}
+                onMouseEnter={() => prefetchAPI(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/${outlet.id}/`)}
                 className="group bg-white rounded-3xl p-4 flex items-center gap-5 border border-gray-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
