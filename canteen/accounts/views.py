@@ -65,15 +65,22 @@ def _is_pending_outlet_user(user):
 
 # ---------------- LOGIN ----------------
 def login_view(request):
+    is_json = request.headers.get('Accept') == 'application/json'
+    
     if request.user.is_authenticated:
         if _is_pending_outlet_user(request.user):
             logout(request)
+            msg = 'Wait until the admin approves your outlet account.'
+            if is_json: return JsonResponse({'success': False, 'msg': msg})
             return render(request, 'accounts/login.html', {
                 'form': LoginForm(),
-                'msg': 'Wait until the admin approves your outlet account.',
+                'msg': msg,
                 'next': '',
                 'show_approval_popup': True,
             })
+        
+        if is_json: return JsonResponse({'success': True, 'redirect': True, 'role': 'outlet' if request.user.is_outlet_head else 'customer'})
+        
         if request.user.is_customer:
             return redirect('customer_home')
         if request.user.is_outlet_head:
@@ -114,6 +121,7 @@ def login_view(request):
             if user is not None:
                 if _is_pending_outlet_user(user):
                     msg = 'Wait until the admin approves your outlet account.'
+                    if is_json: return JsonResponse({'success': False, 'msg': msg})
                     return render(request, 'accounts/login.html', {
                         'form': form,
                         'msg': msg,
@@ -128,10 +136,15 @@ def login_view(request):
                 next_url = request.POST.get('next') or next_url
                 if next_url and next_url.startswith('/'):
                     request.session['next_url'] = next_url
+                
+                if is_json: return JsonResponse({'success': True, 'redirect': True, 'role': 'outlet' if user.is_outlet_head else 'customer'})
+                
                 return redirect('welcome_splash')
             msg = 'Invalid username or password. Please try again.'
+            if is_json: return JsonResponse({'success': False, 'msg': msg})
         else:
             msg = 'Please correct the errors below.'
+            if is_json: return JsonResponse({'success': False, 'msg': msg, 'errors': form.errors})
 
     return render(request, 'accounts/login.html', {
         'form': form,
@@ -216,36 +229,52 @@ def send_verification_email(request, user):
         return 0
 
 def customer_register(request):
+    is_json = request.headers.get('Accept') == 'application/json'
     form = CustomerSignupForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        email_sent = send_verification_email(request, user)
-        if email_sent:
-            messages.success(request, 'Registration successful. Please check your email to verify your account.')
+    if request.method == 'POST':
+        if form.is_valid():
+            user = form.save()
+            email_sent = send_verification_email(request, user)
+            msg = 'Registration successful. Please check your email to verify your account.' if email_sent else 'Registration successful, but we could not send the verification email due to a server error. Please try resending later.'
+            if is_json:
+                return JsonResponse({'success': True, 'msg': msg})
+            if email_sent:
+                messages.success(request, msg)
+            else:
+                messages.warning(request, msg)
+            return redirect('login')
         else:
-            messages.warning(request, 'Registration successful, but we could not send the verification email due to a server error. Please try resending later.')
-        return redirect('login')
+            if is_json:
+                return JsonResponse({'success': False, 'errors': form.errors, 'msg': 'Please correct the errors below.'})
     return render(request, 'accounts/customer_register.html', {'form': form})
 
 
 def outlet_register(request):
+    is_json = request.headers.get('Accept') == 'application/json'
     form = OutletSignupForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        outlet_name = form.cleaned_data.get('outlet_name') or f"{user.username}'s Outlet"
-        outlet_logo = form.cleaned_data.get('logo')
-        Outlet.objects.create(
-            manager=user,
-            name=outlet_name,
-            logo=outlet_logo,
-            is_approved=False,
-        )
-        email_sent = send_verification_email(request, user)
-        if email_sent:
-            messages.success(request, 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.')
+    if request.method == 'POST':
+        if form.is_valid():
+            user = form.save()
+            outlet_name = form.cleaned_data.get('outlet_name') or f"{user.username}'s Outlet"
+            outlet_logo = form.cleaned_data.get('logo')
+            Outlet.objects.create(
+                manager=user,
+                name=outlet_name,
+                logo=outlet_logo,
+                is_approved=False,
+            )
+            email_sent = send_verification_email(request, user)
+            msg = 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.' if email_sent else 'Registration successful, but the verification email failed to send. Wait until admin approves your outlet account.'
+            if is_json:
+                return JsonResponse({'success': True, 'msg': msg})
+            if email_sent:
+                messages.success(request, msg)
+            else:
+                messages.warning(request, msg)
+            return redirect('login')
         else:
-            messages.warning(request, 'Registration successful, but the verification email failed to send. Wait until admin approves your outlet account.')
-        return redirect('login')
+            if is_json:
+                return JsonResponse({'success': False, 'errors': form.errors, 'msg': 'Please correct the errors below.'})
     return render(request, 'accounts/outlet_register.html', {'form': form})
 
 # ---------------- EMAIL VERIFICATION ----------------
