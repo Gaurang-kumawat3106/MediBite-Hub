@@ -821,6 +821,24 @@ def cart_view(request):
     total = sum(item.total_price() for item in items)
     can_order = all(item.product.is_available for item in items) and bool(items)
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'items': [
+                {
+                    'id': item.id,
+                    'product_id': item.product.id,
+                    'name': item.product.name,
+                    'price': float(item.product.customer_price),
+                    'quantity': item.quantity,
+                    'image_url': item.product.image.url if item.product.image else None,
+                    'outlet_name': item.product.outlet.name
+                } for item in items
+            ],
+            'total': float(total),
+            'can_order': can_order,
+            'razorpay_key_id': getattr(settings, "RAZORPAY_KEY_ID", "")
+        })
     return render(request, 'accounts/cart.html', {
         'items': items,
         'total': total,
@@ -1276,6 +1294,36 @@ def customer_orders(request):
             popup_token.viewed_at = timezone.now()
             popup_token.save(update_fields=['is_viewed', 'viewed_at'])
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'orders': [
+                {
+                    'id': o.id,
+                    'status': o.status,
+                    'payment_status': o.payment_status,
+                    'total_amount': float(o.total_amount),
+                    'created_at': o.created_at.isoformat(),
+                    'outlet_name': o.outlet.name,
+                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'items': [
+                        {
+                            'id': i.id,
+                            'product_name': i.product.name if i.product else i.product_name,
+                            'quantity': i.quantity,
+                            'price': float(i.unit_price)
+                        } for i in o.items.all()
+                    ]
+                } for o in orders
+            ],
+            'popup_token': {
+                'id': popup_token.id,
+                'order_id': popup_token.order.id,
+                'token_number': str(popup_token.token_no),
+                'outlet_name': popup_token.outlet.name,
+                'remaining_seconds': getattr(popup_token, 'remaining_seconds', 0)
+            } if popup_token else None
+        })
     return render(request, 'accounts/customer_orders.html', {'orders': orders, 'popup_token': popup_token})
 
 @login_required
@@ -1306,6 +1354,29 @@ def outlet_orders(request):
         'items__product', 'token'
     ).order_by('-created_at')
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'orders': [
+                {
+                    'id': o.id,
+                    'status': o.status,
+                    'payment_status': o.payment_status,
+                    'total_amount': float(o.total_amount),
+                    'created_at': o.created_at.isoformat(),
+                    'customer_name': o.user.username if o.user else "Guest",
+                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'items': [
+                        {
+                            'id': i.id,
+                            'product_name': i.product.name if i.product else i.product_name,
+                            'quantity': i.quantity,
+                            'price': float(i.unit_price)
+                        } for i in o.items.all()
+                    ]
+                } for o in orders
+            ]
+        })
     return render(request, 'accounts/outlet_orders.html', {
         'orders': orders
     }) 
@@ -1350,6 +1421,29 @@ def outlet_delivered_orders(request):
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         orders = orders.filter(completed_at__gte=month_start)
         
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'orders': [
+                {
+                    'id': o.id,
+                    'status': o.status,
+                    'payment_status': o.payment_status,
+                    'total_amount': float(o.total_amount),
+                    'created_at': o.created_at.isoformat(),
+                    'customer_name': o.user.username if o.user else "Guest",
+                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'items': [
+                        {
+                            'id': i.id,
+                            'product_name': i.product.name if i.product else i.product_name,
+                            'quantity': i.quantity,
+                            'price': float(i.unit_price)
+                        } for i in o.items.all()
+                    ]
+                } for o in orders
+            ]
+        })
     return render(request, 'accounts/outlet_delivered_orders.html', {
         'orders': orders,
         'filter_val': filter_val
@@ -1478,6 +1572,26 @@ def customer_token(request):
         popup_token.viewed_at = timezone.now()
         popup_token.save(update_fields=['is_viewed', 'viewed_at'])
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'tokens': [
+                {
+                    'id': t.id,
+                    'order_id': t.order.id,
+                    'token_number': str(t.token_no),
+                    'outlet_name': t.outlet.name,
+                    'remaining_seconds': getattr(t, 'remaining_seconds', 0)
+                } for t in tokens
+            ],
+            'popup_token': {
+                'id': popup_token.id,
+                'order_id': popup_token.order.id,
+                'token_number': str(popup_token.token_no),
+                'outlet_name': popup_token.outlet.name,
+                'remaining_seconds': getattr(popup_token, 'remaining_seconds', 0)
+            } if popup_token else None
+        })
     return render(request, 'accounts/customer_token.html', {
         'tokens': tokens,
         'popup_token': popup_token,
@@ -1516,6 +1630,25 @@ def outlet_products_view(request):
     outlet = request.user.outlet
     categories = Category.objects.filter(outlet=outlet).prefetch_related('products')
     
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'categories': [
+                {
+                    'id': c.id,
+                    'name': c.name,
+                    'products': [
+                        {
+                            'id': p.id,
+                            'name': p.name,
+                            'customer_price': float(p.customer_price),
+                            'is_available': p.is_available,
+                            'image_url': p.image.url if p.image else None
+                        } for p in c.products.all()
+                    ]
+                } for c in categories
+            ]
+        })
     return render(request, 'accounts/outlet_products.html', {
         'outlet': outlet,
         'categories': categories,
