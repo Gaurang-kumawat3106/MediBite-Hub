@@ -121,6 +121,13 @@ export default function OutletDetailPage() {
         },
         credentials: "include"
       });
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response from server during add-to-cart:", text.substring(0, 1000));
+        setToast({ msg: `Server error (${res.status}). Could not add item.`, type: 'error' });
+        return;
+      }
       const resData = await res.json();
       if (resData.success) {
         setToast({ msg: `${productName} added to cart!`, type: 'success' });

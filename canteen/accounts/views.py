@@ -64,8 +64,9 @@ def _is_pending_outlet_user(user):
 
 
 # ---------------- LOGIN ----------------
+@csrf_exempt
 def login_view(request):
-    is_json = request.headers.get('Accept') == 'application/json'
+    is_json = request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '')
     
     if request.user.is_authenticated:
         if _is_pending_outlet_user(request.user):

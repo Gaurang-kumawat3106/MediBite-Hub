@@ -16,6 +16,14 @@ export default function Home() {
           credentials: "include"
         });
         
+        const contentType = res.headers.get("content-type");
+        if (!res.ok || !contentType || !contentType.includes("application/json")) {
+          const text = await res.text();
+          console.error("Non-JSON response from server during checkAuth:", text.substring(0, 1000));
+          router.push("/login");
+          return;
+        }
+
         const data = await res.json();
         
         if (data.success) {

@@ -48,6 +48,15 @@ export default function LoginPage() {
         body: formData,
       });
 
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response from server during login:", text.substring(0, 1000));
+        setErrorMsg(`Server returned an error (${res.status}). Please check console logs.`);
+        setIsLoading(false);
+        return;
+      }
+
       const data = await res.json();
       
       if (data.success) {

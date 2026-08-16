@@ -8,6 +8,12 @@ export async function getCSRFToken(): Promise<string> {
       headers: { "Accept": "application/json" },
       credentials: "include"
     });
+    const contentType = res.headers.get("content-type");
+    if (!res.ok || !contentType || !contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("Non-JSON response from server during getCSRFToken:", text.substring(0, 1000));
+      return "";
+    }
     const data = await res.json();
     if (data.csrfToken) {
       cachedToken = data.csrfToken;

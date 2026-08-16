@@ -144,6 +144,14 @@ export default function CartPage() {
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response from server during payment creation:", text.substring(0, 1000));
+        alert(`Server error (${res.status}). Could not process checkout.`);
+        setProcessing(false);
+        return;
+      }
       const resData = await res.json();
       
       if (!resData.success) {
@@ -175,6 +183,14 @@ export default function CartPage() {
               body: formData.toString(),
               credentials: "include"
             });
+            const contentType = verifyRes.headers.get("content-type");
+            if (!verifyRes.ok || !contentType || !contentType.includes("application/json")) {
+              const text = await verifyRes.text();
+              console.error("Non-JSON response from server during payment verification:", text.substring(0, 1000));
+              alert(`Server error (${verifyRes.status}). Could not verify payment.`);
+              setProcessing(false);
+              return;
+            }
             const verifyData = await verifyRes.json();
             
             if (verifyData.success && verifyData.redirect_url) {
