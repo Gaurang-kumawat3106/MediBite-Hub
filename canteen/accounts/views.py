@@ -531,6 +531,19 @@ def customer_home(request):
 
     t2 = time.perf_counter()
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'outlets': [
+                {
+                    'id': o.id,
+                    'name': o.name,
+                    'logo_url': o.logo.url if o.logo else None
+                } for o in outlets
+            ],
+            'username': request.user.username
+        })
+    
     response = render(request, 'accounts/customer_home.html', {
         'outlets': outlets
     })
@@ -587,6 +600,18 @@ def outlet_home(request):
 
     stats = get_order_stats(outlet)
 
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'outlet': {
+                'id': outlet.id,
+                'name': outlet.name,
+                'logo_url': outlet.logo.url if outlet.logo else None
+            },
+            'username': request.user.username,
+            'stats': stats
+        })
+
     return render(request, 'accounts/outlet_home.html', {
         'outlet': outlet,
         'ui': ui,
@@ -615,6 +640,30 @@ def outlet_detail(request, id):
         outlet=outlet,
         is_active=True
     ).prefetch_related('products')
+
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'success': True,
+            'outlet': {
+                'id': outlet.id,
+                'name': outlet.name,
+                'logo_url': outlet.logo.url if outlet.logo else None
+            },
+            'categories': [
+                {
+                    'id': c.id,
+                    'name': c.name,
+                    'products': [
+                        {
+                            'id': p.id,
+                            'name': p.name,
+                            'customer_price': p.customer_price,
+                            'image_url': p.image.url if p.image else None
+                        } for p in c.products.all()
+                    ]
+                } for c in categories
+            ]
+        })
 
     return render(request, 'accounts/outlet_detail.html', {
         'outlet': outlet,
