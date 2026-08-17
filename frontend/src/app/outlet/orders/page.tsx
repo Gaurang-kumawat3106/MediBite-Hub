@@ -47,7 +47,7 @@ export default function OutletOrders() {
     switch(status) {
       case "pending": return <span className="px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-bold uppercase tracking-wider border border-yellow-200">Pending</span>;
       case "preparing": return <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-200">Preparing</span>;
-      case "ready": return <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">Ready</span>;
+      case "completed": return <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">Ready</span>;
       default: return <span className="px-3 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider border border-gray-200">{status}</span>;
     }
   };
@@ -114,11 +114,11 @@ export default function OutletOrders() {
                     </button>
                   )}
                   {order.status === "preparing" && (
-                    <button onClick={() => handleUpdateStatus(order.id, "ready")} className="px-6 py-2 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition-colors">
+                    <button onClick={() => handleUpdateStatus(order.id, "completed")} className="px-6 py-2 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition-colors">
                       Mark Ready
                     </button>
                   )}
-                  {order.status === "ready" && (
+                  {order.status === "completed" && (
                     <button onClick={() => handleUpdateStatus(order.id, "delivered")} className="px-6 py-2 bg-[#2b1b10] text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
                       Mark Delivered
                     </button>

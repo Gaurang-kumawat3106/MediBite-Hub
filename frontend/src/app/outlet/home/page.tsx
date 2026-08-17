@@ -52,7 +52,7 @@ export default function OutletDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {/* Orders summary */}
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
               <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 text-xl">
@@ -76,6 +76,14 @@ export default function OutletDashboard() {
               </div>
               <h3 className="text-gray-500 font-bold uppercase tracking-wider text-xs mb-1">This Week</h3>
               <div className="text-3xl font-black text-[#2b1b10]">₹{data?.stats?.week_collection || 0}</div>
+            </div>
+          
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center mb-4 text-xl">
+                <i className="fa-solid fa-calendar-days"></i>
+              </div>
+              <h3 className="text-gray-500 font-bold uppercase tracking-wider text-xs mb-1">This Month</h3>
+              <div className="text-3xl font-black text-[#2b1b10]">₹{data?.stats?.month_collection || 0}</div>
             </div>
           </div>
         </div>

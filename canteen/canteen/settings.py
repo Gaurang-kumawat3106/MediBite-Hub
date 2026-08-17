@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ['medibite-hub.onrender.com',
                  'localhost', 
                  'bhukkadbox.in',
                  'www.bhukkadbox.in',
+                 'api.bhukkadbox.in',
                  '127.0.0.1',]
 
 # For Render's external hostname

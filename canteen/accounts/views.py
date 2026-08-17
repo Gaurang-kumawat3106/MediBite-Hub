@@ -589,6 +589,7 @@ def get_order_stats(outlet):
         return qs.aggregate(Sum('actual_amount'))['actual_amount__sum'] or 0
 
     return {
+        'today_orders': valid_orders.exclude(status='delivered').count(),
         'today_collection': total_collection(today_orders),
         'week_collection': total_collection(week_orders),
         'month_collection': total_collection(month_orders),
@@ -728,7 +729,10 @@ def add_category(request):
                 # For now just redirect, but ideally show an error
                 return redirect('outlet_home')
             Category.objects.create(outlet=outlet, name=name)
-
+            
+        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+            
     return redirect('outlet_home')
 
 
@@ -767,13 +771,17 @@ def add_product(request):
         # Check if category belongs to this outlet
         category = get_object_or_404(Category, id=category_id, outlet=outlet)
         
-        Product.objects.create(
+        product = Product.objects.create(
             outlet=outlet,
             category=category,
             name=request.POST.get('name'),
-            price=request.POST.get('price'),
-            image=request.FILES.get('image')
+            price=request.POST.get('price')
         )
+        product.image = request.FILES.get('image')
+        product.save()
+        
+        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
 
     return redirect('outlet_home')
 
@@ -1720,6 +1728,24 @@ def edit_product(request, product_id):
     product = get_object_or_404(Product, id=product_id, outlet=request.user.outlet)
     
     if request.method == 'POST':
+        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            name = request.POST.get('name')
+            price = request.POST.get('price')
+            category_id = request.POST.get('category')
+            image = request.FILES.get('image')
+            
+            if name: product.name = name
+            if price:
+                try: product.price = float(price)
+                except ValueError: pass
+            if category_id:
+                cat = get_object_or_404(Category, id=category_id, outlet=request.user.outlet)
+                product.category = cat
+            if image: product.image = image
+            
+            product.save()
+            return JsonResponse({'success': True})
+            
         action = request.POST.get('action')
         if action == 'delete':
             product_id_str = product.id
@@ -1763,6 +1789,7 @@ def edit_product(request, product_id):
         return redirect('edit_product', product_id=product.id)
 
     return render(request, 'accounts/edit_product.html', {'product': product})
+
 
 @login_required
 @require_POST

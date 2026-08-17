@@ -1,0 +1,320 @@
+diff --git a/canteen/accounts/views.py b/canteen/accounts/views.py
+index eafca48..b00f812 100644
+--- a/canteen/accounts/views.py
++++ b/canteen/accounts/views.py
+@@ -589,6 +589,7 @@ def get_order_stats(outlet):
+         return qs.aggregate(Sum('actual_amount'))['actual_amount__sum'] or 0
+ 
+     return {
++        'today_orders': valid_orders.exclude(status='delivered').count(),
+         'today_collection': total_collection(today_orders),
+         'week_collection': total_collection(week_orders),
+         'month_collection': total_collection(month_orders),
+@@ -728,7 +729,10 @@ def add_category(request):
+                 # For now just redirect, but ideally show an error
+                 return redirect('outlet_home')
+             Category.objects.create(outlet=outlet, name=name)
+-
++            
++        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
++            return JsonResponse({'success': True})
++            
+     return redirect('outlet_home')
+ 
+ 
+@@ -767,13 +771,17 @@ def add_product(request):
+         # Check if category belongs to this outlet
+         category = get_object_or_404(Category, id=category_id, outlet=outlet)
+         
+-        Product.objects.create(
++        product = Product.objects.create(
+             outlet=outlet,
+             category=category,
+             name=request.POST.get('name'),
+-            price=request.POST.get('price'),
+-            image=request.FILES.get('image')
++            price=request.POST.get('price')
+         )
++        product.image = request.FILES.get('image')
++        product.save()
++        
++        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
++            return JsonResponse({'success': True})
+ 
+     return redirect('outlet_home')
+ 
+diff --git a/canteen/canteen/settings.py b/canteen/canteen/settings.py
+index f073464..f4ce3db 100644
+--- a/canteen/canteen/settings.py
++++ b/canteen/canteen/settings.py
+@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ['medibite-hub.onrender.com',
+                  'localhost', 
+                  'bhukkadbox.in',
+                  'www.bhukkadbox.in',
++                 'api.bhukkadbox.in',
+                  '127.0.0.1',]
+ 
+ # For Render's external hostname
+diff --git a/canteen/canteen/urls.py b/canteen/canteen/urls.py
+index 39f7428..4f92871 100644
+--- a/canteen/canteen/urls.py
++++ b/canteen/canteen/urls.py
+@@ -1,4 +1,5 @@
+ from django.contrib import admin
++from django.contrib.auth import views as auth_views
+ from django.urls import include, path
+ from accounts import views as accounts_views
+ from django.conf import settings
+@@ -18,6 +19,24 @@ urlpatterns = [
+ 
+     # Application routes
+     path('app/', include('accounts.urls')),
++
++    path('password-reset/', auth_views.PasswordResetView.as_view(
++        template_name='accounts/password_reset_form.html',
++        email_template_name='accounts/email/password_reset_email.html',
++        subject_template_name='accounts/email/password_reset_subject.txt',
++        success_url='/password-reset/done/'
++    ), name='password_reset'),
++    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
++        template_name='accounts/password_reset_done.html'
++    ), name='password_reset_done'),
++    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
++        template_name='accounts/password_reset_confirm.html',
++        success_url='/reset/done/'
++    ), name='password_reset_confirm'),
++    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
++        template_name='accounts/password_reset_complete.html'
++    ), name='password_reset_complete'),
++
+     path('', accounts_views.login_view, name='login'),
+     path(
+     "sitemap.xml",
+diff --git a/frontend/src/app/login/page.tsx b/frontend/src/app/login/page.tsx
+index 1ca4167..dafca0e 100644
+--- a/frontend/src/app/login/page.tsx
++++ b/frontend/src/app/login/page.tsx
+@@ -158,7 +158,7 @@ export default function LoginPage() {
+             />
+             Remember me
+           </label>
+-          <a href={`${process.env.NEXT_PUBLIC_API_URL}/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
++          <a href={`${process.env.NEXT_PUBLIC_API_URL}/app/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
+             Forgot password?
+           </a>
+         </div>
+diff --git a/frontend/src/app/outlet/home/page.tsx b/frontend/src/app/outlet/home/page.tsx
+index c51046a..d72f554 100644
+--- a/frontend/src/app/outlet/home/page.tsx
++++ b/frontend/src/app/outlet/home/page.tsx
+@@ -52,7 +52,7 @@ export default function OutletDashboard() {
+           </div>
+ 
+           {/* Stats Grid */}
+-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
++          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+             {/* Orders summary */}
+             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+               <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mb-4 text-xl">
+@@ -77,6 +77,14 @@ export default function OutletDashboard() {
+               <h3 className="text-gray-500 font-bold uppercase tracking-wider text-xs mb-1">This Week</h3>
+               <div className="text-3xl font-black text-[#2b1b10]">₹{data?.stats?.week_collection || 0}</div>
+             </div>
++          
++            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
++              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center mb-4 text-xl">
++                <i className="fa-solid fa-calendar-days"></i>
++              </div>
++              <h3 className="text-gray-500 font-bold uppercase tracking-wider text-xs mb-1">This Month</h3>
++              <div className="text-3xl font-black text-[#2b1b10]">₹{data?.stats?.month_collection || 0}</div>
++            </div>
+           </div>
+         </div>
+       </main>
+diff --git a/frontend/src/app/outlet/orders/page.tsx b/frontend/src/app/outlet/orders/page.tsx
+index 1a95a3c..11a2841 100644
+--- a/frontend/src/app/outlet/orders/page.tsx
++++ b/frontend/src/app/outlet/orders/page.tsx
+@@ -47,7 +47,7 @@ export default function OutletOrders() {
+     switch(status) {
+       case "pending": return <span className="px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-bold uppercase tracking-wider border border-yellow-200">Pending</span>;
+       case "preparing": return <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-200">Preparing</span>;
+-      case "ready": return <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">Ready</span>;
++      case "completed": return <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200">Ready</span>;
+       default: return <span className="px-3 py-1 bg-gray-50 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider border border-gray-200">{status}</span>;
+     }
+   };
+@@ -114,11 +114,11 @@ export default function OutletOrders() {
+                     </button>
+                   )}
+                   {order.status === "preparing" && (
+-                    <button onClick={() => handleUpdateStatus(order.id, "ready")} className="px-6 py-2 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition-colors">
++                    <button onClick={() => handleUpdateStatus(order.id, "completed")} className="px-6 py-2 bg-green-500 text-white rounded-xl font-bold text-sm hover:bg-green-600 transition-colors">
+                       Mark Ready
+                     </button>
+                   )}
+-                  {order.status === "ready" && (
++                  {order.status === "completed" && (
+                     <button onClick={() => handleUpdateStatus(order.id, "delivered")} className="px-6 py-2 bg-[#2b1b10] text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
+                       Mark Delivered
+                     </button>
+diff --git a/frontend/src/app/outlet/products/page.tsx b/frontend/src/app/outlet/products/page.tsx
+index 73dc827..1e878d6 100644
+--- a/frontend/src/app/outlet/products/page.tsx
++++ b/frontend/src/app/outlet/products/page.tsx
+@@ -14,6 +14,13 @@ const getImageUrl = (url: string | null) => {
+ export default function OutletProducts() {
+   const [data, setData] = useState<any>(null);
+   const [loading, setLoading] = useState(true);
++  const [isAddingProduct, setIsAddingProduct] = useState(false);
++  const [isAddingCategory, setIsAddingCategory] = useState(false);
++  const [editingProduct, setEditingProduct] = useState<any>(null);
++  const [formName, setFormName] = useState("");
++  const [formPrice, setFormPrice] = useState("");
++  const [formCategory, setFormCategory] = useState("");
++  const [formImage, setFormImage] = useState<File | null>(null);
+ 
+   const fetchProducts = async () => {
+     try {
+@@ -34,6 +41,58 @@ export default function OutletProducts() {
+       fetchProducts();
+   }, []);
+ 
++  
++  const handleCreateProduct = async (e: React.FormEvent) => {
++    e.preventDefault();
++    try {
++      const formData = new FormData();
++      formData.append("name", formName);
++      formData.append("price", formPrice);
++      formData.append("category", formCategory);
++      if (formImage) formData.append("image", formImage);
++      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/add-product/`, {
++        method: "POST",
++        body: formData,
++        credentials: "include"
++      });
++      setIsAddingProduct(false);
++      fetchProducts();
++    } catch (err) { console.error(err); }
++  };
++
++  const handleCreateCategory = async (e: React.FormEvent) => {
++    e.preventDefault();
++    try {
++      const formData = new URLSearchParams();
++      formData.append("name", formName);
++      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/add-category/`, {
++        method: "POST",
++        headers: { "Content-Type": "application/x-www-form-urlencoded" },
++        credentials: "include"
++      });
++      setIsAddingCategory(false);
++      fetchProducts();
++    } catch (err) { console.error(err); }
++  };
++
++  const handleEditProduct = async (e: React.FormEvent) => {
++    e.preventDefault();
++    try {
++      const formData = new FormData();
++      formData.append("name", formName);
++      formData.append("price", formPrice);
++      formData.append("category", formCategory);
++      if (formImage) formData.append("image", formImage);
++      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/product/${editingProduct.id}/edit/`, {
++        method: "POST",
++        body: formData,
++        credentials: "include"
++      });
++      setEditingProduct(null);
++      fetchProducts();
++    } catch (err) { console.error(err); }
++  };
++
+   const toggleAvailability = async (productId: number) => {
+     try {
+       await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/product/${productId}/toggle/`, {
+@@ -63,9 +122,7 @@ export default function OutletProducts() {
+         <div className="p-8 max-w-5xl mx-auto">
+           <div className="flex items-center justify-between mb-8">
+             <h1 className="text-2xl font-bold font-heading text-[#2b1b10]">Menu Management</h1>
+-            <button className="bg-brand text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-brand/20 hover:bg-brand-dark transition-colors">
+-              + Add Product
+-            </button>
++            <div className="flex gap-4"><button onClick={() => {setFormName(""); setFormPrice(""); setFormCategory(""); setIsAddingProduct(true);}} className="bg-brand text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-brand/20 hover:bg-brand-dark transition-colors">+ Add Product</button><button onClick={() => {setFormName(""); setIsAddingCategory(true);}} className="bg-gray-100 text-[#2b1b10] px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-200 transition-colors">+ Add Category</button></div>
+           </div>
+ 
+           <div className="space-y-8">
+@@ -104,7 +161,7 @@ export default function OutletProducts() {
+                               {prod.is_available ? "In Stock" : "Sold Out"}
+                             </span>
+                           </label>
+-                          <button className="text-gray-400 hover:text-brand transition-colors p-2">
++                          <button onClick={() => {setEditingProduct(prod); setFormName(prod.name); setFormPrice(prod.price); setFormCategory(cat.id.toString());}} className="text-gray-400 hover:text-brand transition-colors p-2">
+                             <i className="fa-solid fa-pen-to-square"></i>
+                           </button>
+                         </div>
+@@ -122,6 +179,61 @@ export default function OutletProducts() {
+           </div>
+         </div>
+       </main>
++
++      {/* Modal Overlays */}
++      {(isAddingProduct || editingProduct) && (
++        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
++          <div className="bg-white rounded-3xl p-8 max-w-md w-full">
++            <h2 className="text-2xl font-bold mb-6 text-[#2b1b10]">{editingProduct ? "Edit Product" : "Add Product"}</h2>
++            <form onSubmit={editingProduct ? handleEditProduct : handleCreateProduct} className="space-y-4">
++              <div>
++                <label className="block text-sm font-bold text-gray-500 mb-1">Name</label>
++                <input required type="text" className="w-full border border-gray-200 rounded-xl px-4 py-2" value={formName} onChange={(e) => setFormName(e.target.value)} />
++              </div>
++              <div>
++                <label className="block text-sm font-bold text-gray-500 mb-1">Price</label>
++                <input required type="number" step="0.01" className="w-full border border-gray-200 rounded-xl px-4 py-2" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} />
++              </div>
++              <div>
++                <label className="block text-sm font-bold text-gray-500 mb-1">Category</label>
++                <select required className="w-full border border-gray-200 rounded-xl px-4 py-2" value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
++                  <option value="">Select Category</option>
++                  {data?.categories?.map((c: any) => (
++                    <option key={c.id} value={c.id}>{c.name}</option>
++                  ))}
++                </select>
++              </div>
++              <div>
++                <label className="block text-sm font-bold text-gray-500 mb-1">Image</label>
++                <input type="file" accept="image/*" className="w-full" onChange={(e) => setFormImage(e.target.files?.[0] || null)} />
++              </div>
++              <div className="flex gap-4 pt-4">
++                <button type="button" onClick={() => {setIsAddingProduct(false); setEditingProduct(null);}} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Cancel</button>
++                <button type="submit" className="flex-1 bg-brand text-white font-bold py-3 rounded-xl">Save</button>
++              </div>
++            </form>
++          </div>
++        </div>
++      )}
++
++      {isAddingCategory && (
++        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
++          <div className="bg-white rounded-3xl p-8 max-w-md w-full">
++            <h2 className="text-2xl font-bold mb-6 text-[#2b1b10]">Add Category</h2>
++            <form onSubmit={handleCreateCategory} className="space-y-4">
++              <div>
++                <label className="block text-sm font-bold text-gray-500 mb-1">Category Name</label>
++                <input required type="text" className="w-full border border-gray-200 rounded-xl px-4 py-2" value={formName} onChange={(e) => setFormName(e.target.value)} />
++              </div>
++              <div className="flex gap-4 pt-4">
++                <button type="button" onClick={() => setIsAddingCategory(false)} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Cancel</button>
++                <button type="submit" className="flex-1 bg-brand text-white font-bold py-3 rounded-xl">Save</button>
++              </div>
++            </form>
++          </div>
++        </div>
++      )}
++
+     </div>
+   );
+ }
+\ No newline at end of file
