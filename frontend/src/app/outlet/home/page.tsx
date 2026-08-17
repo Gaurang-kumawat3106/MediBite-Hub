@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache } from "@/lib/apiCache";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 export default function OutletDashboard() {
   const [data, setData] = useState<any>(null);

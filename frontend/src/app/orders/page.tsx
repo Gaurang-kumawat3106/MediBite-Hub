@@ -5,6 +5,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import { fetchWithCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface Order {
   id: number;
@@ -53,9 +54,15 @@ export default function OrdersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useEffect(() => { fetchOrders(); }, []);
+
+  useWebSocket("/ws/orders/", (data) => {
+    if (data.type === 'order_update' || data.type === 'token_update') {
+      fetchOrders();
+    }
+  });
+
+
 
   const handleCancel = async (orderId: number) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
+import toast, { Toaster } from "react-hot-toast";
 
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
@@ -57,7 +58,9 @@ export default function OutletProducts() {
       });
       setIsAddingProduct(false);
       fetchProducts();
-    } catch (err) { console.error(err); }
+      toast.success(`Product Added Successfully
+Product: ${formName}`);
+    } catch (err: any) { console.error(err); toast.error("Failed to add product"); }
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -72,7 +75,9 @@ export default function OutletProducts() {
       });
       setIsAddingCategory(false);
       fetchProducts();
-    } catch (err) { console.error(err); }
+      toast.success(`Category Added Successfully
+Category: ${formName}`);
+    } catch (err: any) { console.error(err); toast.error("Failed to add category"); }
   };
 
   const handleEditProduct = async (e: React.FormEvent) => {
@@ -90,7 +95,8 @@ export default function OutletProducts() {
       });
       setEditingProduct(null);
       fetchProducts();
-    } catch (err) { console.error(err); }
+      toast.success(`Product Updated Successfully`);
+    } catch (err: any) { console.error(err); toast.error("Failed to update product"); }
   };
 
   const toggleAvailability = async (productId: number) => {
@@ -102,7 +108,8 @@ export default function OutletProducts() {
       });
       invalidateCache(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/products/`);
       fetchProducts();
-    } catch (e) {
+      toast.success("Availability changed");
+    } catch (e: any) { toast.error("Failed to change availability");
       console.error(e);
     }
   };
@@ -117,6 +124,7 @@ export default function OutletProducts() {
 
   return (
     <div className="min-h-screen bg-[#faf9f6] flex">
+      <Toaster position="bottom-right" />
       <OutletSidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 max-w-5xl mx-auto">

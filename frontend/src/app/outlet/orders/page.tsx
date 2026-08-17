@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 export default function OutletOrders() {
   const [data, setData] = useState<any>(null);
@@ -24,8 +25,7 @@ export default function OutletOrders() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 10000); // Polling every 10s
-    return () => clearInterval(interval);
+    
   }, []);
 
   const handleUpdateStatus = async (orderId: number, status: string) => {
