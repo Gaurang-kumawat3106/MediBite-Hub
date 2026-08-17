@@ -57,6 +57,10 @@ export default function OutletProducts() {
         credentials: "include"
       });
       setIsAddingProduct(false);
+      setFormName("");
+      setFormPrice("");
+      setFormCategory("");
+      setFormImage(null);
       fetchProducts();
       toast.success(`Product Added Successfully
 Product: ${formName}`);
@@ -74,6 +78,7 @@ Product: ${formName}`);
         credentials: "include"
       });
       setIsAddingCategory(false);
+      setFormName("");
       fetchProducts();
       toast.success(`Category Added Successfully
 Category: ${formName}`);

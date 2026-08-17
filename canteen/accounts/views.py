@@ -1,4 +1,5 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
+from django.db.models import Prefetch, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -649,7 +650,9 @@ def outlet_detail(request, id):
     categories = Category.objects.filter(
         outlet=outlet,
         is_active=True
-    ).prefetch_related('products')
+    ).prefetch_related(
+        Prefetch('products', queryset=Product.objects.filter(is_available=True))
+    )
 
     if request.headers.get('Accept') == 'application/json':
         return JsonResponse({

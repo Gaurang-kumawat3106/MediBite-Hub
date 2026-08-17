@@ -23,6 +23,12 @@ export default function OutletOrders() {
     }
   };
 
+  useWebSocket("/ws/orders/", (data) => {
+    if (data.type === 'new_order' || data.type === 'order_update' || data.type === 'token_update') {
+      fetchOrders();
+    }
+  });
+
   useEffect(() => {
     fetchOrders();
     
