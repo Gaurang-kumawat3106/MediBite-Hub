@@ -961,7 +961,10 @@ def payment_callback(request):
     4. If the Order is already marked 'paid', we return immediately (idempotent).
     5. The cart is cleared only after the Order is successfully confirmed as paid.
     """
+    is_json = 'application/json' in request.headers.get('Accept', '')
+
     if request.method != "POST":
+        if is_json: return JsonResponse({"success": False, "error": "Invalid request method."})
         return redirect("cart")
 
     payment_id = request.POST.get("razorpay_payment_id", "")
@@ -969,6 +972,7 @@ def payment_callback(request):
     signature = request.POST.get("razorpay_signature", "")
 
     if not payment_id or not razorpay_order_id or not signature:
+        if is_json: return JsonResponse({"success": False, "error": "Invalid payment response."})
         messages.error(request, "Invalid payment response.")
         return redirect("cart")
 
@@ -986,11 +990,13 @@ def payment_callback(request):
         client.utility.verify_payment_signature(params_dict)
 
     except razorpay.errors.SignatureVerificationError:
+        if is_json: return JsonResponse({"success": False, "error": "Payment verification failed."})
         messages.error(request, "Payment verification failed.")
         return redirect("cart")
 
     except Exception as e:
         print("PAYMENT_CALLBACK SIGNATURE ERROR:", e)
+        if is_json: return JsonResponse({"success": False, "error": "Something went wrong during payment verification."})
         messages.error(request, "Something went wrong during payment verification.")
         return redirect("cart")
 
@@ -1006,12 +1012,14 @@ def payment_callback(request):
                     .get(razorpay_order_id=razorpay_order_id)
                 )
             except Order.DoesNotExist:
+                if is_json: return JsonResponse({"success": False, "error": "Order not found."})
                 messages.error(request, "Order not found.")
                 return redirect("cart")
 
             # ── Step 3: Idempotency guard ─────────────────────────────────────
             # If this order is already paid (callback received before), do nothing.
             if order.payment_status == "paid":
+                if is_json: return JsonResponse({"success": True, "redirect_url": "/customer/orders"})
                 return redirect("customer_orders")
 
             # ── Step 4: Server-side amount verification ───────────────────────
@@ -1029,6 +1037,7 @@ def payment_callback(request):
                         f"({expected_amount_paisa} paisa) but Razorpay paid "
                         f"{rzp_amount_paisa} paisa."
                     )
+                    if is_json: return JsonResponse({"success": False, "error": "Payment amount mismatch. Please contact support."})
                     messages.error(request, "Payment amount mismatch. Please contact support.")
                     return redirect("cart")
             except Exception as e:
@@ -1043,6 +1052,7 @@ def payment_callback(request):
             # went wrong during order creation — do not proceed.
             if not order.items.exists():
                 print(f"PAYMENT_CALLBACK: Order {order.id} has no items — refusing to mark paid.")
+                if is_json: return JsonResponse({"success": False, "error": "Order has no items. Please contact support."})
                 messages.error(request, "Order has no items. Please contact support.")
                 return redirect("cart")
 
@@ -1086,6 +1096,7 @@ def payment_callback(request):
         except Exception as ws_error:
             print(f"PAYMENT_CALLBACK WEBSOCKET ERROR (non-fatal): {ws_error}")
 
+        if is_json: return JsonResponse({"success": True, "redirect_url": "/customer/orders"})
         messages.success(request, "Payment successful! Order placed.")
         return redirect("customer_orders")
 
@@ -1093,6 +1104,7 @@ def payment_callback(request):
         print("PAYMENT CALLBACK ERROR:", e)
         import traceback
         traceback.print_exc()
+        if is_json: return JsonResponse({"success": False, "error": "Something went wrong while confirming your order. Please try again."})
         messages.error(request, "Something went wrong while confirming your order. Please try again.")
         return redirect("cart")
 
