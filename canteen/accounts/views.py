@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from django.db.models import Prefetch, redirect, get_object_or_404
+from django.db.models import Prefetch
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
