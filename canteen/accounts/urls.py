@@ -50,7 +50,7 @@ path('payment/webhook/', views.payment_webhook, name='payment_webhook'),
 
 path('outlet/orders/', views.outlet_orders, name='outlet_orders'),
 path('outlet/orders/delivered/', views.outlet_delivered_orders, name='outlet_delivered_orders'),
-path('outlet/order/<int:order_id>/update-status/', views.update_order_status, name='update_order_status'),
+path('outlet/order/<int:order_id>/update/', views.update_order_status, name='update_order_status'),
 
 
 path('cart/increase/<int:item_id>/', views.increase_quantity, name='increase_quantity'),

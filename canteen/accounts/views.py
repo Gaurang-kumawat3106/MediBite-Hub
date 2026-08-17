@@ -1539,6 +1539,9 @@ def update_order_status(request, order_id):
     order = get_object_or_404(Order, id=order_id, outlet=request.user.outlet)
     if request.method == 'POST':
         new_status = request.POST.get('status')
+        if new_status == 'ready':
+            new_status = 'completed'
+        
         old_status = order.status
         if new_status in ['preparing', 'completed', 'delivered', 'cancelled']:
             order.status = new_status
@@ -1562,7 +1565,8 @@ def update_order_status(request, order_id):
                     "message": f"Your order status is now: {new_status}"
                 }
             )
-    return redirect('outlet_orders')
+        return JsonResponse({'success': True, 'status': order.status})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
 @login_required
@@ -1702,7 +1706,8 @@ def toggle_availability(request, product_id):
                 }
             )
             
-    return redirect('outlet_products')
+        return JsonResponse({'success': True, 'is_available': product.is_available})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @login_required
 def edit_product(request, product_id):
