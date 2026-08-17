@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import { fetchWithCache } from "@/lib/apiCache";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { getApiUrl } from "@/lib/utils";
 
 export default function DeliveredOrders() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  const fetchOrders = async (currentFilter: string) => {
+  const fetchOrders = async (currentFilter: string, force = false) => {
     try {
-      setLoading(true);
-      const json = await fetchWithCache<any>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/orders/delivered/?time_filter=${currentFilter}`);
+      if (!data) setLoading(true);
+      const json = await fetchWithCache<any>(`${getApiUrl()}/app/outlet/orders/delivered/?time_filter=${currentFilter}`, force);
       if (json.success) {
         setData(json);
       }
@@ -23,8 +25,14 @@ export default function DeliveredOrders() {
     }
   };
 
+  useWebSocket("/ws/orders/", (wsData) => {
+    if (wsData.type === 'order_update' || wsData.type === 'new_order') {
+      fetchOrders(filter, true);
+    }
+  });
+
   useEffect(() => {
-    fetchOrders(filter);
+    fetchOrders(filter, true);
   }, [filter]);
 
   const formatDate = (isoString: string | null) => {
@@ -59,7 +67,18 @@ export default function DeliveredOrders() {
           </div>
 
           {loading && !data ? (
-             <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="w-32 h-6 rounded-lg skeleton-shimmer"></div>
+                    <div className="w-48 h-4 rounded skeleton-shimmer"></div>
+                    <div className="w-40 h-4 rounded skeleton-shimmer"></div>
+                  </div>
+                  <div className="w-24 h-8 rounded-xl skeleton-shimmer md:self-end"></div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {data?.orders?.length > 0 ? data.orders.map((order: any) => (
@@ -80,9 +99,9 @@ export default function DeliveredOrders() {
                   </div>
                   
                   <div className="flex flex-col md:items-end justify-between">
-                    <div className="font-bold text-xl text-[#2b1b10] mb-3">₹{order.total_price}</div>
+                    <div className="font-bold text-xl text-[#2b1b10] mb-3">₹{order.total_price ?? order.total_amount ?? 0}</div>
                     <div className="text-xs text-gray-500 max-w-xs text-right">
-                      {order.items.map((i: any) => `${i.quantity}x ${i.product_name}`).join(", ")}
+                      {order.items?.map((i: any) => `${i.quantity}x ${i.product_name || i.name}`).join(", ")}
                     </div>
                   </div>
                 </div>

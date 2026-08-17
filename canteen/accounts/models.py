@@ -1,23 +1,47 @@
+import time
 from decimal import Decimal
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
+# In-memory slab cache for zero-query platform fee resolution
+_CACHED_SLABS = None
+_CACHED_CONFIG = None
+_SLABS_CACHE_TIME = 0
+_SLABS_CACHE_TTL = 60  # seconds
+
+def invalidate_platform_fee_cache():
+    global _CACHED_SLABS, _CACHED_CONFIG, _SLABS_CACHE_TIME
+    _CACHED_SLABS = None
+    _CACHED_CONFIG = None
+    _SLABS_CACHE_TIME = 0
+
+def _get_slabs_and_config():
+    global _CACHED_SLABS, _CACHED_CONFIG, _SLABS_CACHE_TIME
+    now = time.time()
+    if _CACHED_SLABS is None or (now - _SLABS_CACHE_TIME) > _SLABS_CACHE_TTL:
+        try:
+            _CACHED_SLABS = list(PlatformFeeSlab.objects.all().order_by('-min_price'))
+            _CACHED_CONFIG = PlatformFeeConfig.objects.first()
+            _SLABS_CACHE_TIME = now
+        except Exception:
+            return [], None
+    return _CACHED_SLABS, _CACHED_CONFIG
 
 def get_platform_fee_for_price(price):
-    """Return platform fee for a given base product price using configured slabs."""
-    price = Decimal(str(price))
-    slab = (
-        PlatformFeeSlab.objects.filter(min_price__lte=price)
-        .filter(Q(max_price__gte=price) | Q(max_price__isnull=True))
-        .order_by('-min_price')
-        .first()
-    )
-    if slab:
-        return slab.fee_amount
-    config = PlatformFeeConfig.objects.first()
-    return config.fee_amount if config else Decimal('0.00')
+    """Return platform fee for a given base product price using cached in-memory slabs."""
+    try:
+        price = Decimal(str(price))
+        slabs, config = _get_slabs_and_config()
+        for slab in slabs:
+            if slab.min_price <= price and (slab.max_price is None or slab.max_price >= price):
+                return slab.fee_amount
+        return config.fee_amount if config else Decimal('0.00')
+    except Exception:
+        return Decimal('0.00')
 
 
 # ---------------- USER MODEL ----------------
@@ -339,3 +363,8 @@ class PlatformFeeSlab(models.Model):
     def __str__(self):
         upper = f"₹{self.max_price}" if self.max_price is not None else "∞"
         return f"₹{self.min_price}–{upper} → ₹{self.fee_amount}"
+
+@receiver([post_save, post_delete], sender=PlatformFeeSlab)
+@receiver([post_save, post_delete], sender=PlatformFeeConfig)
+def on_platform_fee_change(sender, **kwargs):
+    invalidate_platform_fee_cache()

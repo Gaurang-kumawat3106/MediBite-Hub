@@ -7,20 +7,10 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { fetchWithCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { getImageUrl, getApiUrl } from "@/lib/utils";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
-
-const getOptimizedImageUrl = (url: string | null, width = 500) => {
-  if (!url) return null;
-  if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
-    // Prevent double injection if already optimized
-    if (!url.includes('/q_auto')) {
-      return url.replace('/upload/', `/upload/q_auto,f_auto,w_${width},c_limit/`);
-    }
-  }
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
-};
 
 interface Product {
   id: number;
@@ -37,18 +27,20 @@ interface Category {
 
 interface OutletData {
   success: boolean;
-  outlet?: {
+  msg?: string;
+  outlet: {
     id: number;
     name: string;
+    description: string;
     logo_url: string | null;
   };
-  categories?: Category[];
-  msg?: string;
+  categories: Category[];
+  cart_count: number;
 }
 
 export default function OutletDetailPage() {
   const params = useParams();
-  const id = params.id as string;
+  const outletId = params?.id as string;
   
   const [data, setData] = useState<OutletData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,29 +52,35 @@ export default function OutletDetailPage() {
 
   // Cart toast state
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
-  const fetchRef = useRef(false);
+  const [addingId, setAddingId] = useState<number | null>(null);
+
+  const fetchOutletData = async (force = false) => {
+    try {
+      const json = await fetchWithCache<OutletData>(`${getApiUrl()}/app/outlet/${outletId}/`, force);
+      if (json.success) {
+        setData(json);
+      } else {
+        setError(json.msg || "Failed to load outlet menu.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (fetchRef.current) return;
-    fetchRef.current = true;
-
-    async function fetchData() {
-      try {
-        const json = await fetchWithCache<OutletData>(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/${id}/`);
-        if (json.success) {
-          setData(json);
-        } else {
-          setError(json.msg || "Failed to load outlet details.");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Network error. Please make sure the Django server is running.");
-      } finally {
-        setLoading(false);
-      }
+    if (outletId) {
+      fetchOutletData();
     }
-    if (id) fetchData();
-  }, [id]);
+  }, [outletId]);
+
+  useWebSocket("/ws/orders/", (wsData) => {
+    if (wsData.type === 'product_deactivated') {
+      fetchOutletData(true);
+    }
+  });
 
   // Derived filtered products
   const filteredProducts = useMemo(() => {
@@ -104,49 +102,76 @@ export default function OutletDetailPage() {
 
   const handleAddToCart = async (e: React.MouseEvent, productId: number, productName: string) => {
     e.preventDefault();
-    const btn = e.currentTarget as HTMLButtonElement;
-    
-    if (btn.disabled) return;
-    btn.disabled = true;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    if (addingId === productId) return;
+
+    // Instant optimistic visual feedback (0ms perceived latency!)
+    setAddingId(productId);
+    setToast({ msg: `${productName} added to cart!`, type: 'success' });
+    setTimeout(() => setAddingId(null), 400);
 
     try {
-      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/add-to-cart/${productId}/`, {
+      const res = await fetchWithCSRF(`${getApiUrl()}/app/add-to-cart/${productId}/`, {
         method: "POST",
         headers: {
           "Accept": "application/json",
-          // Django cart API needs a CSRF token or we need to bypass it via @csrf_exempt
-          // Assuming we use standard fetch or it's exempted
         },
         credentials: "include"
       });
       const contentType = res.headers.get("content-type");
       if (!res.ok || !contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        console.error("Non-JSON response from server during add-to-cart:", text.substring(0, 1000));
         setToast({ msg: `Server error (${res.status}). Could not add item.`, type: 'error' });
         return;
       }
       const resData = await res.json();
-      if (resData.success) {
-        setToast({ msg: `${productName} added to cart!`, type: 'success' });
-      } else {
+      if (!resData.success) {
         setToast({ msg: resData.message || "Could not add item.", type: 'error' });
       }
     } catch (err) {
       setToast({ msg: "Something went wrong.", type: 'error' });
     } finally {
-      btn.innerHTML = originalHtml;
-      btn.disabled = false;
       setTimeout(() => setToast(null), 3000);
     }
   };
 
-  if (loading) {
+  if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col">
+        {/* Navbar Skeleton */}
+        <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 py-4">
+          <div className="w-10 h-10 rounded-full skeleton-shimmer"></div>
+          <div className="w-32 h-6 rounded-lg skeleton-shimmer"></div>
+          <div className="w-20 h-10 rounded-full skeleton-shimmer"></div>
+        </div>
+
+        {/* Hero Banner Skeleton */}
+        <div className="bg-[#2b1b10] px-6 py-10 flex flex-col items-center">
+          <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl skeleton-shimmer mb-4 border-[3px] border-white/10"></div>
+          <div className="w-48 h-8 rounded-xl skeleton-shimmer mb-2 bg-white/10"></div>
+          <div className="w-36 h-4 rounded-lg skeleton-shimmer bg-white/10"></div>
+        </div>
+
+        {/* Category Strip Skeleton */}
+        <div className="py-4 border-b border-gray-100 px-6 flex gap-3 overflow-x-auto no-scrollbar">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="w-24 h-10 rounded-full skeleton-shimmer shrink-0"></div>
+          ))}
+        </div>
+
+        {/* Product Cards Grid Skeleton */}
+        <div className="flex-1 px-6 py-8 max-w-5xl mx-auto w-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="bg-white rounded-3xl border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+                <div className="aspect-square skeleton-shimmer"></div>
+                <div className="p-4 pt-6 space-y-2">
+                  <div className="w-16 h-3 rounded skeleton-shimmer"></div>
+                  <div className="w-full h-5 rounded skeleton-shimmer"></div>
+                  <div className="w-1/2 h-4 rounded skeleton-shimmer"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -235,9 +260,11 @@ export default function OutletDetailPage() {
           <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden bg-white shrink-0 border-[3px] border-white shadow-md z-10 flex items-center justify-center">
             {data.outlet.logo_url ? (
               <img 
-                src={getOptimizedImageUrl(data.outlet.logo_url, 400) as string} 
+                src={getImageUrl(data.outlet.logo_url, 240) as string} 
                 alt={data.outlet.name} 
                 className="w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="async"
               />
             ) : (
               <i className="fa-solid fa-store text-3xl text-gray-300"></i>
@@ -278,13 +305,15 @@ export default function OutletDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {filteredProducts.map((product, index) => (
               <div key={product.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden flex flex-col shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div className="relative aspect-square bg-gray-50 border-b border-gray-100">
+                <div className="relative aspect-square bg-gray-50 border-b border-gray-100 overflow-hidden">
                   {product.image_url ? (
                     <img 
-                      src={getOptimizedImageUrl(product.image_url, 400) as string} 
+                      src={getImageUrl(product.image_url, 320) as string} 
                       alt={product.name} 
-                      className="w-full h-full object-cover"
-                      loading={index < 6 ? "eager" : "lazy"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading={index < 4 ? "eager" : "lazy"}
+                      decoding="async"
+                      fetchPriority={index < 2 ? "high" : "auto"}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
@@ -295,13 +324,18 @@ export default function OutletDetailPage() {
                   {/* Add Button */}
                   <button 
                     onClick={(e) => handleAddToCart(e, product.id, product.name)}
-                    className="absolute -bottom-5 right-4 bg-white border border-gray-100 shadow-md rounded-full flex items-center overflow-hidden group/btn hover:border-brand transition-colors"
+                    disabled={addingId === product.id}
+                    className="absolute -bottom-5 right-4 bg-white border border-gray-100 shadow-md rounded-full flex items-center overflow-hidden group/btn hover:border-brand transition-colors disabled:opacity-60"
                   >
                     <div className="px-3 py-2 text-sm font-bold text-[#2b1b10]">
                       ₹{product.customer_price}
                     </div>
                     <div className="w-10 h-10 flex items-center justify-center bg-gray-50 text-brand border-l border-gray-100 group-hover/btn:bg-brand group-hover/btn:text-white transition-colors">
-                      <i className="fa-solid fa-plus"></i>
+                      {addingId === product.id ? (
+                        <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                      ) : (
+                        <i className="fa-solid fa-plus"></i>
+                      )}
                     </div>
                   </button>
                 </div>

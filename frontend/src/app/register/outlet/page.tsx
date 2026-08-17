@@ -4,6 +4,7 @@ import { useState } from "react";
 import AuthLayout from "@/components/AuthLayout";
 import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { getApiUrl } from "@/lib/utils";
 
 export default function OutletRegisterPage() {
   const [formData, setFormData] = useState({
@@ -50,7 +51,7 @@ export default function OutletRegisterPage() {
         data.append("logo", logoFile);
       }
 
-      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/register/outlet/`, {
+      const res = await fetchWithCSRF(`${getApiUrl()}/app/register/outlet/`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

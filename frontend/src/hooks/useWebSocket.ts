@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
+import { getWsUrl } from '@/lib/utils';
+import { invalidateOrderCaches } from '@/lib/apiCache';
 
 export const useWebSocket = (urlPath: string, onMessage: (data: any) => void) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -11,11 +13,7 @@ export const useWebSocket = (urlPath: string, onMessage: (data: any) => void) =>
   }, [onMessage]);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return;
-    
-    const wsUrl = apiUrl.replace("http://", "ws://").replace("https://", "wss://");
-    const fullUrl = `${wsUrl}${urlPath}`;
+    const fullUrl = getWsUrl(urlPath);
     
     let reconnectAttempts = 0;
     let isComponentMounted = true;
@@ -33,25 +31,26 @@ export const useWebSocket = (urlPath: string, onMessage: (data: any) => void) =>
         reconnectAttempts = 0;
       };
       
-      socket.onclose = (e) => {
-        if (isComponentMounted) setIsConnected(false);
-        wsRef.current = null;
-        
-        // Exponential backoff reconnect
-        if (isComponentMounted && e.code !== 1000) {
-          const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // max 10s
+      socket.onclose = () => {
+        if (isComponentMounted) {
+          setIsConnected(false);
+          wsRef.current = null;
+          const timeout = Math.min(1000 * Math.pow(1.5, reconnectAttempts), 8000);
           reconnectAttempts++;
-          reconnectTimeoutRef.current = setTimeout(connect, timeout);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isComponentMounted) connect();
+          }, timeout);
         }
       };
       
       socket.onerror = (err) => {
-        console.error("WebSocket Error:", err);
+        console.warn("WebSocket non-fatal error, connection will retry:", err);
       };
       
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          invalidateOrderCaches();
           onMessageRef.current(data);
         } catch (err) {
           console.error(err);

@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { fetchWithCache } from "@/lib/apiCache";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { getApiUrl } from "@/lib/utils";
 
 interface PopupToken {
   id: number;
   token_number: string;
+  token?: string;
   outlet_name: string;
   remaining_seconds: number;
 }
@@ -27,9 +30,9 @@ export default function TokenPage() {
   // We maintain client-side timers for live countdown
   const [timers, setTimers] = useState<Record<number, number>>({});
 
-  const fetchTokens = async () => {
+  const fetchTokens = async (force = false) => {
     try {
-      const json = await fetchWithCache<TokenData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/token/`);
+      const json = await fetchWithCache<TokenData>(`${getApiUrl()}/app/customer/token/`, force);
       if (json.success) {
         setData(json);
         
@@ -57,6 +60,12 @@ export default function TokenPage() {
   useEffect(() => {
     fetchTokens();
   }, []);
+
+  useWebSocket("/ws/orders/", (wsData) => {
+    if (wsData.type === 'token_update' || wsData.type === 'order_update') {
+      fetchTokens(true);
+    }
+  });
 
   // Countdown effect
   useEffect(() => {
@@ -90,8 +99,26 @@ export default function TokenPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col">
+        <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center px-6 py-4">
+          <div className="w-16 h-5 rounded-lg skeleton-shimmer"></div>
+          <div className="flex-1 text-center">
+            <div className="w-28 h-6 rounded-lg skeleton-shimmer mx-auto"></div>
+          </div>
+          <div className="w-16"></div>
+        </nav>
+
+        <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8 space-y-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="w-32 h-6 rounded-lg skeleton-shimmer"></div>
+                <div className="w-24 h-4 rounded skeleton-shimmer"></div>
+              </div>
+              <div className="w-24 h-12 rounded-2xl skeleton-shimmer"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

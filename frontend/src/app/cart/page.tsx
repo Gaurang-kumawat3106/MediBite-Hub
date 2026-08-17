@@ -6,20 +6,18 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import Footer from "@/components/Footer";
 import { fetchWithCSRF } from "@/lib/csrf";
-
-const getImageUrl = (url: string | null) => {
-  if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
-};
+import { fetchWithCache } from "@/lib/apiCache";
+import { getImageUrl, getApiUrl } from "@/lib/utils";
 
 interface CartItem {
   id: number;
   product_id: number;
-  product_name: string;
-  product_price: number;
+  product_name?: string;
+  name?: string;
+  product_price?: number;
+  price?: number;
   quantity: number;
-  total_price: number;
+  total_price?: number;
   outlet_name: string;
   image_url: string | null;
   is_available: boolean;
@@ -29,6 +27,7 @@ interface CartData {
   success: boolean;
   items: CartItem[];
   total: number;
+  total_price?: number;
   can_order: boolean;
   razorpay_key_id: string;
 }
@@ -46,43 +45,26 @@ export default function CartPage() {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const fetchCart = async (showLoading = true) => {
+  const fetchCart = async (force = false, showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/cart/`, {
-        headers: {
-          "Accept": "application/json",
-        },
-        credentials: "include"
-      });
-
-      if (res.status === 403 || res.status === 401 ) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const json = await res.json();
+      const json = await fetchWithCache<CartData>(`${getApiUrl()}/app/cart/`, force);
       if (json.success) {
         setData(json);
+        setError("");
       } else {
         setError("Failed to load cart.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Network error. Please make sure the Django server is running.");
+      setError(err?.message || "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCart(true);
+    fetchCart(true, true);
   }, []);
 
   const handleActionOptimistic = async (action: 'increase' | 'decrease' | 'remove', itemId: number) => {
@@ -95,13 +77,15 @@ export default function CartPage() {
     
     if (itemIndex > -1) {
       const item = { ...newData.items[itemIndex] };
+      const itemPrice = item.price ?? item.product_price ?? 0;
+
       if (action === 'increase') {
         item.quantity += 1;
-        item.total_price = item.quantity * item.product_price;
+        item.total_price = item.quantity * itemPrice;
         newData.items[itemIndex] = item;
       } else if (action === 'decrease') {
         item.quantity -= 1;
-        item.total_price = item.quantity * item.product_price;
+        item.total_price = item.quantity * itemPrice;
         if (item.quantity <= 0) {
           newData.items.splice(itemIndex, 1);
         } else {
@@ -111,15 +95,15 @@ export default function CartPage() {
         newData.items.splice(itemIndex, 1);
       }
       
-      newData.total = newData.items.reduce((sum, i) => sum + i.total_price, 0);
-      newData.can_order = newData.items.length > 0 && newData.items.every(i => i.is_available);
+      newData.total = newData.items.reduce((sum, i) => sum + (i.total_price ?? (i.quantity * (i.price ?? i.product_price ?? 0))), 0);
+      newData.can_order = newData.items.length > 0 && newData.items.every(i => i.is_available !== false);
       setData(newData);
     }
     
     const urlMap = {
-      'increase': `${process.env.NEXT_PUBLIC_API_URL}/app/cart/increase/${itemId}/`,
-      'decrease': `${process.env.NEXT_PUBLIC_API_URL}/app/cart/decrease/${itemId}/`,
-      'remove': `${process.env.NEXT_PUBLIC_API_URL}/app/remove-from-cart/${itemId}/`
+      'increase': `${getApiUrl()}/app/cart/increase/${itemId}/`,
+      'decrease': `${getApiUrl()}/app/cart/decrease/${itemId}/`,
+      'remove': `${getApiUrl()}/app/remove-from-cart/${itemId}/`
     };
     
     try {
@@ -129,7 +113,7 @@ export default function CartPage() {
         credentials: "include"
       });
       // Sync background exactly with server logic
-      fetchCart(false);
+      fetchCart(true, false);
     } catch (e) {
       console.error(e);
       setData(originalData); // Rollback on network error
@@ -137,9 +121,15 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.Razorpay === "undefined") {
+      alert("Payment gateway is initializing. Please wait a moment and try again.");
+      return;
+    }
+
     setProcessing(true);
     try {
-      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/create/`, {
+      const res = await fetchWithCSRF(`${getApiUrl()}/app/payment/create/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -174,7 +164,7 @@ export default function CartPage() {
             formData.append("razorpay_order_id", response.razorpay_order_id);
             formData.append("razorpay_signature", response.razorpay_signature);
 
-            const verifyRes = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/payment/callback/`, {
+            const verifyRes = await fetchWithCSRF(`${getApiUrl()}/app/payment/callback/`, {
               method: "POST",
               headers: { 
                 "Accept": "application/json",
@@ -205,7 +195,7 @@ export default function CartPage() {
             setProcessing(false);
           }
         },
-        theme: { color: "#3b82f6" }
+        theme: { color: "#e85d20" }
       };
 
       const rzp1 = new window.Razorpay(options);
@@ -223,8 +213,60 @@ export default function CartPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col">
+        <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center px-6 py-4">
+          <div className="w-16 h-5 rounded-lg skeleton-shimmer"></div>
+          <div className="flex-1 text-center">
+            <div className="w-24 h-6 rounded-lg skeleton-shimmer mx-auto"></div>
+          </div>
+          <div className="w-16"></div>
+        </nav>
+
+        <div className="flex-1 w-full max-w-4xl mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex-1 flex flex-col gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-3xl p-4 border border-gray-100 flex gap-4 shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl skeleton-shimmer shrink-0"></div>
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="w-3/4 h-5 rounded skeleton-shimmer"></div>
+                    <div className="w-1/3 h-4 rounded skeleton-shimmer"></div>
+                  </div>
+                  <div className="w-20 h-8 rounded-full skeleton-shimmer self-center"></div>
+                </div>
+              ))}
+            </div>
+            <div className="w-full md:w-80">
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                <div className="w-32 h-6 rounded skeleton-shimmer"></div>
+                <div className="space-y-2">
+                  <div className="w-full h-4 rounded skeleton-shimmer"></div>
+                  <div className="w-full h-4 rounded skeleton-shimmer"></div>
+                  <div className="w-full h-5 rounded skeleton-shimmer"></div>
+                </div>
+                <div className="w-full h-12 rounded-2xl skeleton-shimmer mt-4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mb-4">
+          <i className="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h2 className="text-xl font-bold font-heading text-[#2b1b10] mb-2">Failed to load cart</h2>
+        <p className="text-gray-500 text-sm mb-6 max-w-sm">{error}</p>
+        <button 
+          onClick={() => { setError(""); fetchCart(true); }}
+          className="bg-brand text-white px-6 py-2.5 rounded-xl font-bold hover:bg-brand-dark transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -256,49 +298,61 @@ export default function CartPage() {
             
             {/* Items Column */}
             <div className="flex-1 flex flex-col gap-4">
-              {data.items.map(item => (
-                <div key={item.id} className={`bg-white rounded-3xl p-4 border border-gray-100 flex gap-4 shadow-sm relative ${!item.is_available ? 'opacity-50' : ''}`}>
-                  <div className="w-16 h-16 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                    {item.image_url ? (
-                      <img src={getImageUrl(item.image_url) as string} alt={item.product_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <i className="fa-solid fa-bowl-food text-gray-300 text-xl"></i>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col justify-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{item.outlet_name}</div>
-                    <div className="font-bold font-heading text-[#2b1b10] leading-tight mb-1 pr-8">{item.product_name}</div>
-                    <div className="text-sm text-brand font-bold">₹{item.product_price} each</div>
-                  </div>
+              {data.items.map(item => {
+                const displayName = item.product_name || item.name || "Item";
+                const displayPrice = item.price ?? item.product_price ?? 0;
+                const isAvail = item.is_available !== false;
 
-                  <div className="flex flex-col items-end justify-between">
-                    <button 
-                      onClick={() => handleActionOptimistic('remove', item.id)}
-                      className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
-                      title="Remove"
-                    >
-                      <i className="fa-solid fa-trash-can text-sm"></i>
-                    </button>
+                return (
+                  <div key={item.id} className={`bg-white rounded-3xl p-4 border border-gray-100 flex gap-4 shadow-sm relative ${!isAvail ? 'opacity-50' : ''}`}>
+                    <div className="w-16 h-16 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {item.image_url ? (
+                        <img 
+                          src={getImageUrl(item.image_url, 160) as string} 
+                          alt={displayName} 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <i className="fa-solid fa-bowl-food text-gray-300 text-xl"></i>
+                      )}
+                    </div>
                     
-                    <div className="flex items-center gap-3 bg-gray-50 rounded-full px-1 py-1 border border-gray-100 mt-2">
+                    <div className="flex-1 flex flex-col justify-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{item.outlet_name}</div>
+                      <div className="font-bold font-heading text-[#2b1b10] leading-tight mb-1 pr-8">{displayName}</div>
+                      <div className="text-sm text-brand font-bold">₹{displayPrice} each</div>
+                    </div>
+
+                    <div className="flex flex-col items-end justify-between">
                       <button 
-                        onClick={() => handleActionOptimistic('decrease', item.id)}
-                        className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center hover:text-brand transition-colors text-sm"
+                        onClick={() => handleActionOptimistic('remove', item.id)}
+                        className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+                        title="Remove"
                       >
-                        <i className="fa-solid fa-minus text-xs"></i>
+                        <i className="fa-solid fa-trash-can text-sm"></i>
                       </button>
-                      <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
-                      <button 
-                        onClick={() => handleActionOptimistic('increase', item.id)}
-                        className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center hover:text-brand transition-colors text-sm"
-                      >
-                        <i className="fa-solid fa-plus text-xs"></i>
-                      </button>
+                      
+                      <div className="flex items-center gap-3 bg-gray-50 rounded-full px-1 py-1 border border-gray-100 mt-2">
+                        <button 
+                          onClick={() => handleActionOptimistic('decrease', item.id)}
+                          className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center hover:text-brand transition-colors text-sm"
+                        >
+                          <i className="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
+                        <button 
+                          onClick={() => handleActionOptimistic('increase', item.id)}
+                          className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center hover:text-brand transition-colors text-sm"
+                        >
+                          <i className="fa-solid fa-plus text-xs"></i>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Summary Column */}
@@ -313,17 +367,17 @@ export default function CartPage() {
                 
                 <div className="flex justify-between items-center text-sm font-medium text-gray-500 mb-4">
                   <span>Subtotal</span>
-                  <span className="font-bold text-[#2b1b10]">₹{data.total}</span>
+                  <span className="font-bold text-[#2b1b10]">₹{data.total ?? data.total_price ?? 0}</span>
                 </div>
                 
                 <div className="h-px w-full bg-gray-100 mb-4"></div>
                 
                 <div className="flex justify-between items-center text-lg font-bold font-heading text-[#2b1b10] mb-6">
                   <span>Grand Total</span>
-                  <span className="text-brand">₹{data.total}</span>
+                  <span className="text-brand">₹{data.total ?? data.total_price ?? 0}</span>
                 </div>
 
-                {data.can_order && data.total > 0 ? (
+                {data.can_order && (data.total > 0 || (data.total_price ?? 0) > 0) ? (
                   <button 
                     onClick={handleCheckout}
                     className="w-full bg-[#2b1b10] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-black transition-all shadow-md"

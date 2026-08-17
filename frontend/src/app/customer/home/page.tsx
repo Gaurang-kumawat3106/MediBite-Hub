@@ -6,14 +6,9 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { fetchWithCache, prefetchAPI } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { getImageUrl, getApiUrl } from "@/lib/utils";
 
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
-
-const getImageUrl = (url: string | null) => {
-  if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${process.env.NEXT_PUBLIC_API_URL}${url}`;
-};
 
 interface Outlet {
   id: number;
@@ -36,7 +31,7 @@ export default function CustomerHomePage() {
 
   const handleLogout = async () => {
     try {
-      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/logout/`, {
+      await fetchWithCSRF(`${getApiUrl()}/app/logout/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -54,7 +49,7 @@ export default function CustomerHomePage() {
 
     async function fetchData() {
       try {
-        const json = await fetchWithCache<HomeData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/home/`);
+        const json = await fetchWithCache<HomeData>(`${getApiUrl()}/app/customer/home/`);
         if (json.success) {
           setData(json);
         } else {
@@ -67,13 +62,47 @@ export default function CustomerHomePage() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, []);
 
-  if (loading) {
+  if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col items-center">
+        {/* Navbar Skeleton */}
+        <nav className="w-full max-w-4xl px-6 py-4 flex items-center justify-between sticky top-0 bg-[#faf9f6]/90 backdrop-blur-md z-40 border-b border-gray-100/50">
+          <div className="w-36 h-6 rounded-lg skeleton-shimmer"></div>
+          <div className="w-24 h-8 rounded-full skeleton-shimmer"></div>
+        </nav>
+
+        {/* Action Buttons Skeleton */}
+        <div className="w-full max-w-4xl px-6 py-4 flex gap-3">
+          <div className="flex-1 h-12 rounded-2xl skeleton-shimmer"></div>
+          <div className="flex-1 h-12 rounded-2xl skeleton-shimmer"></div>
+          <div className="flex-1 h-12 rounded-2xl skeleton-shimmer"></div>
+        </div>
+
+        {/* Hero Skeleton */}
+        <div className="w-full max-w-4xl px-6 py-8 space-y-3">
+          <div className="w-28 h-6 rounded-full skeleton-shimmer"></div>
+          <div className="w-72 h-10 rounded-2xl skeleton-shimmer"></div>
+          <div className="w-52 h-5 rounded-lg skeleton-shimmer"></div>
+        </div>
+
+        {/* Outlet Cards Skeleton */}
+        <div className="w-full max-w-4xl px-6 pb-12 flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-3xl p-4 flex items-center gap-5 border border-gray-100 shadow-sm">
+                <div className="w-24 h-24 rounded-2xl skeleton-shimmer shrink-0"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="w-3/4 h-6 rounded-xl skeleton-shimmer"></div>
+                  <div className="w-1/2 h-4 rounded-lg skeleton-shimmer"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -149,7 +178,7 @@ export default function CustomerHomePage() {
               <Link 
                 href={`/outlet/${outlet.id}`} 
                 key={outlet.id}
-                onMouseEnter={() => prefetchAPI(`${process.env.NEXT_PUBLIC_API_URL}/app/outlet/${outlet.id}/`)}
+                onMouseEnter={() => prefetchAPI(`${getApiUrl()}/app/outlet/${outlet.id}/`)}
                 className="group bg-white rounded-3xl p-4 flex items-center gap-5 border border-gray-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">

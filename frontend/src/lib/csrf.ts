@@ -1,17 +1,28 @@
+import { getApiUrl } from "./utils";
+
 let cachedToken = "";
 
+function getCookie(name: string): string {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : "";
+}
+
 export async function getCSRFToken(): Promise<string> {
+  const cookieToken = getCookie("csrftoken");
+  if (cookieToken) {
+    cachedToken = cookieToken;
+    return cookieToken;
+  }
   if (cachedToken) return cachedToken;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/app/csrf/`, {
+    const res = await fetch(`${getApiUrl()}/app/csrf/`, {
       method: "GET",
       headers: { "Accept": "application/json" },
       credentials: "include"
     });
     const contentType = res.headers.get("content-type");
     if (!res.ok || !contentType || !contentType.includes("application/json")) {
-      const text = await res.text();
-      console.error("Non-JSON response from server during getCSRFToken:", text.substring(0, 1000));
       return "";
     }
     const data = await res.json();

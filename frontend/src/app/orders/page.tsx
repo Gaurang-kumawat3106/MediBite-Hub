@@ -6,19 +6,34 @@ import Footer from "@/components/Footer";
 import { fetchWithCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { getApiUrl } from "@/lib/utils";
+
+interface OrderItem {
+  id: number;
+  product_name?: string;
+  name?: string;
+  quantity: number;
+  price: number;
+}
 
 interface Order {
   id: number;
   created_at: string;
+  completed_at?: string | null;
   status: string;
   payment_status: string;
-  total_price: number;
+  total_price?: number;
+  total_amount?: number;
+  token_number?: string | null;
+  token?: string | null;
   outlet_name: string | null;
+  items?: OrderItem[];
 }
 
 interface PopupToken {
   id: number;
   token_number: string;
+  token?: string;
   outlet_name: string;
   remaining_seconds: number;
 }
@@ -35,9 +50,9 @@ export default function OrdersPage() {
   const [error, setError] = useState("");
   const [showPopup, setShowPopup] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (force = false) => {
     try {
-      const json = await fetchWithCache<OrdersData>(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/orders/`);
+      const json = await fetchWithCache<OrdersData>(`${getApiUrl()}/app/customer/orders/`, force);
       if (json.success) {
         setData(json);
         if (json.popup_token) {
@@ -56,24 +71,22 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  useWebSocket("/ws/orders/", (data) => {
-    if (data.type === 'order_update' || data.type === 'token_update') {
-      fetchOrders();
+  useWebSocket("/ws/orders/", (wsData) => {
+    if (wsData.type === 'order_update' || wsData.type === 'token_update' || wsData.type === 'new_order') {
+      fetchOrders(true);
     }
   });
-
-
 
   const handleCancel = async (orderId: number) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
       setLoading(true);
-      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/cancel/`, {
+      await fetchWithCSRF(`${getApiUrl()}/app/customer/order/${orderId}/cancel/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      await fetchOrders();
+      await fetchOrders(true);
     } catch (e) {
       console.error(e);
       setLoading(false);
@@ -83,7 +96,7 @@ export default function OrdersPage() {
   const handleReorder = async (orderId: number) => {
     try {
       setLoading(true);
-      await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/customer/order/${orderId}/reorder/`, {
+      await fetchWithCSRF(`${getApiUrl()}/app/customer/order/${orderId}/reorder/`, {
         method: "POST",
         headers: { "Accept": "application/json" },
         credentials: "include"
@@ -114,8 +127,32 @@ export default function OrdersPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#faf9f6] flex flex-col">
+        <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center px-6 py-4">
+          <div className="w-16 h-5 rounded-lg skeleton-shimmer"></div>
+          <div className="flex-1 text-center">
+            <div className="w-28 h-6 rounded-lg skeleton-shimmer mx-auto"></div>
+          </div>
+          <div className="w-16"></div>
+        </nav>
+
+        <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8 space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+              <div className="flex justify-between border-b border-gray-100 pb-4">
+                <div className="space-y-2">
+                  <div className="w-36 h-6 rounded-lg skeleton-shimmer"></div>
+                  <div className="w-48 h-4 rounded skeleton-shimmer"></div>
+                </div>
+                <div className="w-20 h-6 rounded-full skeleton-shimmer"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="w-full h-4 rounded skeleton-shimmer"></div>
+                <div className="w-3/4 h-4 rounded skeleton-shimmer"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -146,7 +183,7 @@ export default function OrdersPage() {
             
             <div className="bg-orange-50 border border-brand/20 rounded-2xl p-4 mb-6">
               <div className="text-xs uppercase font-bold text-brand tracking-wider mb-1">Your Token Number</div>
-              <div className="text-4xl font-black text-[#2b1b10] font-heading tracking-widest">{data.popup_token.token_number}</div>
+              <div className="text-4xl font-black text-[#2b1b10] font-heading tracking-widest">{data.popup_token.token_number || data.popup_token.token}</div>
             </div>
 
             <button 
@@ -162,52 +199,73 @@ export default function OrdersPage() {
       <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8">
         {data?.orders && data.orders.length > 0 ? (
           <div className="flex flex-col gap-4">
-            {data.orders.map(order => (
-              <div key={order.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-brand/30 transition-colors">
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-bold text-[#2b1b10] text-lg">Order #{order.id}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </div>
-                  
-                  <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
-                    <i className="fa-solid fa-store w-4 text-center"></i> {order.outlet_name || "Unknown"}
-                  </div>
-                  <div className="text-gray-500 text-sm flex items-center gap-2">
-                    <i className="fa-regular fa-calendar w-4 text-center"></i> {formatDate(order.created_at)}
-                  </div>
-                </div>
+            {data.orders.map(order => {
+              const displayTotal = order.total_price ?? order.total_amount ?? 0;
+              const tokenNo = order.token_number || order.token;
 
-                <div className="flex flex-col md:items-end justify-between gap-4">
-                  <div className="font-bold font-heading text-xl text-[#2b1b10]">
-                    ₹{order.total_price}
-                  </div>
+              return (
+                <div key={order.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-brand/30 transition-colors">
                   
-                  <div className="flex gap-2">
-                    {order.status === 'pending' && (
-                      <button 
-                        onClick={() => handleCancel(order.id)}
-                        className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-100"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                    {(order.status === 'completed' || order.status === 'cancelled') && (
-                      <button 
-                        onClick={() => handleReorder(order.id)}
-                        className="px-4 py-2 text-sm font-bold text-brand bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors border border-brand/20 flex items-center gap-2"
-                      >
-                        <i className="fa-solid fa-rotate-right"></i> Reorder
-                      </button>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <span className="font-bold text-[#2b1b10] text-lg">Order #{order.id}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                      {tokenNo && (
+                        <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-orange-50 text-brand border border-brand/20">
+                          Token #{tokenNo}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+                      <i className="fa-solid fa-store w-4 text-center"></i> {order.outlet_name || "Unknown Outlet"}
+                    </div>
+                    <div className="text-gray-500 text-sm flex items-center gap-2 mb-3">
+                      <i className="fa-regular fa-calendar w-4 text-center"></i> {formatDate(order.created_at)}
+                    </div>
+
+                    {order.items && order.items.length > 0 && (
+                      <div className="text-xs text-gray-500 bg-gray-50 rounded-xl p-3 border border-gray-100 flex flex-col gap-1">
+                        {order.items.map(item => (
+                          <div key={item.id} className="flex justify-between">
+                            <span className="font-medium">{item.quantity}x {item.product_name || item.name}</span>
+                            <span>₹{item.price * item.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
 
-              </div>
-            ))}
+                  <div className="flex flex-col md:items-end justify-between gap-4">
+                    <div className="font-bold font-heading text-xl text-[#2b1b10]">
+                      ₹{displayTotal}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {order.status === 'pending' && (
+                        <button 
+                          onClick={() => handleCancel(order.id)}
+                          className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-100"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      {(order.status === 'completed' || order.status === 'cancelled') && (
+                        <button 
+                          onClick={() => handleReorder(order.id)}
+                          className="px-4 py-2 text-sm font-bold text-brand bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors border border-brand/20 flex items-center gap-2"
+                        >
+                          <i className="fa-solid fa-rotate-right"></i> Reorder
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-center py-20 px-6 bg-white rounded-3xl border border-gray-100 shadow-sm">

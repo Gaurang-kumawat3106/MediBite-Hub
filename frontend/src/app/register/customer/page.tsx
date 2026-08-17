@@ -4,6 +4,7 @@ import { useState } from "react";
 import AuthLayout from "@/components/AuthLayout";
 import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { getApiUrl } from "@/lib/utils";
 
 export default function CustomerRegisterPage() {
   const [formData, setFormData] = useState({
@@ -35,7 +36,7 @@ export default function CustomerRegisterPage() {
       data.append("password1", formData.password1);
       data.append("password2", formData.password2);
 
-      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/app/register/customer/`, {
+      const res = await fetchWithCSRF(`${getApiUrl()}/app/register/customer/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

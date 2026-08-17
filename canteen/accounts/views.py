@@ -1,5 +1,6 @@
-from django.shortcuts import render
-from django.db.models import Prefetch, redirect, get_object_or_404
+from functools import wraps
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Prefetch
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -15,8 +16,21 @@ from django.middleware.csrf import get_token
 import razorpay
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.middleware.csrf import get_token
+
+def login_required_or_401(view_func):
+    """
+    Decorator for views that checks that the user is logged in.
+    If the request is JSON/AJAX and user is not authenticated, returns HTTP 401 instead of 302 redirect.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Authentication required', 'login_required': True}, status=401)
+            return redirect('login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 @ensure_csrf_cookie
 def csrf_token_view(request):
@@ -526,7 +540,7 @@ def password_reset_confirm(request, uidb64, token):
 #     })
 import time
 
-@login_required
+@login_required_or_401
 def customer_home(request):
     total_start = time.perf_counter()
 
@@ -596,7 +610,7 @@ def get_order_stats(outlet):
         'month_collection': total_collection(month_orders),
     }
 
-@login_required
+@login_required_or_401
 def outlet_home(request):
     if not request.user.is_outlet_head:
         return redirect('login')
@@ -635,14 +649,16 @@ def outlet_home(request):
 # ---------------- OUTLET DETAIL (CUSTOMER + HEAD) ----------------
 def outlet_detail(request, id):
     outlet = get_object_or_404(Outlet, id=id)
+    user = getattr(request, 'user', None)
+    is_authenticated = bool(user and getattr(user, 'is_authenticated', False))
     is_owner = (
-        request.user.is_authenticated
-        and request.user.is_outlet_head
-        and getattr(request.user, 'outlet', None) == outlet
+        is_authenticated
+        and getattr(user, 'is_outlet_head', False)
+        and getattr(user, 'outlet', None) == outlet
     )
 
     # Customers (and anonymous users) must not see unapproved outlets.
-    if not outlet.is_approved and not is_owner and not getattr(request.user, 'is_staff', False):
+    if not outlet.is_approved and not is_owner and not getattr(user, 'is_staff', False):
         return redirect('customer_home')
 
     ui = getattr(outlet, 'ui', None)
@@ -654,7 +670,7 @@ def outlet_detail(request, id):
         Prefetch('products', queryset=Product.objects.filter(is_available=True))
     )
 
-    if request.headers.get('Accept') == 'application/json':
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
             'outlet': {
@@ -670,7 +686,10 @@ def outlet_detail(request, id):
                         {
                             'id': p.id,
                             'name': p.name,
-                            'customer_price': p.customer_price,
+                            'product_name': p.name,
+                            'customer_price': float(p.customer_price),
+                            'price': float(p.customer_price),
+                            'is_available': p.is_available,
                             'image_url': p.image.url if p.image else None
                         } for p in c.products.all()
                     ]
@@ -723,51 +742,70 @@ def add_category(request):
         logout(request)
         return redirect('login')
 
-    outlet = request.user.outlet
+@login_required_or_401
+def add_category(request):
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
+    if _is_pending_outlet_user(request.user):
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
     if request.method == 'POST':
         name = request.POST.get('name')
+        if not name:
+            try:
+                body = json.loads(request.body.decode('utf-8'))
+                name = body.get('name')
+            except Exception:
+                pass
+
         if name:
-            if Category.objects.filter(outlet=outlet, name=name).exists():
-                # For now just redirect, but ideally show an error
+            name = name.strip()
+            if Category.objects.filter(outlet=outlet, name__iexact=name).exists():
+                if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+                    return JsonResponse({'success': False, 'error': f'Category "{name}" already exists.'}, status=400)
                 return redirect('outlet_home')
             Category.objects.create(outlet=outlet, name=name)
             
-        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
             return JsonResponse({'success': True})
             
     return redirect('outlet_home')
 
 
-@login_required
+@login_required_or_401
 def delete_category(request, category_id):
-    if not request.user.is_outlet_head:
-        return redirect('login')
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
     if _is_pending_outlet_user(request.user):
-        logout(request)
-        return redirect('login')
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
 
     category = get_object_or_404(
         Category,
         id=category_id,
-        outlet__manager=request.user
+        outlet=getattr(request.user, 'outlet', None)
     )
 
     outlet_id = category.outlet.id
     category.delete()
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+        return JsonResponse({'success': True})
     return redirect('outlet_detail', outlet_id)
 
 
 # ---------------- PRODUCT MANAGEMENT ----------------
-@login_required
+@login_required_or_401
 def add_product(request):
-    if not request.user.is_outlet_head:
-        return redirect('login')
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
     if _is_pending_outlet_user(request.user):
-        logout(request)
-        return redirect('login')
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
 
-    outlet = request.user.outlet
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
     if request.method == 'POST':
         category_id = request.POST.get('category')
@@ -780,11 +818,12 @@ def add_product(request):
             name=request.POST.get('name'),
             price=request.POST.get('price')
         )
-        product.image = request.FILES.get('image')
-        product.save()
+        if request.FILES.get('image'):
+            product.image = request.FILES.get('image')
+            product.save()
         
-        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': True})
+        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({'success': True, 'product_id': product.id})
 
     return redirect('outlet_home')
 
@@ -795,29 +834,28 @@ def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     return render(request, 'accounts/product_detail.html', {'product': product})
 
-@login_required
+@login_required_or_401
 def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    product = get_object_or_404(Product.objects.select_related('outlet'), id=product_id)
 
-    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1'
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' 
+        or 'application/json' in request.headers.get('Accept', '') 
+        or request.GET.get('ajax') == '1'
+    )
 
     if not product.is_available:
         if is_ajax:
             return JsonResponse({'success': False, 'message': 'Product is unavailable'}, status=400)
         return redirect('outlet_detail', product.outlet.id)
 
-    cart, created = Cart.objects.get_or_create(user=request.user)
+    cart, _ = Cart.objects.get_or_create(user=request.user)
 
-    # Check if cart already has items from another outlet
-    if cart.items.exists():
-        existing_outlet = cart.items.first().product.outlet
-        if existing_outlet != product.outlet:
-            # Option 1: Clear cart and add new product
-            cart.items.all().delete()
-            messages.info(request, f"Your cart was cleared to add items from {product.outlet.name}")
-            # Option 2: Reject addition (simpler)
-            # messages.warning(request, f"You can only order from one outlet at a time. Clear your cart first.")
-            # return redirect('cart')
+    # Check if cart already has items from another outlet in 1 query
+    first_item = cart.items.select_related('product').first()
+    if first_item and first_item.product.outlet_id != product.outlet_id:
+        cart.items.all().delete()
+        messages.info(request, f"Your cart was cleared to add items from {product.outlet.name}")
 
     item, created = CartItem.objects.get_or_create(
         cart=cart,
@@ -826,36 +864,46 @@ def add_to_cart(request, product_id):
 
     if not created:
         item.quantity += 1
-        item.save()
+        item.save(update_fields=['quantity'])
 
     if is_ajax:
-        return JsonResponse({'success': True, 'message': 'Product added to cart successfully.'})
+        return JsonResponse({
+            'success': True, 
+            'message': f'{product.name} added to cart.',
+            'item_id': item.id,
+            'quantity': item.quantity
+        })
 
     return redirect('cart')
 
-@login_required
+@login_required_or_401
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
-    items = cart.items.select_related('product').all()
+    items = cart.items.select_related('product__outlet').all()
 
     total = sum(item.total_price() for item in items)
     can_order = all(item.product.is_available for item in items) and bool(items)
 
-    if request.headers.get('Accept') == 'application/json':
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
             'items': [
                 {
                     'id': item.id,
                     'product_id': item.product.id,
+                    'product_name': item.product.name,
                     'name': item.product.name,
+                    'product_price': float(item.product.customer_price),
                     'price': float(item.product.customer_price),
                     'quantity': item.quantity,
+                    'total_price': float(item.total_price()),
+                    'is_available': item.product.is_available,
                     'image_url': item.product.image.url if item.product.image else None,
                     'outlet_name': item.product.outlet.name
                 } for item in items
             ],
             'total': float(total),
+            'total_price': float(total),
             'can_order': can_order,
             'razorpay_key_id': getattr(settings, "RAZORPAY_KEY_ID", "")
         })
@@ -927,7 +975,25 @@ def create_razorpay_order(request):
 
             # Step 3: Create the Razorpay order using the exact same amount
             # that is stored on the internal Order.
-            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+            key_id = getattr(settings, 'RAZORPAY_KEY_ID', None)
+            key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', None)
+
+            if not key_id or not key_secret:
+                if settings.DEBUG:
+                    import uuid
+                    rzp_id = f"order_dev_{uuid.uuid4().hex[:14]}"
+                    order.razorpay_order_id = rzp_id
+                    order.save(update_fields=["razorpay_order_id"])
+                    return JsonResponse({
+                        "success": True,
+                        "razorpay_order_id": rzp_id,
+                        "amount": amount_in_paisa,
+                        "key": "rzp_test_placeholder",
+                        "dev_mode": True
+                    })
+                return JsonResponse({"success": False, "error": "Razorpay credentials are not configured."}, status=500)
+
+            client = razorpay.Client(auth=(key_id, key_secret))
             razorpay_order = client.order.create({
                 "amount": amount_in_paisa,
                 "currency": "INR",
@@ -940,22 +1006,24 @@ def create_razorpay_order(request):
 
     except Exception as e:
         print("CREATE_RAZORPAY_ORDER ERROR:", e)
-        return JsonResponse({"success": False, "error": "Failed to create payment order. Please try again."}, status=500)
+        return JsonResponse({"success": False, "error": "Failed to create payment order. Please check gateway config."}, status=500)
 
     return JsonResponse({
         "success": True,
         "razorpay_order_id": razorpay_order["id"],
         "amount": amount_in_paisa,
-        "key": settings.RAZORPAY_KEY_ID
+        "key": getattr(settings, "RAZORPAY_KEY_ID", "")
     })
 
 
 
     
-@login_required
+@login_required_or_401
 def remove_from_cart(request, item_id):
-    item = get_object_or_404(CartItem, id=item_id)
+    item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
     item.delete()
+    if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'message': 'Item removed from cart.'})
     return redirect('cart')
 
 @login_required
@@ -995,29 +1063,36 @@ def payment_callback(request):
         messages.error(request, "Invalid payment response.")
         return redirect("cart")
 
-    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    is_dev_order = razorpay_order_id.startswith("order_dev_") and settings.DEBUG
+    client = None
 
-    params_dict = {
-        "razorpay_order_id": razorpay_order_id,
-        "razorpay_payment_id": payment_id,
-        "razorpay_signature": signature
-    }
+    if not is_dev_order:
+        key_id = getattr(settings, 'RAZORPAY_KEY_ID', None)
+        key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', None)
+        if not key_id or not key_secret:
+            if is_json: return JsonResponse({"success": False, "error": "Payment credentials not configured."})
+            messages.error(request, "Payment credentials not configured.")
+            return redirect("cart")
 
-    try:
-        # ── Step 1: Verify HMAC signature ────────────────────────────────────
-        # This is cryptographic proof that the callback came from Razorpay.
-        client.utility.verify_payment_signature(params_dict)
+        client = razorpay.Client(auth=(key_id, key_secret))
+        params_dict = {
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": payment_id,
+            "razorpay_signature": signature
+        }
 
-    except razorpay.errors.SignatureVerificationError:
-        if is_json: return JsonResponse({"success": False, "error": "Payment verification failed."})
-        messages.error(request, "Payment verification failed.")
-        return redirect("cart")
-
-    except Exception as e:
-        print("PAYMENT_CALLBACK SIGNATURE ERROR:", e)
-        if is_json: return JsonResponse({"success": False, "error": "Something went wrong during payment verification."})
-        messages.error(request, "Something went wrong during payment verification.")
-        return redirect("cart")
+        try:
+            # ── Step 1: Verify HMAC signature ────────────────────────────────────
+            client.utility.verify_payment_signature(params_dict)
+        except razorpay.errors.SignatureVerificationError:
+            if is_json: return JsonResponse({"success": False, "error": "Payment verification failed."})
+            messages.error(request, "Payment verification failed.")
+            return redirect("cart")
+        except Exception as e:
+            print("PAYMENT_CALLBACK SIGNATURE ERROR:", e)
+            if is_json: return JsonResponse({"success": False, "error": "Something went wrong during payment verification."})
+            messages.error(request, "Something went wrong during payment verification.")
+            return redirect("cart")
 
     try:
         with transaction.atomic():
@@ -1042,28 +1117,17 @@ def payment_callback(request):
                 return redirect("customer_orders")
 
             # ── Step 4: Server-side amount verification ───────────────────────
-            # Fetch the actual payment from Razorpay and compare its amount
-            # against what is stored on our internal Order.
-            # This prevents tampered frontend amounts from being accepted.
-            try:
-                rzp_payment = client.payment.fetch(payment_id)
-                rzp_amount_paisa = rzp_payment.get("amount", 0)
-                expected_amount_paisa = int(order.total_amount * 100)
-                if rzp_amount_paisa != expected_amount_paisa:
-                    print(
-                        f"PAYMENT_CALLBACK AMOUNT MISMATCH: "
-                        f"Order {order.id} expected ₹{order.total_amount} "
-                        f"({expected_amount_paisa} paisa) but Razorpay paid "
-                        f"{rzp_amount_paisa} paisa."
-                    )
-                    if is_json: return JsonResponse({"success": False, "error": "Payment amount mismatch. Please contact support."})
-                    messages.error(request, "Payment amount mismatch. Please contact support.")
-                    return redirect("cart")
-            except Exception as e:
-                # If we can't fetch the payment details, log and continue —
-                # the HMAC signature already verified Razorpay authenticity.
-                # Amount mismatch attacks are thus still mitigated.
-                print(f"PAYMENT_CALLBACK: Could not verify amount (non-fatal): {e}")
+            if not is_dev_order and client:
+                try:
+                    rzp_payment = client.payment.fetch(payment_id)
+                    rzp_amount_paisa = rzp_payment.get("amount", 0)
+                    expected_amount_paisa = int(order.total_amount * 100)
+                    if rzp_amount_paisa != expected_amount_paisa:
+                        if is_json: return JsonResponse({"success": False, "error": "Payment amount mismatch."})
+                        messages.error(request, "Payment amount mismatch.")
+                        return redirect("cart")
+                except Exception as err:
+                    print(f"PAYMENT_CALLBACK: Amount check skipped (non-fatal): {err}")
 
             # ── Step 5: Verify order has items (the snapshot must exist) ──────
             # The OrderItems were created in create_razorpay_order().
@@ -1302,13 +1366,13 @@ def payment_webhook(request):
 
 
 
-@login_required
+@login_required_or_401
 def customer_orders(request):
     if not request.user.is_customer:
         return redirect('login')
     
     # Only show orders that are not unpaid (e.g., paid, cancelled, pending but not unpaid)
-    orders = Order.objects.filter(user=request.user).exclude(payment_status='unpaid').order_by('-created_at')
+    orders = Order.objects.filter(user=request.user).exclude(payment_status='unpaid').select_related('outlet', 'token').prefetch_related('items__product').order_by('-created_at')
     # Popup only if the token is still valid (<= 3 hours since completion).
     popup_token = None
     candidate = (
@@ -1326,7 +1390,7 @@ def customer_orders(request):
             popup_token.viewed_at = timezone.now()
             popup_token.save(update_fields=['is_viewed', 'viewed_at'])
 
-    if request.headers.get('Accept') == 'application/json':
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
             'orders': [
@@ -1335,13 +1399,17 @@ def customer_orders(request):
                     'status': o.status,
                     'payment_status': o.payment_status,
                     'total_amount': float(o.total_amount),
+                    'total_price': float(o.total_amount),
                     'created_at': o.created_at.isoformat(),
+                    'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'outlet_name': o.outlet.name,
                     'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
                     'items': [
                         {
                             'id': i.id,
-                            'product_name': i.product.name if i.product else i.product_name,
+                            'product_name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
+                            'name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
                             'quantity': i.quantity,
                             'price': float(i.unit_price)
                         } for i in o.items.all()
@@ -1352,6 +1420,7 @@ def customer_orders(request):
                 'id': popup_token.id,
                 'order_id': popup_token.order.id,
                 'token_number': str(popup_token.token_no),
+                'token': str(popup_token.token_no),
                 'outlet_name': popup_token.outlet.name,
                 'remaining_seconds': getattr(popup_token, 'remaining_seconds', 0)
             } if popup_token else None
@@ -1366,11 +1435,14 @@ def cancel_order(request, order_id):
             order.status = 'cancelled'
             order.cancelled_by = 'customer'
             order.save()
+            if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'status': 'cancelled'})
+    if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'error': 'Cannot cancel this order.'})
     return redirect('customer_orders')
 
-@login_required
+@login_required_or_401
 def outlet_orders(request):
-
     if not request.user.is_outlet_head:
         return redirect('login')
     if _is_pending_outlet_user(request.user):
@@ -1386,7 +1458,7 @@ def outlet_orders(request):
         'items__product', 'token'
     ).order_by('-created_at')
 
-    if request.headers.get('Accept') == 'application/json':
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
             'orders': [
@@ -1395,13 +1467,17 @@ def outlet_orders(request):
                     'status': o.status,
                     'payment_status': o.payment_status,
                     'total_amount': float(o.total_amount),
+                    'total_price': float(o.total_amount),
                     'created_at': o.created_at.isoformat(),
+                    'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'customer_name': o.user.username if o.user else "Guest",
                     'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
                     'items': [
                         {
                             'id': i.id,
-                            'product_name': i.product.name if i.product else i.product_name,
+                            'product_name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
+                            'name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
                             'quantity': i.quantity,
                             'price': float(i.unit_price)
                         } for i in o.items.all()
@@ -1413,7 +1489,7 @@ def outlet_orders(request):
         'orders': orders
     }) 
 
-@login_required
+@login_required_or_401
 def outlet_delivered_orders(request):
     if not request.user.is_outlet_head:
         return redirect('login')
@@ -1446,14 +1522,14 @@ def outlet_delivered_orders(request):
         start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
         end = now.replace(hour=0, minute=0, second=0, microsecond=0)
         orders = orders.filter(completed_at__gte=start, completed_at__lt=end)
-    elif filter_val == 'week':
+    elif filter_val in ('week', 'this_week'):
         week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
         orders = orders.filter(completed_at__gte=week_start)
-    elif filter_val == 'month':
+    elif filter_val in ('month', 'this_month'):
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         orders = orders.filter(completed_at__gte=month_start)
         
-    if request.headers.get('Accept') == 'application/json':
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
             'orders': [
@@ -1462,13 +1538,17 @@ def outlet_delivered_orders(request):
                     'status': o.status,
                     'payment_status': o.payment_status,
                     'total_amount': float(o.total_amount),
+                    'total_price': float(o.total_amount),
                     'created_at': o.created_at.isoformat(),
+                    'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'customer_name': o.user.username if o.user else "Guest",
                     'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
                     'items': [
                         {
                             'id': i.id,
-                            'product_name': i.product.name if i.product else i.product_name,
+                            'product_name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
+                            'name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
                             'quantity': i.quantity,
                             'price': float(i.unit_price)
                         } for i in o.items.all()
@@ -1540,47 +1620,77 @@ def _token_remaining_seconds(token: OrderToken):
     remaining = (_token_expires_at(token) - timezone.now()).total_seconds()
     return int(remaining) if remaining > 0 else 0
 
-@login_required
+@login_required_or_401
 def update_order_status(request, order_id):
-    if not request.user.is_outlet_head:
-        return redirect('login')
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
     if _is_pending_outlet_user(request.user):
-        logout(request)
-        return redirect('login')
-    order = get_object_or_404(Order, id=order_id, outlet=request.user.outlet)
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
+    
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
+
+    order = get_object_or_404(Order, id=order_id, outlet=outlet)
     if request.method == 'POST':
         new_status = request.POST.get('status')
+        if not new_status:
+            try:
+                body = json.loads(request.body.decode('utf-8'))
+                new_status = body.get('status')
+            except Exception:
+                pass
+        
         if new_status == 'ready':
             new_status = 'completed'
         
         old_status = order.status
-        if new_status in ['preparing', 'completed', 'delivered', 'cancelled']:
+        if new_status in ['pending', 'preparing', 'completed', 'delivered', 'cancelled']:
             order.status = new_status
             if new_status == 'cancelled':
                 order.cancelled_by = 'outlet'
             if new_status == 'completed' and old_status != 'completed':
                 order.completed_at = timezone.now()
             order.save()
-            if new_status == 'completed' and old_status != 'completed':
+
+            token_no = None
+            if new_status == 'completed':
                 # Generate token only when an order becomes "completed".
-                generate_token_for_order(order)
+                token_obj = generate_token_for_order(order)
+                if token_obj:
+                    token_no = token_obj.token_no
             
-            # Trigger WebSocket notification for status change
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"user_{order.user.id}",
-                {
-                    "type": "order_update",
-                    "order_id": order.id,
-                    "status": new_status,
-                    "message": f"Your order status is now: {new_status}"
-                }
-            )
-        return JsonResponse({'success': True, 'status': order.status})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+            # Trigger WebSocket notifications for status change to both customer and outlet
+            try:
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{order.user.id}",
+                        {
+                            "type": "order_update",
+                            "order_id": order.id,
+                            "status": new_status,
+                            "token_no": token_no,
+                            "message": f"Your order status is now: {new_status}"
+                        }
+                    )
+                    async_to_sync(channel_layer.group_send)(
+                        f"outlet_{outlet.id}",
+                        {
+                            "type": "order_update",
+                            "order_id": order.id,
+                            "status": new_status,
+                            "token_no": token_no
+                        }
+                    )
+            except Exception as ws_err:
+                print("WS broadcast warning:", ws_err)
+
+            return JsonResponse({'success': True, 'status': order.status, 'token_no': token_no})
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
 
-@login_required
+@login_required_or_401
 def customer_token(request):
     if not request.user.is_customer:
         return redirect('login')
@@ -1634,28 +1744,34 @@ def customer_token(request):
     })
     
     
-@login_required
+@login_required_or_401
 def increase_quantity(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
     item.quantity += 1
     item.save()
+    if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'quantity': item.quantity})
     return redirect('cart')
     
     
-@login_required
+@login_required_or_401
 def decrease_quantity(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
     if item.quantity > 1:
         item.quantity -= 1
         item.save()
+        if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'quantity': item.quantity})
     else:
         item.delete()
+        if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'quantity': 0, 'deleted': True})
 
     return redirect('cart')
 
 # ---------------- PRODUCT AVAILABILITY MANAGEMENT ----------------
 
-@login_required
+@login_required_or_401
 def outlet_products_view(request):
     if not request.user.is_outlet_head:
         return redirect('login')
@@ -1690,7 +1806,7 @@ def outlet_products_view(request):
         'categories': categories,
     })
 
-@login_required
+@login_required_or_401
 def toggle_availability(request, product_id):
     if not request.user.is_outlet_head:
         return redirect('login')
@@ -1720,7 +1836,7 @@ def toggle_availability(request, product_id):
         return JsonResponse({'success': True, 'is_available': product.is_available})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
-@login_required
+@login_required_or_401
 def edit_product(request, product_id):
     if not request.user.is_outlet_head:
         return redirect('login')

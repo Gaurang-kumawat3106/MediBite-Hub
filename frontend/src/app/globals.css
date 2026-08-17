@@ -33,3 +33,18 @@ h1, h2, h3, h4, h5, h6 {
     @apply w-full flex items-center justify-center bg-brand text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-brand-dark hover:shadow-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed;
   }
 }
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f3efe9 25%, #ffffff 50%, #f3efe9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+}

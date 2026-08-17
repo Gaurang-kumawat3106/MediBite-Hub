@@ -1,7 +1,9 @@
 import os
 import sys
 from pathlib import Path
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
+# pyrefly: ignore [missing-import]
 import dj_database_url
 
 
@@ -16,29 +18,54 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['medibite-hub.onrender.com', 
-                 'localhost', 
-                 'bhukkadbox.in',
-                 'www.bhukkadbox.in',
-                 'api.bhukkadbox.in',
-                 '127.0.0.1',]
+ALLOWED_HOSTS = [
+    'medibite-hub.onrender.com', 
+    'localhost', 
+    'bhukkadbox.in',
+    'www.bhukkadbox.in',
+    'api.bhukkadbox.in',
+    '127.0.0.1',
+]
+
+# Allow custom environment-provided hosts on AWS / Render
+extra_hosts = os.environ.get('ALLOWED_HOSTS_EXTRA') or os.environ.get('ALLOWED_HOSTS_LIST')
+if extra_hosts:
+    for h in extra_hosts.split(','):
+        h = h.strip()
+        if h and h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
+
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
 
 # For Render's external hostname
 RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://medi-bite-hub.vercel.app",
-#     'https://bhukkadbox.in',
-#     'https://www.bhukkadbox.in',
-#     'https://*.onrender.com',
-#     ]
-
 CORS_ALLOWED_ORIGINS = [
     "https://medi-bite-hub.vercel.app",
     "https://bhukkadbox.in",
     "https://www.bhukkadbox.in",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+extra_cors = os.environ.get('CORS_ALLOWED_ORIGINS')
+if extra_cors:
+    for origin in extra_cors.split(','):
+        origin = origin.strip()
+        if origin and origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
+    r"^https://.*\.bhukkadbox\.in$",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -60,13 +87,23 @@ CSRF_TRUSTED_ORIGINS = [
     "https://bhukkadbox.in",
     "https://www.bhukkadbox.in",
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
     "https://*.onrender.com",
 ]
 
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = True
+extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if extra_csrf:
+    for origin in extra_csrf.split(','):
+        origin = origin.strip()
+        if origin and origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+
+CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+SESSION_COOKIE_SECURE = not DEBUG
 
 # Use RENDER_EXTERNAL_HOSTNAME as fallback if SITE_URL is not explicitly set
 if RENDER_EXTERNAL_HOSTNAME and not os.getenv('SITE_URL'):
@@ -138,7 +175,7 @@ REDIS_URL = os.getenv('REDIS_URL')
 
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True 
+SECURE_SSL_REDIRECT = not DEBUG 
 
 raw_db_url = os.environ.get("DATABASE_URL", "").strip().strip("'").strip('"')
 
@@ -147,8 +184,7 @@ if raw_db_url:
     DATABASES = {
         'default': dj_database_url.parse(
             raw_db_url,
-            # changed = 600 to =0 on apr 3 
-            conn_max_age=0,
+            conn_max_age=600,
             conn_health_checks=True,
             ssl_require=True, # Forces SSL for Neon
         )

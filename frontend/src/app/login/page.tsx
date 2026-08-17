@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import AuthLayout from "@/components/AuthLayout";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
+import { getApiUrl } from "@/lib/utils";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const [welcomeName, setWelcomeName] = useState("Guest");
 
@@ -21,7 +24,15 @@ export default function LoginPage() {
     if (savedName) {
       setWelcomeName(savedName);
     }
-  }, []);
+
+    if (searchParams.get("verified") === "true") {
+      setSuccessMsg("Email verified successfully! You can now log in.");
+    } else if (searchParams.get("error") === "invalid_token") {
+      setErrorMsg("Verification link is invalid or expired. Please request a new one.");
+    } else if (searchParams.get("error") === "already_verified") {
+      setSuccessMsg("Your email is already verified. Please log in.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +49,7 @@ export default function LoginPage() {
         formData.append("remember_me", "on");
       }
 
-      const res = await fetchWithCSRF(`${process.env.NEXT_PUBLIC_API_URL}/`, {
+      const res = await fetchWithCSRF(`${getApiUrl()}/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -88,6 +99,13 @@ export default function LoginPage() {
       } 
       subtitle="Log in to access your account"
     >
+      {successMsg && (
+        <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-xl flex items-start gap-2 text-sm font-medium">
+          <i className="fa-solid fa-circle-check mt-0.5"></i>
+          <div>{successMsg}</div>
+        </div>
+      )}
+
       {errorMsg && (
         <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-start gap-2 text-sm font-medium">
           <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
@@ -158,7 +176,7 @@ export default function LoginPage() {
             />
             Remember me
           </label>
-          <a href={`${process.env.NEXT_PUBLIC_API_URL}/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
+          <a href={`${getApiUrl()}/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
             Forgot password?
           </a>
         </div>
@@ -169,7 +187,7 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <a href={`${process.env.NEXT_PUBLIC_API_URL}/resend-verification/`} className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
+        <a href={`${getApiUrl()}/resend-verification/`} className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
           Haven't received verification link?
         </a>
         <div className="text-sm text-gray-400 font-medium">New here?</div>
@@ -183,5 +201,17 @@ export default function LoginPage() {
         </div>
       </div>
     </AuthLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

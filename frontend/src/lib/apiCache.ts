@@ -5,7 +5,7 @@ type CacheItem<T> = {
 };
 
 const cache = new Map<string, CacheItem<any>>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 4 * 1000; // 4 seconds fresh TTL with fast SWR
 
 export const prefetchAPI = (url: string) => {
   if (cache.has(url)) return;
@@ -15,22 +15,22 @@ export const prefetchAPI = (url: string) => {
     credentials: "include"
   })
     .then(async res => {
-      if (res.status === 401 || res.status === 403) throw new Error("Unauthorized");
+      if (res.status === 401 || res.status === 403) return null;
       const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) throw new Error("Not JSON");
+      if (!contentType || !contentType.includes("application/json")) return null;
       return res.json();
     })
     .then(data => {
-      if (data.success) {
+      if (data && data.success) {
         cache.set(url, { data, timestamp: Date.now() });
       } else {
         cache.delete(url);
       }
       return data;
     })
-    .catch(err => {
+    .catch(() => {
       cache.delete(url);
-      throw err;
+      return null;
     });
 
   cache.set(url, { data: null, timestamp: 0, promise });
@@ -42,7 +42,6 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
   if (item && !forceRevalidate) {
     if (item.promise) return item.promise;
     if (Date.now() - item.timestamp < CACHE_TTL) {
-      prefetchAPI(url);
       return item.data;
     }
   }
@@ -52,19 +51,22 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
     credentials: "include"
   })
     .then(async res => {
-      if (res.status === 401 || res.status === 403) {
-         window.location.href = "/login";
-         throw new Error("Unauthorized");
+      if (res.status === 401) {
+        if (typeof window !== "undefined" && 
+            !window.location.pathname.startsWith("/login") && 
+            !window.location.pathname.startsWith("/register")) {
+          window.location.href = "/login";
+        }
+        return { success: false, error: "Unauthorized", login_required: true } as any;
       }
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-         window.location.href = "/login";
-         throw new Error("Not JSON");
+        return { success: false, error: `Server returned non-JSON response (${res.status})` } as any;
       }
       return res.json();
     })
     .then(data => {
-      if (data.success) {
+      if (data && data.success) {
         cache.set(url, { data, timestamp: Date.now() });
       } else {
         cache.delete(url);
@@ -73,7 +75,8 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
     })
     .catch(err => {
       cache.delete(url);
-      throw err;
+      console.warn("fetchWithCache network warning:", err);
+      return { success: false, error: err?.message || "Network connection issue." } as any;
     });
 
   cache.set(url, { data: null, timestamp: 0, promise });
@@ -82,4 +85,24 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
 
 export const invalidateCache = (url: string) => {
   cache.delete(url);
+};
+
+export const invalidateAllCache = () => {
+  cache.clear();
+};
+
+export const invalidateMatchingCache = (pattern: string | RegExp) => {
+  for (const key of cache.keys()) {
+    if (typeof pattern === "string" ? key.includes(pattern) : pattern.test(key)) {
+      cache.delete(key);
+    }
+  }
+};
+
+export const invalidateOrderCaches = () => {
+  invalidateMatchingCache("/app/outlet/orders");
+  invalidateMatchingCache("/app/outlet/home");
+  invalidateMatchingCache("/app/customer/orders");
+  invalidateMatchingCache("/app/customer/token");
+  invalidateMatchingCache("/app/cart");
 };
