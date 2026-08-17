@@ -204,12 +204,12 @@ def logout_view(request):
 # ---------------- REGISTER ----------------
 
 def send_verification_email(request, user):
-    site_url = settings.SITE_URL.rstrip('/')
+    backend_url = request.build_absolute_uri('/').rstrip('/')
     mail_subject = 'Activate your Medibite account'
 
     message = render_to_string('accounts/email/verification_email.html', {
         'user': user,
-        'site_url': site_url,
+        'site_url': backend_url,
         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
         'token': default_token_generator.make_token(user),
     })
@@ -280,21 +280,29 @@ def outlet_register(request):
 
 # ---------------- EMAIL VERIFICATION ----------------
 def verify_email(request, uidb64, token):
+    is_json = 'application/json' in request.headers.get('Accept', '')
+    
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = UserModel.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
         user = None
 
+    frontend_url = settings.SITE_URL.rstrip('/')
+
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.is_email_verified = True
         user.save()
+        if is_json:
+            return JsonResponse({'success': True, 'msg': 'Thank you for your email confirmation. Now you can log in your account.'})
         messages.success(request, 'Thank you for your email confirmation. Now you can log in your account.')
-        return redirect('login')
+        return redirect(f"{frontend_url}/login?verified=true")
     else:
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Verification link is invalid or has expired.'})
         messages.error(request, 'Verification link is invalid or has expired.')
-        return render(request, 'accounts/verify_email_done.html', {'success': False})
+        return redirect(f"{frontend_url}/login?error=invalid_token")
 
 def resend_verification_email(request):
     if request.method == 'POST':
@@ -1019,7 +1027,7 @@ def payment_callback(request):
             # ── Step 3: Idempotency guard ─────────────────────────────────────
             # If this order is already paid (callback received before), do nothing.
             if order.payment_status == "paid":
-                if is_json: return JsonResponse({"success": True, "redirect_url": "/customer/orders"})
+                if is_json: return JsonResponse({"success": True, "redirect_url": "/orders"})
                 return redirect("customer_orders")
 
             # ── Step 4: Server-side amount verification ───────────────────────
@@ -1096,7 +1104,7 @@ def payment_callback(request):
         except Exception as ws_error:
             print(f"PAYMENT_CALLBACK WEBSOCKET ERROR (non-fatal): {ws_error}")
 
-        if is_json: return JsonResponse({"success": True, "redirect_url": "/customer/orders"})
+        if is_json: return JsonResponse({"success": True, "redirect_url": "/orders"})
         messages.success(request, "Payment successful! Order placed.")
         return redirect("customer_orders")
 
