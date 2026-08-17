@@ -23,7 +23,7 @@ def login_required_or_401(view_func):
     If the request is JSON/AJAX and user is not authenticated, returns HTTP 401 instead of 302 redirect.
     """
     @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
+    def _wrapped_view(request, *args, **kwargs):``
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
             if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
