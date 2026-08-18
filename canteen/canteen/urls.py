@@ -19,6 +19,7 @@ urlpatterns = [
 
     # Application routes
     path('app/', include('accounts.urls')),
+    path('health/', accounts_views.health_check, name='health_root'),
 
     path('password-reset/', accounts_views.password_reset_request, name='password_reset_root'),
     path('password-reset/select/', accounts_views.password_reset_select, name='password_reset_select_root'),

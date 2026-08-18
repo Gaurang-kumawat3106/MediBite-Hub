@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import ApiKeepAlive from "@/components/ApiKeepAlive";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       </head>
       <body className="font-sans antialiased min-h-screen bg-bg-main text-text-main flex flex-col">
+        <ApiKeepAlive />
         {children}
       </body>
     </html>

@@ -38,6 +38,14 @@ def login_required_or_401(view_func):
 def csrf_token_view(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
+@csrf_exempt
+def health_check(request):
+    return JsonResponse({
+        'status': 'ok',
+        'service': 'medibite-hub',
+        'timestamp': timezone.now().isoformat(),
+    })
+
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
