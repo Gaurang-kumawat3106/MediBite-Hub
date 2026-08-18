@@ -172,7 +172,11 @@ class Product(models.Model):
 
     @property
     def customer_price(self):
-        return self.price + self.get_platform_fee()
+        try:
+            base = Decimal(str(self.price))
+        except Exception:
+            base = Decimal('0.00')
+        return base + self.get_platform_fee()
 
     def __str__(self):
         return f"{self.name} - {self.outlet.name}"

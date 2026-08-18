@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { fetchWithCache } from "@/lib/apiCache";
+import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -117,14 +117,23 @@ export default function OutletDetailPage() {
         },
         credentials: "include"
       });
+
+      if (res.status === 401) {
+        setToast({ msg: "Please log in to add items to cart", type: 'error' });
+        setTimeout(() => { window.location.href = "/login"; }, 1200);
+        return;
+      }
+
       const contentType = res.headers.get("content-type");
       if (!res.ok || !contentType || !contentType.includes("application/json")) {
-        setToast({ msg: `Server error (${res.status}). Could not add item.`, type: 'error' });
+        setToast({ msg: `Could not add item (${res.status}).`, type: 'error' });
         return;
       }
       const resData = await res.json();
       if (!resData.success) {
         setToast({ msg: resData.message || "Could not add item.", type: 'error' });
+      } else {
+        invalidateCache(`${getApiUrl()}/app/cart/`);
       }
     } catch (err) {
       setToast({ msg: "Something went wrong.", type: 'error' });

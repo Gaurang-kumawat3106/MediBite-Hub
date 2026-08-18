@@ -1,3 +1,5 @@
+import os
+import json
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Prefetch
@@ -23,7 +25,7 @@ def login_required_or_401(view_func):
     If the request is JSON/AJAX and user is not authenticated, returns HTTP 401 instead of 302 redirect.
     """
     @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):``
+    def _wrapped_view(request, *args, **kwargs):
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
             if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -218,15 +220,39 @@ def logout_view(request):
 
 # ---------------- REGISTER ----------------
 
+def get_site_url(request=None):
+    """
+    Returns the absolute base URL with valid protocol (https:// or http://).
+    Guarantees Brevo / Sendinblue link tracking never throws 'invalid URL: host missing' error.
+    """
+    site_url = os.environ.get('SITE_URL') or getattr(settings, 'SITE_URL', '')
+    if not site_url and request:
+        try:
+            site_url = request.build_absolute_uri('/')
+        except Exception:
+            pass
+    if not site_url:
+        site_url = 'https://bhukkadbox.in'
+
+    site_url = site_url.strip().rstrip('/')
+    if not site_url.startswith('http://') and not site_url.startswith('https://'):
+        proto = 'http://' if settings.DEBUG else 'https://'
+        site_url = f"{proto}{site_url}"
+    return site_url
+
 def send_verification_email(request, user):
-    backend_url = request.build_absolute_uri('/').rstrip('/')
+    base_url = get_site_url(request)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    verify_url = f"{base_url}/app/verify-email/{uid}/{token}/"
     mail_subject = 'Activate your Medibite account'
 
     message = render_to_string('accounts/email/verification_email.html', {
         'user': user,
-        'site_url': backend_url,
-        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-        'token': default_token_generator.make_token(user),
+        'site_url': base_url,
+        'verify_url': verify_url,
+        'uid': uid,
+        'token': token,
     })
 
     try:
@@ -244,6 +270,7 @@ def send_verification_email(request, user):
         traceback.print_exc()
         return 0
 
+@csrf_exempt
 def customer_register(request):
     is_json = request.headers.get('Accept') == 'application/json'
     form = CustomerSignupForm(request.POST or None)
@@ -265,6 +292,7 @@ def customer_register(request):
     return render(request, 'accounts/customer_register.html', {'form': form})
 
 
+@csrf_exempt
 def outlet_register(request):
     is_json = request.headers.get('Accept') == 'application/json'
     form = OutletSignupForm(request.POST or None, request.FILES or None)
@@ -278,9 +306,10 @@ def outlet_register(request):
                 name=outlet_name,
                 logo=outlet_logo,
                 is_approved=False,
+                is_featured=False
             )
             email_sent = send_verification_email(request, user)
-            msg = 'Registration successful. Please check your email to verify your account. Wait until admin approves your outlet account.' if email_sent else 'Registration successful, but the verification email failed to send. Wait until admin approves your outlet account.'
+            msg = 'Registration successful. Please wait for admin approval and check your email for verification.'
             if is_json:
                 return JsonResponse({'success': True, 'msg': msg})
             if email_sent:
@@ -295,29 +324,20 @@ def outlet_register(request):
 
 # ---------------- EMAIL VERIFICATION ----------------
 def verify_email(request, uidb64, token):
-    is_json = 'application/json' in request.headers.get('Accept', '')
-    
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = UserModel.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
         user = None
 
-    frontend_url = settings.SITE_URL.rstrip('/')
-
     if user is not None and default_token_generator.check_token(user, token):
-        user.is_active = True
         user.is_email_verified = True
-        user.save()
-        if is_json:
-            return JsonResponse({'success': True, 'msg': 'Thank you for your email confirmation. Now you can log in your account.'})
-        messages.success(request, 'Thank you for your email confirmation. Now you can log in your account.')
-        return redirect(f"{frontend_url}/login?verified=true")
+        user.save(update_fields=['is_email_verified'])
+        messages.success(request, 'Your email has been verified! You can now log in.')
+        return render(request, 'accounts/email/verification_success.html')
     else:
-        if is_json:
-            return JsonResponse({'success': False, 'error': 'Verification link is invalid or has expired.'})
-        messages.error(request, 'Verification link is invalid or has expired.')
-        return redirect(f"{frontend_url}/login?error=invalid_token")
+        messages.error(request, 'The verification link was invalid or has expired.')
+        return render(request, 'accounts/email/verification_failed.html')
 
 def resend_verification_email(request):
     if request.method == 'POST':
@@ -337,9 +357,27 @@ def resend_verification_email(request):
     return render(request, 'accounts/resend_verification.html')
 
 
-# Helper to partially mask usernames for security
+# ---------------- FORGOT PASSWORD ----------------
+def mask_email(email):
+    if not email or '@' not in email:
+        return email
+    user_part, domain_part = email.split('@', 1)
+    if len(user_part) <= 1:
+        masked_user = user_part + "*"
+    elif len(user_part) <= 2:
+        masked_user = user_part[0] + "*"
+    elif len(user_part) <= 4:
+        masked_user = user_part[0] + "*" * (len(user_part) - 2) + user_part[-1]
+    else:
+        masked_user = user_part[:2] + "*" * (len(user_part) - 4) + user_part[-2:]
+    return f"{masked_user}@{domain_part}"
+
 def mask_username(username):
-    if len(username) <= 2:
+    if not username:
+        return username
+    if len(username) <= 1:
+        return username + "*"
+    elif len(username) <= 2:
         return username[0] + "*" * (len(username) - 1)
     elif len(username) <= 4:
         return username[0] + "*" * (len(username) - 2) + username[-1]
@@ -348,15 +386,17 @@ def mask_username(username):
 
 # Helper to send password reset email
 def send_reset_email_for_user(request, user):
-    site_url = settings.SITE_URL.rstrip('/')
+    base_url = get_site_url(request)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
+    reset_url = f"{base_url}/app/password-reset-confirm/{uid}/{token}/"
 
     mail_subject = "Password Reset Request"
 
     message = render_to_string('accounts/email/password_reset_email.html', {
         'user': user,
-        'site_url': site_url,
+        'site_url': base_url,
+        'reset_url': reset_url,
         'uid': uid,
         'token': token,
     })
@@ -734,14 +774,7 @@ def manage_outlet_ui(request, outlet_id):
 
 
 # ---------------- CATEGORY MANAGEMENT ----------------
-@login_required
-def add_category(request):
-    if not request.user.is_outlet_head:
-        return redirect('login')
-    if _is_pending_outlet_user(request.user):
-        logout(request)
-        return redirect('login')
-
+@csrf_exempt
 @login_required_or_401
 def add_category(request):
     if not getattr(request.user, 'is_outlet_head', False):
@@ -761,20 +794,33 @@ def add_category(request):
             except Exception:
                 pass
 
-        if name:
-            name = name.strip()
-            if Category.objects.filter(outlet=outlet, name__iexact=name).exists():
-                if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
-                    return JsonResponse({'success': False, 'error': f'Category "{name}" already exists.'}, status=400)
-                return redirect('outlet_home')
-            Category.objects.create(outlet=outlet, name=name)
-            
-        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
-            return JsonResponse({'success': True})
-            
+        if not name or not name.strip():
+            return JsonResponse({'success': False, 'error': 'Category name cannot be empty.'}, status=400)
+
+        name = name.strip()
+        existing = Category.objects.filter(outlet=outlet, name__iexact=name).first()
+        if existing:
+            if not existing.is_active:
+                existing.is_active = True
+                existing.save(update_fields=['is_active'])
+                return JsonResponse({'success': True, 'category': {'id': existing.id, 'name': existing.name, 'products': []}, 'message': f'Category "{name}" reactivated.'})
+            return JsonResponse({'success': False, 'error': f'Category "{name}" already exists.'}, status=400)
+
+        cat = Category.objects.create(outlet=outlet, name=name, is_active=True)
+        return JsonResponse({
+            'success': True,
+            'category': {
+                'id': cat.id,
+                'name': cat.name,
+                'products': []
+            },
+            'message': f'Category "{name}" added successfully.'
+        })
+
     return redirect('outlet_home')
 
 
+@csrf_exempt
 @login_required_or_401
 def delete_category(request, category_id):
     if not getattr(request.user, 'is_outlet_head', False):
@@ -788,14 +834,15 @@ def delete_category(request, category_id):
         outlet=getattr(request.user, 'outlet', None)
     )
 
-    outlet_id = category.outlet.id
+    cat_name = category.name
     category.delete()
-    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
-        return JsonResponse({'success': True})
-    return redirect('outlet_detail', outlet_id)
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '') or request.method == 'POST':
+        return JsonResponse({'success': True, 'message': f'Category "{cat_name}" deleted successfully.'})
+    return redirect('outlet_products')
 
 
 # ---------------- PRODUCT MANAGEMENT ----------------
+@csrf_exempt
 @login_required_or_401
 def add_product(request):
     if not getattr(request.user, 'is_outlet_head', False):
@@ -808,24 +855,85 @@ def add_product(request):
         return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
     if request.method == 'POST':
+        name = (request.POST.get('name') or '').strip()
+        price_val = request.POST.get('price')
         category_id = request.POST.get('category')
-        # Check if category belongs to this outlet
-        category = get_object_or_404(Category, id=category_id, outlet=outlet)
-        
+
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Product name is required.'}, status=400)
+        if not price_val:
+            return JsonResponse({'success': False, 'error': 'Product price is required.'}, status=400)
+        if not category_id:
+            return JsonResponse({'success': False, 'error': 'Please select a valid category.'}, status=400)
+
+        try:
+            price = float(price_val)
+            if price < 0:
+                return JsonResponse({'success': False, 'error': 'Price cannot be negative.'}, status=400)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid price format.'}, status=400)
+
+        try:
+            category = Category.objects.get(id=category_id, outlet=outlet)
+        except Category.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Selected category does not exist for this outlet.'}, status=404)
+
         product = Product.objects.create(
             outlet=outlet,
             category=category,
-            name=request.POST.get('name'),
-            price=request.POST.get('price')
+            name=name,
+            price=price
         )
         if request.FILES.get('image'):
             product.image = request.FILES.get('image')
             product.save()
-        
-        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
-            return JsonResponse({'success': True, 'product_id': product.id})
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Product "{product.name}" added successfully.',
+            'product': {
+                'id': product.id,
+                'name': product.name,
+                'customer_price': float(product.customer_price),
+                'price': float(product.price),
+                'is_available': product.is_available,
+                'image_url': product.image.url if product.image else None,
+                'category_id': category.id
+            }
+        })
 
     return redirect('outlet_home')
+
+
+@csrf_exempt
+@login_required_or_401
+def delete_product(request, product_id):
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+    if _is_pending_outlet_user(request.user):
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
+
+    product = get_object_or_404(Product, id=product_id, outlet=getattr(request.user, 'outlet', None))
+    prod_id = product.id
+    prod_name = product.name
+    product.delete()
+
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "customers",
+            {
+                "type": "product_deactivated",
+                "product_id": prod_id,
+                "product_name": prod_name,
+            }
+        )
+    except Exception:
+        pass
+
+    return JsonResponse({'success': True, 'message': f'Product "{prod_name}" deleted successfully.'})
 
 
    # updates in march
@@ -834,6 +942,7 @@ def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     return render(request, 'accounts/product_detail.html', {'product': product})
 
+@csrf_exempt
 @login_required_or_401
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product.objects.select_related('outlet'), id=product_id)
@@ -876,6 +985,7 @@ def add_to_cart(request, product_id):
 
     return redirect('cart')
 
+@csrf_exempt
 @login_required_or_401
 def cart_view(request):
     cart, created = Cart.objects.get_or_create(user=request.user)
@@ -913,7 +1023,9 @@ def cart_view(request):
         'can_order': can_order,
         'razorpay_key_id': getattr(settings, "RAZORPAY_KEY_ID", "")
     })
-@login_required
+
+@csrf_exempt
+@login_required_or_401
 @require_POST
 def create_razorpay_order(request):
     """
@@ -1018,6 +1130,7 @@ def create_razorpay_order(request):
 
 
     
+@csrf_exempt
 @login_required_or_401
 def remove_from_cart(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
@@ -1427,7 +1540,8 @@ def customer_orders(request):
         })
     return render(request, 'accounts/customer_orders.html', {'orders': orders, 'popup_token': popup_token})
 
-@login_required
+@csrf_exempt
+@login_required_or_401
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     if order.status == 'pending':
@@ -1620,6 +1734,7 @@ def _token_remaining_seconds(token: OrderToken):
     remaining = (_token_expires_at(token) - timezone.now()).total_seconds()
     return int(remaining) if remaining > 0 else 0
 
+@csrf_exempt
 @login_required_or_401
 def update_order_status(request, order_id):
     if not getattr(request.user, 'is_outlet_head', False):
@@ -1744,6 +1859,7 @@ def customer_token(request):
     })
     
     
+@csrf_exempt
 @login_required_or_401
 def increase_quantity(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
@@ -1754,6 +1870,7 @@ def increase_quantity(request, item_id):
     return redirect('cart')
     
     
+@csrf_exempt
 @login_required_or_401
 def decrease_quantity(request, item_id):
     item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
@@ -1806,15 +1923,15 @@ def outlet_products_view(request):
         'categories': categories,
     })
 
+@csrf_exempt
 @login_required_or_401
 def toggle_availability(request, product_id):
-    if not request.user.is_outlet_head:
-        return redirect('login')
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
     if _is_pending_outlet_user(request.user):
-        logout(request)
-        return redirect('login')
+        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
     
-    product = get_object_or_404(Product, id=product_id, outlet=request.user.outlet)
+    product = get_object_or_404(Product, id=product_id, outlet=getattr(request.user, 'outlet', None))
     
     if request.method == 'POST':
         product.is_available = not product.is_available
@@ -1836,6 +1953,7 @@ def toggle_availability(request, product_id):
         return JsonResponse({'success': True, 'is_available': product.is_available})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
+@csrf_exempt
 @login_required_or_401
 def edit_product(request, product_id):
     if not request.user.is_outlet_head:
@@ -1910,10 +2028,13 @@ def edit_product(request, product_id):
     return render(request, 'accounts/edit_product.html', {'product': product})
 
 
-@login_required
+@csrf_exempt
+@login_required_or_401
 @require_POST
 def reorder(request, order_id):
     if not request.user.is_customer:
+        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=401)
         return redirect('login')
     
     old_order = get_object_or_404(Order, id=order_id, user=request.user)
@@ -1943,9 +2064,14 @@ def reorder(request, order_id):
             unavailable_items.append(order_item.product.name)
             
     if unavailable_items:
-        messages.warning(request, f"The following items are no longer available: {', '.join(unavailable_items)}")
+        msg = f"The following items are no longer available: {', '.join(unavailable_items)}"
+        messages.warning(request, msg)
     else:
-        messages.success(request, "Items successfully added to your cart.")
+        msg = "Items successfully added to your cart."
+        messages.success(request, msg)
+        
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+        return JsonResponse({'success': True, 'redirect_url': '/cart', 'message': msg})
         
     return redirect('cart')
 

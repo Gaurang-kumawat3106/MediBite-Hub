@@ -5,12 +5,13 @@ type CacheItem<T> = {
 };
 
 const cache = new Map<string, CacheItem<any>>();
-const CACHE_TTL = 4 * 1000; // 4 seconds fresh TTL with fast SWR
+const DEFAULT_TTL = 30 * 1000; // 30s fresh TTL for static/menu data
+const TRANSACTIONAL_TTL = 4 * 1000; // 4s fresh TTL for live carts & active queues
 
 export const prefetchAPI = (url: string) => {
   if (cache.has(url)) return;
 
-  const promise = fetch(url, {
+  fetch(url, {
     headers: { Accept: "application/json" },
     credentials: "include"
   })
@@ -26,24 +27,46 @@ export const prefetchAPI = (url: string) => {
       } else {
         cache.delete(url);
       }
-      return data;
     })
     .catch(() => {
       cache.delete(url);
-      return null;
     });
-
-  cache.set(url, { data: null, timestamp: 0, promise });
 };
 
 export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): Promise<T> => {
   const item = cache.get(url);
-  
-  if (item && !forceRevalidate) {
-    if (item.promise) return item.promise;
-    if (Date.now() - item.timestamp < CACHE_TTL) {
-      return item.data;
+  const isTransactional = url.includes("/cart") || url.includes("/orders") || url.includes("/token");
+  const ttl = isTransactional ? TRANSACTIONAL_TTL : DEFAULT_TTL;
+
+  // 1. Fast Cache Hit: If cached data exists and forceRevalidate is not requested
+  if (item?.data && !forceRevalidate) {
+    // If expired, trigger background revalidation (Stale-While-Revalidate)
+    if (Date.now() - item.timestamp > ttl && !item.promise) {
+      const backgroundPromise = fetch(url, {
+        headers: { Accept: "application/json" },
+        credentials: "include"
+      })
+        .then(res => res.json())
+        .then(newData => {
+          if (newData && newData.success) {
+            cache.set(url, { data: newData, timestamp: Date.now() });
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          const current = cache.get(url);
+          if (current) current.promise = undefined;
+        });
+
+      item.promise = backgroundPromise;
     }
+    // Return stale data immediately in 0ms!
+    return item.data;
+  }
+
+  // 2. In-flight request deduplication
+  if (item?.promise && !forceRevalidate) {
+    return item.promise;
   }
 
   const promise = fetch(url, {
@@ -79,7 +102,7 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
       return { success: false, error: err?.message || "Network connection issue." } as any;
     });
 
-  cache.set(url, { data: null, timestamp: 0, promise });
+  cache.set(url, { data: item?.data || null, timestamp: item?.timestamp || 0, promise });
   return promise;
 };
 

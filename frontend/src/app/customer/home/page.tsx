@@ -52,6 +52,14 @@ export default function CustomerHomePage() {
         const json = await fetchWithCache<HomeData>(`${getApiUrl()}/app/customer/home/`);
         if (json.success) {
           setData(json);
+          // Prefetch menus for all visible outlets in the background
+          if (json.outlets && Array.isArray(json.outlets)) {
+            json.outlets.forEach((o) => {
+              prefetchAPI(`${getApiUrl()}/app/outlet/${o.id}/`);
+            });
+          }
+          // Prefetch cart in background
+          prefetchAPI(`${getApiUrl()}/app/cart/`);
         } else {
           setError(json.msg || "Failed to load outlets.");
         }

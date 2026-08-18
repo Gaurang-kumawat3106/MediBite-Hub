@@ -30,6 +30,8 @@ urlpatterns = [
     path('outlet/add-category/', views.add_category, name='add_category'),
     path('outlet/add-product/', views.add_product, name='add_product'),
     path('outlet/category/delete/<int:category_id>/', views.delete_category, name='delete_category'),
+    path('outlet/category/<int:category_id>/delete/', views.delete_category, name='delete_category_alt'),
+    path('outlet/product/<int:product_id>/delete/', views.delete_product, name='delete_product'),
     
     
        

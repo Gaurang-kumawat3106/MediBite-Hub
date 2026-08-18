@@ -52,8 +52,10 @@ export default function CartPage() {
       if (json.success) {
         setData(json);
         setError("");
+      } else if ((json as any).login_required) {
+        window.location.href = "/login";
       } else {
-        setError("Failed to load cart.");
+        setError((json as any).error || "Failed to load cart.");
       }
     } catch (err: any) {
       console.error(err);
@@ -122,9 +124,22 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (typeof window === "undefined") return;
+
     if (typeof window.Razorpay === "undefined") {
-      alert("Payment gateway is initializing. Please wait a moment and try again.");
-      return;
+      setProcessing(true);
+      await new Promise<void>((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
+        document.body.appendChild(script);
+      });
+      if (typeof window.Razorpay === "undefined") {
+        alert("Payment gateway could not be loaded. Please check your internet connection.");
+        setProcessing(false);
+        return;
+      }
     }
 
     setProcessing(true);
