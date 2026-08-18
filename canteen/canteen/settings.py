@@ -105,12 +105,9 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
 
-# Use RENDER_EXTERNAL_HOSTNAME as fallback if SITE_URL is not explicitly set
-if RENDER_EXTERNAL_HOSTNAME and not os.getenv('SITE_URL'):
-    SITE_URL = f"https://{RENDER_EXTERNAL_HOSTNAME}"
-else:
-    SITE_URL = os.getenv('SITE_URL', 
-                         'http://127.0.0.1:8000')
+# Prefer the public frontend domain for auth email links.
+# In production, set SITE_URL explicitly in Render env to the public frontend URL.
+SITE_URL = os.getenv('SITE_URL', 'https://bhukkadbox.in')
 
 INSTALLED_APPS = [
     'daphne',

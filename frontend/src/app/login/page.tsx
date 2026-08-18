@@ -176,9 +176,9 @@ function LoginForm() {
             />
             Remember me
           </label>
-          <a href={`${getApiUrl()}/password-reset/`} className="text-brand font-semibold hover:text-brand-dark transition-colors">
+          <Link href="/password-reset" className="text-brand font-semibold hover:text-brand-dark transition-colors">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <button type="submit" className="bb-btn mt-2" disabled={isLoading}>
@@ -187,9 +187,9 @@ function LoginForm() {
       </form>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <a href={`${getApiUrl()}/resend-verification/`} className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
+        <Link href="/resend-verification" className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
           Haven't received verification link?
-        </a>
+        </Link>
         <div className="text-sm text-gray-400 font-medium">New here?</div>
         <div className="flex w-full gap-3">
           <Link href="/register/customer" className="flex-1 py-2.5 px-4 text-center rounded-xl bg-gray-50 text-[#2b1b10] text-sm font-semibold border border-gray-200 hover:bg-gray-100 transition-colors">
