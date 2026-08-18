@@ -102,8 +102,10 @@ if extra_csrf:
 
 CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
 
 # Prefer the public frontend domain for auth email links.
 # In production, set SITE_URL explicitly in Render env to the public frontend URL.

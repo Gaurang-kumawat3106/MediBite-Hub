@@ -221,6 +221,7 @@ def welcome_splash(request):
 
 
 # ---------------- LOGOUT ----------------
+@csrf_exempt
 def logout_view(request):
     logout(request)
     return redirect('login')
