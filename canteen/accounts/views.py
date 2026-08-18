@@ -94,6 +94,10 @@ def login_view(request):
     is_json = request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '') or request.content_type == 'application/json'
     
     if request.user.is_authenticated:
+        if not request.user.is_customer and not request.user.is_outlet_head:
+            request.user.is_customer = True
+            request.user.save(update_fields=['is_customer'])
+
         if _is_pending_outlet_user(request.user):
             logout(request)
             msg = 'Wait until the admin approves your outlet account.'
@@ -166,6 +170,10 @@ def login_view(request):
         user = authenticate(request, username=target_username, password=password_input)
 
         if user is not None:
+            if not user.is_customer and not user.is_outlet_head:
+                user.is_customer = True
+                user.save(update_fields=['is_customer'])
+
             if _is_pending_outlet_user(user):
                 msg = 'Wait until the admin approves your outlet account.'
                 if is_json: return JsonResponse({'success': False, 'msg': msg, 'pending_approval': True})
@@ -650,8 +658,13 @@ import time
 def customer_home(request):
     total_start = time.perf_counter()
 
-    if not request.user.is_customer:
-        return redirect('login')
+    if not request.user.is_customer and not request.user.is_outlet_head:
+        request.user.is_customer = True
+        request.user.save(update_fields=['is_customer'])
+    elif not request.user.is_customer and request.user.is_outlet_head:
+        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({'success': True, 'redirect': True, 'role': 'outlet', 'redirect_url': '/outlet/home'})
+        return redirect('outlet_home')
 
     t1 = time.perf_counter()
 
