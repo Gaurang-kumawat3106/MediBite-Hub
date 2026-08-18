@@ -8,6 +8,19 @@ function getCookie(name: string): string {
   return match ? decodeURIComponent(match[2]) : "";
 }
 
+export function getSessionKeyHeader(): Record<string, string> {
+  if (typeof window !== "undefined") {
+    const key = localStorage.getItem("bb_session_key");
+    if (key) {
+      return {
+        "X-Session-Key": key,
+        "Authorization": `Bearer ${key}`
+      };
+    }
+  }
+  return {};
+}
+
 export async function getCSRFToken(): Promise<string> {
   const cookieToken = getCookie("csrftoken");
   if (cookieToken) {
@@ -18,7 +31,10 @@ export async function getCSRFToken(): Promise<string> {
   try {
     const res = await fetch(`${getApiUrl()}/app/csrf/`, {
       method: "GET",
-      headers: { "Accept": "application/json" },
+      headers: {
+        "Accept": "application/json",
+        ...getSessionKeyHeader()
+      },
       credentials: "include"
     });
     const contentType = res.headers.get("content-type");
@@ -42,6 +58,13 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}) {
   if (token) {
     headers.set("X-CSRFToken", token);
   }
+  const sessionHeaders = getSessionKeyHeader();
+  Object.entries(sessionHeaders).forEach(([k, v]) => {
+    if (!headers.has(k)) {
+      headers.set(k, v);
+    }
+  });
+
   return fetch(url, {
     ...options,
     headers,

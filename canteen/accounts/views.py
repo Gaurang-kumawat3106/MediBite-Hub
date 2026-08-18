@@ -91,13 +91,13 @@ def _is_pending_outlet_user(user):
 # ---------------- LOGIN ----------------
 @csrf_exempt
 def login_view(request):
-    is_json = request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '')
+    is_json = request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '') or request.content_type == 'application/json'
     
     if request.user.is_authenticated:
         if _is_pending_outlet_user(request.user):
             logout(request)
             msg = 'Wait until the admin approves your outlet account.'
-            if is_json: return JsonResponse({'success': False, 'msg': msg})
+            if is_json: return JsonResponse({'success': False, 'msg': msg, 'pending_approval': True})
             return render(request, 'accounts/login.html', {
                 'form': LoginForm(),
                 'msg': msg,
@@ -105,7 +105,21 @@ def login_view(request):
                 'show_approval_popup': True,
             })
         
-        if is_json: return JsonResponse({'success': True, 'redirect': True, 'role': 'outlet' if request.user.is_outlet_head else 'customer'})
+        request.session.save()
+        if is_json:
+            return JsonResponse({
+                'success': True,
+                'redirect': True,
+                'role': 'outlet' if request.user.is_outlet_head else 'customer',
+                'session_key': request.session.session_key,
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'is_customer': request.user.is_customer,
+                    'is_outlet_head': request.user.is_outlet_head,
+                }
+            })
         
         if request.user.is_customer:
             return redirect('customer_home')
@@ -114,64 +128,106 @@ def login_view(request):
         else:
             return redirect('customer_home')
 
-    form = LoginForm(request.POST or None)
-    msg = None
     next_url = request.GET.get('next', '')
+    msg = None
 
     if request.method == 'POST':
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            
-            # Print login debug info
-            print("\n================ LOGIN VIEW DEBUG ================")
-            print(f"[DEBUG] Login attempt for Username: {username}")
-            
-            # Find user in DB
+        username_input = None
+        password_input = None
+
+        # Handle JSON body or Form Data
+        if request.content_type == 'application/json' or (not request.POST and request.body):
             try:
-                db_user = UserModel.objects.get(username=username)
-                print(f"[DEBUG] Found User in DB: {db_user.username} (ID: {db_user.pk}), Email: {db_user.email}")
-                print(f"[DEBUG] Password Hash in DB: {db_user.password}")
-                print(f"[DEBUG] check_password validation result: {db_user.check_password(password)}")
-            except UserModel.DoesNotExist:
-                print("[DEBUG] User not found in DB.")
+                body = json.loads(request.body.decode('utf-8'))
+                username_input = body.get('username') or body.get('email')
+                password_input = body.get('password')
+            except Exception:
+                pass
 
-            user = authenticate(
-                request,
-                username=username,
-                password=password
-            )
-            print(f"[DEBUG] authenticate() result: {user}")
-            print("==================================================\n")
+        if not username_input or not password_input:
+            username_input = request.POST.get('username')
+            password_input = request.POST.get('password')
 
-            if user is not None:
-                if _is_pending_outlet_user(user):
-                    msg = 'Wait until the admin approves your outlet account.'
+        if not username_input or not password_input:
+            form = LoginForm(request.POST or None)
+            msg = 'Please enter both username/email and password.'
+            if is_json: return JsonResponse({'success': False, 'msg': msg}, status=400)
+            return render(request, 'accounts/login.html', {'form': form, 'msg': msg, 'next': next_url})
+
+        login_identifier = username_input.strip()
+
+        # Find user in DB by username or email (case-insensitive)
+        db_user = UserModel.objects.filter(
+            Q(username__iexact=login_identifier) | Q(email__iexact=login_identifier)
+        ).first()
+
+        # Authenticate using the db_user's canonical username if found, else original input
+        target_username = db_user.username if db_user else login_identifier
+        user = authenticate(request, username=target_username, password=password_input)
+
+        if user is not None:
+            if _is_pending_outlet_user(user):
+                msg = 'Wait until the admin approves your outlet account.'
+                if is_json: return JsonResponse({'success': False, 'msg': msg, 'pending_approval': True})
+                return render(request, 'accounts/login.html', {
+                    'form': LoginForm(request.POST or None),
+                    'msg': msg,
+                    'next': next_url,
+                    'show_approval_popup': True,
+                })
+            login(request, user)
+            
+            # Unconditionally enable persistent session for 14 days
+            request.session.set_expiry(1209600)
+            request.session.save()
+                
+            next_url = request.POST.get('next') or next_url
+            if next_url and next_url.startswith('/'):
+                request.session['next_url'] = next_url
+            
+            if is_json:
+                return JsonResponse({
+                    'success': True,
+                    'redirect': True,
+                    'role': 'outlet' if user.is_outlet_head else 'customer',
+                    'session_key': request.session.session_key,
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'is_customer': user.is_customer,
+                        'is_outlet_head': user.is_outlet_head,
+                    }
+                })
+            
+            return redirect('welcome_splash')
+
+        # If authentication failed, diagnose reason for helpful message
+        if db_user:
+            if db_user.check_password(password_input):
+                if not db_user.is_active or not getattr(db_user, 'is_email_verified', True):
+                    msg = 'Your email address is not verified yet. Please check your email inbox for the verification link.'
+                    if is_json:
+                        return JsonResponse({
+                            'success': False,
+                            'msg': msg,
+                            'unverified': True,
+                            'email': db_user.email
+                        })
+                else:
+                    msg = 'Account is disabled. Please contact support.'
                     if is_json: return JsonResponse({'success': False, 'msg': msg})
-                    return render(request, 'accounts/login.html', {
-                        'form': form,
-                        'msg': msg,
-                        'next': next_url,
-                        'show_approval_popup': True,
-                    })
-                login(request, user)
-                
-                # Unconditionally enable persistent session for 14 days
-                request.session.set_expiry(1209600)
-                    
-                next_url = request.POST.get('next') or next_url
-                if next_url and next_url.startswith('/'):
-                    request.session['next_url'] = next_url
-                
-                if is_json: return JsonResponse({'success': True, 'redirect': True, 'role': 'outlet' if user.is_outlet_head else 'customer'})
-                
-                return redirect('welcome_splash')
-            msg = 'Invalid username or password. Please try again.'
-            if is_json: return JsonResponse({'success': False, 'msg': msg})
+            else:
+                msg = 'Invalid password. Please check your password and try again.'
+                if is_json: return JsonResponse({'success': False, 'msg': msg})
         else:
-            msg = 'Please correct the errors below.'
-            if is_json: return JsonResponse({'success': False, 'msg': msg, 'errors': form.errors})
+            msg = 'No account found with this username or email address.'
+            if is_json: return JsonResponse({'success': False, 'msg': msg})
 
+        form = LoginForm(request.POST or None)
+        return render(request, 'accounts/login.html', {'form': form, 'msg': msg, 'next': next_url})
+
+    form = LoginForm()
     return render(request, 'accounts/login.html', {
         'form': form,
         'msg': msg,

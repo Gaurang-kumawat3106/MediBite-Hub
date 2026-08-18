@@ -16,6 +16,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [isUnverified, setIsUnverified] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const [welcomeName, setWelcomeName] = useState("Guest");
 
@@ -38,10 +39,10 @@ function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
+    setIsUnverified(false);
     setFieldErrors({});
 
     try {
-      // Send as x-www-form-urlencoded matching standard Django Form submission
       const formData = new URLSearchParams();
       formData.append("username", username);
       formData.append("password", password);
@@ -60,10 +61,16 @@ function LoginForm() {
       });
 
       const contentType = res.headers.get("content-type");
-      if (!res.ok || !contentType || !contentType.includes("application/json")) {
+      if (!res.ok && res.status !== 400 && res.status !== 401 && res.status !== 403) {
         const text = await res.text();
-        console.error("Non-JSON response from server during login:", text.substring(0, 1000));
+        console.error("Non-OK response from server during login:", text.substring(0, 1000));
         setErrorMsg(`Server returned an error (${res.status}). Please check console logs.`);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!contentType || !contentType.includes("application/json")) {
+        setErrorMsg(`Server returned unexpected response format (${res.status}).`);
         setIsLoading(false);
         return;
       }
@@ -71,6 +78,13 @@ function LoginForm() {
       const data = await res.json();
       
       if (data.success) {
+        if (data.session_key) {
+          localStorage.setItem("bb_session_key", data.session_key);
+        }
+        if (data.user?.username) {
+          localStorage.setItem("bb_username", data.user.username);
+        }
+
         if (data.redirect) {
           if (data.role === "outlet") {
             window.location.href = "/outlet/home";
@@ -82,6 +96,7 @@ function LoginForm() {
         }
       } else {
         if (data.msg) setErrorMsg(data.msg);
+        if (data.unverified) setIsUnverified(true);
         if (data.errors) setFieldErrors(data.errors);
       }
     } catch (err) {
@@ -107,9 +122,19 @@ function LoginForm() {
       )}
 
       {errorMsg && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-start gap-2 text-sm font-medium">
-          <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
-          <div>{errorMsg}</div>
+        <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl flex flex-col gap-2 text-sm font-medium">
+          <div className="flex items-start gap-2">
+            <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
+            <div>{errorMsg}</div>
+          </div>
+          {isUnverified && (
+            <Link
+              href="/resend-verification"
+              className="mt-1 inline-block self-start px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors"
+            >
+              Resend Verification Email
+            </Link>
+          )}
         </div>
       )}
 
@@ -125,7 +150,6 @@ function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 relative">
-        {/* Fullscreen Loader Overlay (inside form or fixed) */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-xl">
             <div className="w-8 h-8 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
@@ -133,7 +157,7 @@ function LoginForm() {
         )}
 
         <div>
-          <label className="block text-sm font-semibold text-[#2b1b10] mb-1.5 ml-1">Username</label>
+          <label className="block text-sm font-semibold text-[#2b1b10] mb-1.5 ml-1">Username or Email</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
               <i className="fa-solid fa-user"></i>
@@ -141,7 +165,7 @@ function LoginForm() {
             <input
               type="text"
               className="bb-input pl-10"
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required

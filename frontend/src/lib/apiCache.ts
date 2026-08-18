@@ -1,3 +1,5 @@
+import { getSessionKeyHeader } from "./csrf";
+
 type CacheItem<T> = {
   data: T;
   timestamp: number;
@@ -8,11 +10,19 @@ const cache = new Map<string, CacheItem<any>>();
 const DEFAULT_TTL = 30 * 1000; // 30s fresh TTL for static/menu data
 const TRANSACTIONAL_TTL = 4 * 1000; // 4s fresh TTL for live carts & active queues
 
+function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    Accept: "application/json",
+    ...getSessionKeyHeader(),
+    ...extraHeaders,
+  };
+}
+
 export const prefetchAPI = (url: string) => {
   if (cache.has(url)) return;
 
   fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: getAuthHeaders(),
     credentials: "include"
   })
     .then(async res => {
@@ -43,7 +53,7 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
     // If expired, trigger background revalidation (Stale-While-Revalidate)
     if (Date.now() - item.timestamp > ttl && !item.promise) {
       const backgroundPromise = fetch(url, {
-        headers: { Accept: "application/json" },
+        headers: getAuthHeaders(),
         credentials: "include"
       })
         .then(res => res.json())
@@ -70,7 +80,7 @@ export const fetchWithCache = async <T,>(url: string, forceRevalidate = false): 
   }
 
   const promise = fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: getAuthHeaders(),
     credentials: "include"
   })
     .then(async res => {

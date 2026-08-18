@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { fetchWithCSRF } from "@/lib/csrf";
+import { getApiUrl } from "@/lib/utils";
 
 export default function Home() {
   const router = useRouter();
@@ -9,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, {
+        const res = await fetchWithCSRF(`${getApiUrl()}/`, {
           headers: {
             "Accept": "application/json"
           },
@@ -18,8 +20,6 @@ export default function Home() {
         
         const contentType = res.headers.get("content-type");
         if (!res.ok || !contentType || !contentType.includes("application/json")) {
-          const text = await res.text();
-          console.error("Non-JSON response from server during checkAuth:", text.substring(0, 1000));
           router.push("/login");
           return;
         }
@@ -27,6 +27,9 @@ export default function Home() {
         const data = await res.json();
         
         if (data.success) {
+          if (data.session_key) {
+            localStorage.setItem("bb_session_key", data.session_key);
+          }
           if (data.role === "outlet") {
             router.push("/outlet/home");
           } else {

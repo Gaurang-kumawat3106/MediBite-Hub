@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
+import { invalidateAllCache } from "@/lib/apiCache";
 
 export default function OutletSidebar() {
   const pathname = usePathname();
@@ -15,9 +16,12 @@ export default function OutletSidebar() {
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      window.location.href = "/login";
     } catch (e) {
       console.error(e);
+    } finally {
+      localStorage.removeItem("bb_session_key");
+      localStorage.removeItem("bb_username");
+      invalidateAllCache();
       window.location.href = "/login";
     }
   };

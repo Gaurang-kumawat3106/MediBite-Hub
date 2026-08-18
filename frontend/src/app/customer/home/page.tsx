@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { fetchWithCache, prefetchAPI } from "@/lib/apiCache";
+import { fetchWithCache, prefetchAPI, invalidateAllCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
 
@@ -36,9 +36,12 @@ export default function CustomerHomePage() {
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      window.location.href = "/login";
     } catch (e) {
       console.error(e);
+    } finally {
+      localStorage.removeItem("bb_session_key");
+      localStorage.removeItem("bb_username");
+      invalidateAllCache();
       window.location.href = "/login";
     }
   };
