@@ -340,12 +340,13 @@ def verify_email(request, uidb64, token):
 
     if user is not None and default_token_generator.check_token(user, token):
         user.is_email_verified = True
-        user.save(update_fields=['is_email_verified'])
+        user.is_active = True
+        user.save(update_fields=['is_email_verified', 'is_active'])
         messages.success(request, 'Your email has been verified! You can now log in.')
-        return render(request, 'accounts/email/verification_success.html')
+        return render(request, 'accounts/email_verification_success.html')
     else:
         messages.error(request, 'The verification link was invalid or has expired.')
-        return render(request, 'accounts/email/verification_failed.html')
+        return render(request, 'accounts/email_verification_invalid.html')
 
 def resend_verification_email(request):
     if request.method == 'POST':

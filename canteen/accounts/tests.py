@@ -14,6 +14,26 @@ class HealthCheckTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'ok')
 
+class EmailVerificationActivationTests(TestCase):
+    def test_verification_activates_user_and_uses_correct_template(self):
+        user = User.objects.create_user(
+            username='verifyme',
+            email='verify@example.com',
+            password='secretpass123',
+            is_active=False,
+            is_email_verified=False,
+        )
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        response = self.client.get(reverse('verify_email', kwargs={'uidb64': uidb64, 'token': token}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/email_verification_success.html')
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)
+        self.assertTrue(user.is_active)
+
 class PasswordResetTests(TestCase):
     def setUp(self):
         cache.clear()
