@@ -252,7 +252,7 @@ def send_verification_email(request, user):
     base_url = get_site_url(request)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    verify_url = f"{base_url}/app/verify-email/{uid}/{token}/"
+    verify_url = f"{base_url}/verify-email/{uid}/{token}/"
     mail_subject = 'Activate your Medibite account'
 
     message = render_to_string('accounts/email/verification_email.html', {
@@ -398,7 +398,7 @@ def send_reset_email_for_user(request, user):
     base_url = get_site_url(request)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    reset_url = f"{base_url}/app/password-reset-confirm/{uid}/{token}/"
+    reset_url = f"{base_url}/password-reset-confirm/{uid}/{token}/"
 
     mail_subject = "Password Reset Request"
 
