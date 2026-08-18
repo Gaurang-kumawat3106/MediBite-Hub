@@ -160,14 +160,27 @@ def login_view(request):
 
         login_identifier = username_input.strip()
 
-        # Find user in DB by username or email (case-insensitive)
-        db_user = UserModel.objects.filter(
+        # Find all users in DB matching username or email (case-insensitive)
+        matching_users = list(UserModel.objects.filter(
             Q(username__iexact=login_identifier) | Q(email__iexact=login_identifier)
-        ).first()
+        ))
 
-        # Authenticate using the db_user's canonical username if found, else original input
-        target_username = db_user.username if db_user else login_identifier
-        user = authenticate(request, username=target_username, password=password_input)
+        user = None
+        target_db_user = None
+
+        # Attempt authentication against all matching accounts
+        for db_u in matching_users:
+            auth_u = authenticate(request, username=db_u.username, password=password_input)
+            if auth_u is not None:
+                user = auth_u
+                target_db_user = db_u
+                break
+
+        if user is None and matching_users:
+            exact_user = next((u for u in matching_users if u.username.lower() == login_identifier.lower()), None)
+            target_db_user = exact_user or matching_users[0]
+        else:
+            target_db_user = db_user if 'db_user' in locals() else (matching_users[0] if matching_users else None)
 
         if user is not None:
             if not user.is_customer and not user.is_outlet_head:
@@ -211,6 +224,7 @@ def login_view(request):
             return redirect('welcome_splash')
 
         # If authentication failed, diagnose reason for helpful message
+        db_user = target_db_user
         if db_user:
             if db_user.check_password(password_input):
                 if not db_user.is_active or not getattr(db_user, 'is_email_verified', True):
@@ -226,7 +240,7 @@ def login_view(request):
                     msg = 'Account is disabled. Please contact support.'
                     if is_json: return JsonResponse({'success': False, 'msg': msg})
             else:
-                msg = 'Invalid password. Please check your password and try again.'
+                msg = f"Invalid password for account '{db_user.username}'. Please try again."
                 if is_json: return JsonResponse({'success': False, 'msg': msg})
         else:
             msg = 'No account found with this username or email address.'
