@@ -2,8 +2,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.sessions.backends.db import SessionStore
 from django.utils.deprecation import MiddlewareMixin
 
-UserModel = get_user_model()
-
 class HeaderSessionMiddleware(MiddlewareMixin):
     """
     Middleware that enables session authentication via header ('X-Session-Key' or 'Authorization: Bearer <key>').
@@ -37,6 +35,7 @@ class HeaderSessionMiddleware(MiddlewareMixin):
             if session.exists(session_key):
                 user_id = session.get('_auth_user_id')
                 if user_id:
+                    UserModel = get_user_model()
                     user = UserModel.objects.filter(pk=user_id, is_active=True).first()
                     if user:
                         request.user = user

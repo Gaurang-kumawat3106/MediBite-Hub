@@ -2,7 +2,7 @@ import os
 import json
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
