@@ -22,13 +22,19 @@ from django.views.decorators.http import require_POST
 def login_required_or_401(view_func):
     """
     Decorator for views that checks that the user is logged in.
-    If the request is JSON/AJAX and user is not authenticated, returns HTTP 401 instead of 302 redirect.
+    If the request is JSON/AJAX/API/POST or under /app/ and user is not authenticated, returns HTTP 401 instead of 302 redirect.
     """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
-            if 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            is_api = (
+                'application/json' in request.headers.get('Accept', '')
+                or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+                or request.path.startswith('/app/')
+                or request.method == 'POST'
+            )
+            if is_api:
                 return JsonResponse({'success': False, 'error': 'Authentication required', 'login_required': True}, status=401)
             return redirect('login')
         return view_func(request, *args, **kwargs)
@@ -77,12 +83,24 @@ TOKEN_VISIBLE_FOR = timedelta(hours=3)
 UserModel = get_user_model()
 
 
+def _get_user_outlet(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    try:
+        return user.outlet
+    except Exception:
+        try:
+            return Outlet.objects.filter(manager=user).first()
+        except Exception:
+            return None
+
 def _is_pending_outlet_user(user):
-    return (
-        getattr(user, 'is_outlet_head', False)
-        and hasattr(user, 'outlet')
-        and not user.outlet.is_approved
-    )
+    if not getattr(user, 'is_outlet_head', False):
+        return False
+    outlet = _get_user_outlet(user)
+    if not outlet:
+        return False
+    return not outlet.is_approved
 
 # ---------------- HOME ----------------
 
@@ -938,17 +956,17 @@ def delete_category(request, category_id):
 @csrf_exempt
 @login_required_or_401
 def add_product(request):
-    if not getattr(request.user, 'is_outlet_head', False):
-        return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
-    if _is_pending_outlet_user(request.user):
-        return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
+    try:
+        if not getattr(request.user, 'is_outlet_head', False):
+            return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
+        if _is_pending_outlet_user(request.user):
+            return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
 
-    outlet = getattr(request.user, 'outlet', None)
-    if not outlet:
-        return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
+        outlet = _get_user_outlet(request.user)
+        if not outlet:
+            return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
-    if request.method == 'POST':
-        try:
+        if request.method == 'POST':
             name = (request.POST.get('name') or '').strip()
             price_val = request.POST.get('price')
             category_id = request.POST.get('category')
@@ -1019,10 +1037,10 @@ def add_product(request):
                     'category_id': category.id
                 }
             })
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': f'Error adding product: {str(e)}'}, status=500)
 
-    return redirect('outlet_home')
+        return redirect('outlet_home')
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error adding product: {str(e)}'}, status=500)
 
 
 @csrf_exempt
