@@ -948,52 +948,79 @@ def add_product(request):
         return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
     if request.method == 'POST':
-        name = (request.POST.get('name') or '').strip()
-        price_val = request.POST.get('price')
-        category_id = request.POST.get('category')
-
-        if not name:
-            return JsonResponse({'success': False, 'error': 'Product name is required.'}, status=400)
-        if not price_val:
-            return JsonResponse({'success': False, 'error': 'Product price is required.'}, status=400)
-        if not category_id:
-            return JsonResponse({'success': False, 'error': 'Please select a valid category.'}, status=400)
-
         try:
-            price = float(price_val)
-            if price < 0:
-                return JsonResponse({'success': False, 'error': 'Price cannot be negative.'}, status=400)
-        except (ValueError, TypeError):
-            return JsonResponse({'success': False, 'error': 'Invalid price format.'}, status=400)
+            name = (request.POST.get('name') or '').strip()
+            price_val = request.POST.get('price')
+            category_id = request.POST.get('category')
 
-        try:
-            category = Category.objects.get(id=category_id, outlet=outlet)
-        except Category.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Selected category does not exist for this outlet.'}, status=404)
+            if (not name or price_val is None or not category_id) and request.body:
+                try:
+                    import json
+                    body_data = json.loads(request.body.decode('utf-8'))
+                    name = name or (body_data.get('name') or '').strip()
+                    if price_val is None:
+                        price_val = body_data.get('price')
+                    category_id = category_id or body_data.get('category')
+                except Exception:
+                    pass
 
-        product = Product.objects.create(
-            outlet=outlet,
-            category=category,
-            name=name,
-            price=price
-        )
-        if request.FILES.get('image'):
-            product.image = request.FILES.get('image')
-            product.save()
+            if not name:
+                return JsonResponse({'success': False, 'error': 'Product name is required.'}, status=400)
+            if price_val is None or str(price_val).strip() == '':
+                return JsonResponse({'success': False, 'error': 'Product price is required.'}, status=400)
+            if not category_id:
+                return JsonResponse({'success': False, 'error': 'Please select a valid category.'}, status=400)
 
-        return JsonResponse({
-            'success': True,
-            'message': f'Product "{product.name}" added successfully.',
-            'product': {
-                'id': product.id,
-                'name': product.name,
-                'customer_price': float(product.customer_price),
-                'price': float(product.price),
-                'is_available': product.is_available,
-                'image_url': product.image.url if product.image else None,
-                'category_id': category.id
-            }
-        })
+            try:
+                price = float(price_val)
+                if price < 0:
+                    return JsonResponse({'success': False, 'error': 'Price cannot be negative.'}, status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Invalid price format.'}, status=400)
+
+            try:
+                cat_id_int = int(category_id)
+                category = Category.objects.get(id=cat_id_int, outlet=outlet)
+            except (Category.DoesNotExist, ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Selected category does not exist for this outlet.'}, status=404)
+
+            product = Product.objects.create(
+                outlet=outlet,
+                category=category,
+                name=name,
+                price=price
+            )
+            if request.FILES.get('image'):
+                product.image = request.FILES.get('image')
+                product.save()
+
+            image_url = None
+            if product.image:
+                try:
+                    image_url = product.image.url
+                except Exception:
+                    image_url = None
+
+            try:
+                cust_price = float(product.customer_price)
+            except Exception:
+                cust_price = float(product.price)
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Product "{product.name}" added successfully.',
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'price': float(product.price),
+                    'customer_price': cust_price,
+                    'is_available': product.is_available,
+                    'image_url': image_url,
+                    'category_id': category.id
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Error adding product: {str(e)}'}, status=500)
 
     return redirect('outlet_home')
 
@@ -1983,34 +2010,55 @@ def decrease_quantity(request, item_id):
 
 @login_required_or_401
 def outlet_products_view(request):
-    if not request.user.is_outlet_head:
+    is_json = 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.path.startswith('/app/outlet/')
+
+    if not getattr(request.user, 'is_outlet_head', False):
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
         return redirect('login')
     if _is_pending_outlet_user(request.user):
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
         logout(request)
         return redirect('login')
 
-    outlet = request.user.outlet
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'No outlet associated'}, status=400)
+        return redirect('login')
+
     categories = Category.objects.filter(outlet=outlet).prefetch_related('products')
     
-    if request.headers.get('Accept') == 'application/json':
-        return JsonResponse({
-            'success': True,
-            'categories': [
-                {
-                    'id': c.id,
-                    'name': c.name,
-                    'products': [
-                        {
-                            'id': p.id,
-                            'name': p.name,
-                            'customer_price': float(p.customer_price),
-                            'is_available': p.is_available,
-                            'image_url': p.image.url if p.image else None
-                        } for p in c.products.all()
-                    ]
-                } for c in categories
-            ]
-        })
+    if is_json:
+        cat_list = []
+        for c in categories:
+            prod_list = []
+            for p in c.products.all():
+                img_url = None
+                if p.image:
+                    try:
+                        img_url = p.image.url
+                    except Exception:
+                        img_url = None
+                try:
+                    c_price = float(p.customer_price)
+                except Exception:
+                    c_price = float(p.price)
+                prod_list.append({
+                    'id': p.id,
+                    'name': p.name,
+                    'price': float(p.price),
+                    'customer_price': c_price,
+                    'is_available': p.is_available,
+                    'image_url': img_url
+                })
+            cat_list.append({
+                'id': c.id,
+                'name': c.name,
+                'products': prod_list
+            })
+        return JsonResponse({'success': True, 'categories': cat_list})
     return render(request, 'accounts/outlet_products.html', {
         'outlet': outlet,
         'categories': categories,
@@ -2049,32 +2097,95 @@ def toggle_availability(request, product_id):
 @csrf_exempt
 @login_required_or_401
 def edit_product(request, product_id):
-    if not request.user.is_outlet_head:
+    is_json = 'application/json' in request.headers.get('Accept', '') or request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.path.startswith('/app/outlet/')
+
+    if not getattr(request.user, 'is_outlet_head', False):
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
         return redirect('login')
     if _is_pending_outlet_user(request.user):
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
         logout(request)
         return redirect('login')
     
-    product = get_object_or_404(Product, id=product_id, outlet=request.user.outlet)
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'No outlet associated'}, status=400)
+        return redirect('login')
+
+    try:
+        product = Product.objects.get(id=product_id, outlet=outlet)
+    except Product.DoesNotExist:
+        if is_json:
+            return JsonResponse({'success': False, 'error': 'Product not found'}, status=404)
+        return redirect('outlet_products')
     
     if request.method == 'POST':
-        if request.headers.get('Accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            name = request.POST.get('name')
-            price = request.POST.get('price')
-            category_id = request.POST.get('category')
-            image = request.FILES.get('image')
-            
-            if name: product.name = name
-            if price:
-                try: product.price = float(price)
-                except ValueError: pass
-            if category_id:
-                cat = get_object_or_404(Category, id=category_id, outlet=request.user.outlet)
-                product.category = cat
-            if image: product.image = image
-            
-            product.save()
-            return JsonResponse({'success': True})
+        if is_json:
+            try:
+                name = request.POST.get('name')
+                price = request.POST.get('price')
+                category_id = request.POST.get('category')
+                image = request.FILES.get('image')
+
+                if (not name and price is None and not category_id) and request.body:
+                    try:
+                        import json
+                        body_data = json.loads(request.body.decode('utf-8'))
+                        name = name or body_data.get('name')
+                        if price is None:
+                            price = body_data.get('price')
+                        category_id = category_id or body_data.get('category')
+                    except Exception:
+                        pass
+
+                if name and name.strip():
+                    product.name = name.strip()
+                if price is not None and str(price).strip() != '':
+                    try:
+                        product.price = float(price)
+                    except (ValueError, TypeError):
+                        pass
+                if category_id:
+                    try:
+                        cat = Category.objects.get(id=int(category_id), outlet=outlet)
+                        product.category = cat
+                    except (Category.DoesNotExist, ValueError, TypeError):
+                        pass
+                if image:
+                    product.image = image
+                
+                product.save()
+
+                img_url = None
+                if product.image:
+                    try:
+                        img_url = product.image.url
+                    except Exception:
+                        img_url = None
+
+                try:
+                    c_price = float(product.customer_price)
+                except Exception:
+                    c_price = float(product.price)
+
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Product updated successfully.',
+                    'product': {
+                        'id': product.id,
+                        'name': product.name,
+                        'price': float(product.price),
+                        'customer_price': c_price,
+                        'is_available': product.is_available,
+                        'image_url': img_url,
+                        'category_id': product.category.id
+                    }
+                })
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': f'Error updating product: {str(e)}'}, status=500)
             
         action = request.POST.get('action')
         if action == 'delete':

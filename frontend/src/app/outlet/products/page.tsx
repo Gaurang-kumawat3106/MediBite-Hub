@@ -191,7 +191,15 @@ export default function OutletProducts() {
         credentials: "include"
       });
 
-      const resData = await res.json();
+      let resData: any = {};
+      try {
+        resData = await res.json();
+      } catch (jsonErr) {
+        toast.error(`Server returned an invalid response (${res.status}). Please try again.`);
+        setSubmittingProduct(false);
+        return;
+      }
+
       if (!res.ok || !resData.success) {
         toast.error(resData.error || "Failed to add product.");
         setSubmittingProduct(false);
@@ -250,7 +258,15 @@ export default function OutletProducts() {
         credentials: "include"
       });
 
-      const resData = await res.json();
+      let resData: any = {};
+      try {
+        resData = await res.json();
+      } catch (jsonErr) {
+        toast.error(`Server returned an invalid response (${res.status}). Please try again.`);
+        setSubmittingProduct(false);
+        return;
+      }
+
       if (!res.ok || !resData.success) {
         toast.error(resData.error || "Failed to update product.");
         setSubmittingProduct(false);
