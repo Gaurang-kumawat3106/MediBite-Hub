@@ -892,18 +892,21 @@ def add_category(request):
         return JsonResponse({'success': False, 'error': 'Unauthorized: Not an outlet operator'}, status=403)
     if _is_pending_outlet_user(request.user):
         return JsonResponse({'success': False, 'error': 'Account pending approval'}, status=403)
-    outlet = getattr(request.user, 'outlet', None)
+    outlet = _get_user_outlet(request.user)
     if not outlet:
         return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
     if request.method == 'POST':
-        name = request.POST.get('name')
-        if not name:
+        name = None
+        if request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''):
             try:
+                import json
                 body = json.loads(request.body.decode('utf-8'))
                 name = body.get('name')
             except Exception:
                 pass
+        if not name:
+            name = request.POST.get('name')
 
         if not name or not name.strip():
             return JsonResponse({'success': False, 'error': 'Category name cannot be empty.'}, status=400)
@@ -942,7 +945,7 @@ def delete_category(request, category_id):
     category = get_object_or_404(
         Category,
         id=category_id,
-        outlet=getattr(request.user, 'outlet', None)
+        outlet=_get_user_outlet(request.user)
     )
 
     cat_name = category.name
@@ -967,20 +970,26 @@ def add_product(request):
             return JsonResponse({'success': False, 'error': 'No outlet associated with this account'}, status=400)
 
         if request.method == 'POST':
-            name = (request.POST.get('name') or '').strip()
-            price_val = request.POST.get('price')
-            category_id = request.POST.get('category')
+            name = None
+            price_val = None
+            category_id = None
 
-            if (not name or price_val is None or not category_id) and request.body:
+            if request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''):
                 try:
                     import json
                     body_data = json.loads(request.body.decode('utf-8'))
-                    name = name or (body_data.get('name') or '').strip()
-                    if price_val is None:
-                        price_val = body_data.get('price')
-                    category_id = category_id or body_data.get('category')
+                    name = (body_data.get('name') or '').strip()
+                    price_val = body_data.get('price')
+                    category_id = body_data.get('category')
                 except Exception:
                     pass
+
+            if not name:
+                name = (request.POST.get('name') or '').strip()
+            if price_val is None:
+                price_val = request.POST.get('price')
+            if not category_id:
+                category_id = request.POST.get('category')
 
             if not name:
                 return JsonResponse({'success': False, 'error': 'Product name is required.'}, status=400)
@@ -2143,21 +2152,27 @@ def edit_product(request, product_id):
     if request.method == 'POST':
         if is_json:
             try:
-                name = request.POST.get('name')
-                price = request.POST.get('price')
-                category_id = request.POST.get('category')
+                name = None
+                price = None
+                category_id = None
                 image = request.FILES.get('image')
 
-                if (not name and price is None and not category_id) and request.body:
+                if request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''):
                     try:
                         import json
                         body_data = json.loads(request.body.decode('utf-8'))
-                        name = name or body_data.get('name')
-                        if price is None:
-                            price = body_data.get('price')
-                        category_id = category_id or body_data.get('category')
+                        name = body_data.get('name')
+                        price = body_data.get('price')
+                        category_id = body_data.get('category')
                     except Exception:
                         pass
+
+                if name is None:
+                    name = request.POST.get('name')
+                if price is None:
+                    price = request.POST.get('price')
+                if category_id is None:
+                    category_id = request.POST.get('category')
 
                 if name and name.strip():
                     product.name = name.strip()
