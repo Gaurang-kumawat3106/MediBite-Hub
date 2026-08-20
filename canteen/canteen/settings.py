@@ -236,15 +236,7 @@ if cloudinary_url and not (cloudinary_cloud_name and cloudinary_api_key and clou
     except Exception:
         pass
 
-if cloudinary_cloud_name and cloudinary_api_key and cloudinary_api_secret:
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': cloudinary_cloud_name,
-        'API_KEY': cloudinary_api_key,
-        'API_SECRET': cloudinary_api_secret,
-    }
-    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-else:
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
 WHITENOISE_MANIFEST_STRICT = False
 STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
