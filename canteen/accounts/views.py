@@ -988,13 +988,14 @@ def _process_and_save_image(product, file_obj):
 def _get_product_image_url(product):
     if not product:
         return None
-    if getattr(product, 'image_url_str', None):
+    if getattr(product, 'image_url_str', None) and str(product.image_url_str).strip():
         return product.image_url_str
     if product.image:
         try:
-            return product.image.url
+            if hasattr(product.image, 'storage') and product.image.storage.exists(product.image.name):
+                return product.image.url
         except Exception:
-            return None
+            pass
     return None
 
 

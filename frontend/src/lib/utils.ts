@@ -18,6 +18,11 @@ export function getWsUrl(path: string = "/ws/orders/"): string {
 export function getImageUrl(url: string | null | undefined, width: number = 360): string | null {
   if (!url) return null;
   
+  // If base64 data URL
+  if (url.startsWith("data:")) {
+    return url;
+  }
+
   // If already an absolute URL
   if (url.startsWith("http://") || url.startsWith("https://")) {
     if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
