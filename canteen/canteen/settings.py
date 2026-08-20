@@ -220,9 +220,23 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 
+cloudinary_cloud_name = os.getenv("CLOUD_NAME") or os.getenv("CLOUDINARY_CLOUD_NAME")
+cloudinary_api_key = os.getenv("CLOUD_API_KEY") or os.getenv("CLOUDINARY_API_KEY")
+cloudinary_api_secret = os.getenv("CLOUD_API_SECRET") or os.getenv("CLOUDINARY_API_SECRET")
+
+if cloudinary_cloud_name and cloudinary_api_key and cloudinary_api_secret:
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': cloudinary_cloud_name,
+        'API_KEY': cloudinary_api_key,
+        'API_SECRET': cloudinary_api_secret,
+    }
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
 STORAGES = {
     "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        "BACKEND": DEFAULT_FILE_STORAGE,
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -232,7 +246,6 @@ STORAGES = {
 # MEDIA_URL = '/media/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -254,15 +267,6 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Medibite <medibite.hub26@g
 
 ANYMAIL = {
     "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
-}
-
-
-
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv("CLOUD_NAME"),
-    'API_KEY': os.getenv("CLOUD_API_KEY"),
-    'API_SECRET': os.getenv("CLOUD_API_SECRET"),
 }
 
 

@@ -1018,8 +1018,11 @@ def add_product(request):
                 price=price
             )
             if request.FILES.get('image'):
-                product.image = request.FILES.get('image')
-                product.save()
+                try:
+                    product.image = request.FILES.get('image')
+                    product.save()
+                except Exception as img_err:
+                    print(f"Warning: Failed to save product image: {img_err}")
 
             image_url = None
             if product.image:
@@ -2188,9 +2191,13 @@ def edit_product(request, product_id):
                     except (Category.DoesNotExist, ValueError, TypeError):
                         pass
                 if image:
-                    product.image = image
-                
-                product.save()
+                    try:
+                        product.image = image
+                        product.save()
+                    except Exception as img_err:
+                        print(f"Warning: Failed to save product image: {img_err}")
+                else:
+                    product.save()
 
                 img_url = None
                 if product.image:
