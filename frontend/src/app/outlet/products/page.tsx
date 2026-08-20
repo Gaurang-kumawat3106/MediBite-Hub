@@ -12,6 +12,7 @@ interface Product {
   name: string;
   price: number;
   customer_price?: number;
+  quantity?: number | null;
   is_available: boolean;
   image_url?: string | null;
   type?: string;
@@ -44,6 +45,7 @@ export default function OutletProducts() {
   // Product form state
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
+  const [productQuantity, setProductQuantity] = useState("");
   const [productCategoryId, setProductCategoryId] = useState("");
   const [productImage, setProductImage] = useState<File | null>(null);
   const [submittingProduct, setSubmittingProduct] = useState(false);
@@ -180,6 +182,7 @@ export default function OutletProducts() {
       formData.append("name", productName.trim());
       formData.append("price", productPrice);
       formData.append("category", productCategoryId);
+      if (productQuantity !== "") formData.append("quantity", productQuantity);
       if (productImage) {
         formData.append("image", productImage);
       }
@@ -226,6 +229,7 @@ export default function OutletProducts() {
       setIsAddingProduct(false);
       setProductName("");
       setProductPrice("");
+      setProductQuantity("");
       setProductCategoryId("");
       setProductImage(null);
       invalidateCache(`${getApiUrl()}/app/outlet/products/`);
@@ -249,6 +253,7 @@ export default function OutletProducts() {
       formData.append("name", productName.trim());
       formData.append("price", productPrice);
       formData.append("category", productCategoryId);
+      formData.append("quantity", productQuantity);
       if (productImage) formData.append("image", productImage);
 
       const res = await fetchWithCSRF(`${getApiUrl()}/app/outlet/product/${editingProduct.id}/edit/`, {
@@ -276,6 +281,7 @@ export default function OutletProducts() {
       setEditingProduct(null);
       setProductName("");
       setProductPrice("");
+      setProductQuantity("");
       setProductCategoryId("");
       setProductImage(null);
       invalidateCache(`${getApiUrl()}/app/outlet/products/`);
@@ -357,6 +363,7 @@ export default function OutletProducts() {
   const openAddProductModal = (presetCategoryId?: number) => {
     setProductName("");
     setProductPrice("");
+    setProductQuantity("");
     setProductCategoryId(presetCategoryId ? presetCategoryId.toString() : (data?.categories?.[0]?.id?.toString() || ""));
     setProductImage(null);
     setEditingProduct(null);
@@ -367,6 +374,7 @@ export default function OutletProducts() {
     setEditingProduct(prod);
     setProductName(prod.name);
     setProductPrice(prod.price.toString());
+    setProductQuantity(prod.quantity != null ? prod.quantity.toString() : "");
     setProductCategoryId(categoryId.toString());
     setProductImage(null);
     setIsAddingProduct(false);
@@ -492,7 +500,16 @@ export default function OutletProducts() {
                                   <div className="w-3 h-3 rounded-full bg-red-500 border border-white outline outline-1 outline-red-500 shrink-0"></div>
                                 )}
                               </div>
-                              <div className="font-bold text-brand mb-2">₹{prod.price}</div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-bold text-brand">₹{prod.price}</span>
+                                {prod.quantity != null && (
+                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                    prod.quantity > 0 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-red-50 text-red-600 border border-red-200"
+                                  }`}>
+                                    {prod.quantity > 0 ? `Qty: ${prod.quantity}` : "Out of Stock"}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                   <div
@@ -627,6 +644,23 @@ export default function OutletProducts() {
                   value={productPrice}
                   onChange={(e) => setProductPrice(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                  Quantity / Stock Count (Optional)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 20 (leave blank for unlimited)"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all"
+                  value={productQuantity}
+                  onChange={(e) => setProductQuantity(e.target.value)}
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Optional. When stock reaches 0, the item automatically disables.
+                </p>
               </div>
 
               <div>

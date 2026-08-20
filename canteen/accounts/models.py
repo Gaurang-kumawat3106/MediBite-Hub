@@ -165,6 +165,7 @@ class Product(models.Model):
         null=True
     )
 
+    quantity = models.IntegerField(null=True, blank=True, default=None)
     is_available = models.BooleanField(default=True)
 
     def get_platform_fee(self):

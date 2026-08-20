@@ -840,6 +840,7 @@ def outlet_detail(request, id):
                             'product_name': p.name,
                             'customer_price': float(p.customer_price),
                             'price': float(p.customer_price),
+                            'quantity': p.quantity,
                             'is_available': p.is_available,
                             'image_url': p.image.url if p.image else None
                         } for p in c.products.all()
@@ -973,6 +974,7 @@ def add_product(request):
             name = None
             price_val = None
             category_id = None
+            quantity_val = None
 
             if request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''):
                 try:
@@ -981,6 +983,7 @@ def add_product(request):
                     name = (body_data.get('name') or '').strip()
                     price_val = body_data.get('price')
                     category_id = body_data.get('category')
+                    quantity_val = body_data.get('quantity')
                 except Exception:
                     pass
 
@@ -990,6 +993,8 @@ def add_product(request):
                 price_val = request.POST.get('price')
             if not category_id:
                 category_id = request.POST.get('category')
+            if quantity_val is None:
+                quantity_val = request.POST.get('quantity')
 
             if not name:
                 return JsonResponse({'success': False, 'error': 'Product name is required.'}, status=400)
@@ -1005,17 +1010,30 @@ def add_product(request):
             except (ValueError, TypeError):
                 return JsonResponse({'success': False, 'error': 'Invalid price format.'}, status=400)
 
+            quantity = None
+            if quantity_val is not None and str(quantity_val).strip() != '':
+                try:
+                    quantity = max(0, int(quantity_val))
+                except (ValueError, TypeError):
+                    quantity = None
+
             try:
                 cat_id_int = int(category_id)
                 category = Category.objects.get(id=cat_id_int, outlet=outlet)
             except (Category.DoesNotExist, ValueError, TypeError):
                 return JsonResponse({'success': False, 'error': 'Selected category does not exist for this outlet.'}, status=404)
 
+            is_avail = True
+            if quantity is not None and quantity == 0:
+                is_avail = False
+
             product = Product.objects.create(
                 outlet=outlet,
                 category=category,
                 name=name,
-                price=price
+                price=price,
+                quantity=quantity,
+                is_available=is_avail
             )
             if request.FILES.get('image'):
                 try:
@@ -1044,6 +1062,7 @@ def add_product(request):
                     'name': product.name,
                     'price': float(product.price),
                     'customer_price': cust_price,
+                    'quantity': product.quantity,
                     'is_available': product.is_available,
                     'image_url': image_url,
                     'category_id': category.id
@@ -1120,6 +1139,13 @@ def add_to_cart(request, product_id):
         cart=cart,
         product=product
     )
+
+    if product.quantity is not None:
+        target_qty = (item.quantity + 1) if not created else 1
+        if target_qty > product.quantity:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': f'Only {product.quantity} items left in stock for {product.name}.'}, status=400)
+            return redirect('outlet_detail', product.outlet.id)
 
     if not created:
         item.quantity += 1
@@ -1296,6 +1322,20 @@ def place_order(request):
     return redirect('cart')
 
 
+def _deduct_product_quantities(order):
+    try:
+        for item in order.items.select_related('product').all():
+            prod = item.product
+            if prod and prod.quantity is not None:
+                new_qty = max(0, prod.quantity - item.quantity)
+                prod.quantity = new_qty
+                if new_qty == 0:
+                    prod.is_available = False
+                prod.save(update_fields=['quantity', 'is_available'])
+    except Exception as e:
+        print(f"Error deducting quantities for Order #{order.id}: {e}")
+
+
 @csrf_exempt
 def payment_callback(request):
     """
@@ -1413,6 +1453,7 @@ def payment_callback(request):
                 "razorpay_signature",
                 "status"
             ])
+            _deduct_product_quantities(order)
 
             # ── Step 7: Clear the cart ────────────────────────────────────────
             # Only clear CartItems belonging to this order's outlet.
@@ -1594,6 +1635,7 @@ def payment_webhook(request):
                 "razorpay_payment_id",
                 "status",
             ])
+            _deduct_product_quantities(order)
 
             # ── 12. Clear cart (surgical — only this outlet's items) ──────────
             try:
@@ -2080,6 +2122,7 @@ def outlet_products_view(request):
                     'name': p.name,
                     'price': float(p.price),
                     'customer_price': c_price,
+                    'quantity': p.quantity,
                     'is_available': p.is_available,
                     'image_url': img_url
                 })
@@ -2158,6 +2201,7 @@ def edit_product(request, product_id):
                 name = None
                 price = None
                 category_id = None
+                quantity_val = None
                 image = request.FILES.get('image')
 
                 if request.content_type == 'application/json' or 'application/json' in request.headers.get('Content-Type', ''):
@@ -2167,6 +2211,7 @@ def edit_product(request, product_id):
                         name = body_data.get('name')
                         price = body_data.get('price')
                         category_id = body_data.get('category')
+                        quantity_val = body_data.get('quantity')
                     except Exception:
                         pass
 
@@ -2176,6 +2221,8 @@ def edit_product(request, product_id):
                     price = request.POST.get('price')
                 if category_id is None:
                     category_id = request.POST.get('category')
+                if quantity_val is None:
+                    quantity_val = request.POST.get('quantity')
 
                 if name and name.strip():
                     product.name = name.strip()
@@ -2190,6 +2237,18 @@ def edit_product(request, product_id):
                         product.category = cat
                     except (Category.DoesNotExist, ValueError, TypeError):
                         pass
+                if quantity_val is not None:
+                    if str(quantity_val).strip() == '':
+                        product.quantity = None
+                    else:
+                        try:
+                            q_int = max(0, int(quantity_val))
+                            product.quantity = q_int
+                            if q_int == 0:
+                                product.is_available = False
+                        except (ValueError, TypeError):
+                            pass
+
                 if image:
                     try:
                         product.image = image
@@ -2219,6 +2278,7 @@ def edit_product(request, product_id):
                         'name': product.name,
                         'price': float(product.price),
                         'customer_price': c_price,
+                        'quantity': product.quantity,
                         'is_available': product.is_available,
                         'image_url': img_url,
                         'category_id': product.category.id
