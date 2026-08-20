@@ -220,9 +220,21 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 
+cloudinary_url = os.getenv("CLOUDINARY_URL")
 cloudinary_cloud_name = os.getenv("CLOUD_NAME") or os.getenv("CLOUDINARY_CLOUD_NAME")
 cloudinary_api_key = os.getenv("CLOUD_API_KEY") or os.getenv("CLOUDINARY_API_KEY")
 cloudinary_api_secret = os.getenv("CLOUD_API_SECRET") or os.getenv("CLOUDINARY_API_SECRET")
+
+if cloudinary_url and not (cloudinary_cloud_name and cloudinary_api_key and cloudinary_api_secret):
+    try:
+        clean_url = cloudinary_url.replace("cloudinary://", "")
+        auth, cloud_name = clean_url.split("@")
+        api_key, api_secret = auth.split(":")
+        cloudinary_cloud_name = cloud_name
+        cloudinary_api_key = api_key
+        cloudinary_api_secret = api_secret
+    except Exception:
+        pass
 
 if cloudinary_cloud_name and cloudinary_api_key and cloudinary_api_secret:
     CLOUDINARY_STORAGE = {
@@ -246,9 +258,9 @@ STORAGES = {
     },
 }
 
-# MEDIA_URL = '/media/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
