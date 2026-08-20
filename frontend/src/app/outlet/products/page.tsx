@@ -463,7 +463,7 @@ export default function OutletProducts() {
                             key={prod.id}
                             className="flex gap-4 border border-gray-100 rounded-2xl p-3 items-center group hover:border-gray-300 transition-colors bg-white"
                           >
-                            <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 relative">
+                            <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
                               {prod.image_url ? (
                                 <img
                                   src={getImageUrl(prod.image_url, 160) as string}
@@ -471,12 +471,16 @@ export default function OutletProducts() {
                                   className="w-full h-full object-cover"
                                   loading="lazy"
                                   decoding="async"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                    const fallback = (e.target as HTMLElement).nextElementSibling;
+                                    if (fallback) fallback.classList.remove('hidden');
+                                  }}
                                 />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                  <i className="fa-solid fa-bowl-food text-2xl"></i>
-                                </div>
-                              )}
+                              ) : null}
+                              <div className={`w-full h-full flex items-center justify-center text-gray-300 ${prod.image_url ? 'hidden' : ''}`}>
+                                <i className="fa-solid fa-bowl-food text-2xl"></i>
+                              </div>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">

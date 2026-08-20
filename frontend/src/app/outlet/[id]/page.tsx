@@ -323,12 +323,16 @@ export default function OutletDetailPage() {
                       loading={index < 4 ? "eager" : "lazy"}
                       decoding="async"
                       fetchPriority={index < 2 ? "high" : "auto"}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                        const fallback = (e.target as HTMLElement).nextElementSibling;
+                        if (fallback) fallback.classList.remove('hidden');
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
-                      <i className="fa-solid fa-bowl-food"></i>
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center text-gray-300 text-4xl ${product.image_url ? 'hidden' : ''}`}>
+                    <i className="fa-solid fa-bowl-food"></i>
+                  </div>
                   
                   {/* Add Button */}
                   <button 

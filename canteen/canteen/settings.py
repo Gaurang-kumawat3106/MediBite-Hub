@@ -114,17 +114,17 @@ SITE_URL = os.getenv('SITE_URL', 'https://bhukkadbox.in')
 
 INSTALLED_APPS = [
     'daphne',
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',
     'channels',
     'accounts.apps.AccountsConfig',
-    'cloudinary',
     'django.contrib.sitemaps',
-    'cloudinary_storage',
     'anymail',
     'corsheaders',
 ]
