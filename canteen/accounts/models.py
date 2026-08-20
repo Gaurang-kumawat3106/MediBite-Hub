@@ -164,6 +164,7 @@ class Product(models.Model):
         blank=True,
         null=True
     )
+    image_url_str = models.TextField(blank=True, null=True)
 
     quantity = models.IntegerField(null=True, blank=True, default=None)
     is_available = models.BooleanField(default=True)

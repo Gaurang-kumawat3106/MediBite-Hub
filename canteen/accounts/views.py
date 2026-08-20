@@ -842,7 +842,7 @@ def outlet_detail(request, id):
                             'price': float(p.customer_price),
                             'quantity': p.quantity,
                             'is_available': p.is_available,
-                            'image_url': p.image.url if p.image else None
+                            'image_url': _get_product_image_url(p)
                         } for p in c.products.all()
                     ]
                 } for c in categories
@@ -956,6 +956,48 @@ def delete_category(request, category_id):
     return redirect('outlet_products')
 
 
+def _process_and_save_image(product, file_obj):
+    if not file_obj:
+        return
+    try:
+        product.image = file_obj
+    except Exception as e:
+        print(f"Warning: Failed to set product.image: {e}")
+
+    try:
+        file_obj.seek(0)
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        img = Image.open(file_obj)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail((600, 600), Image.Resampling.LANCZOS)
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=82, optimize=True)
+        b64_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        product.image_url_str = f"data:image/jpeg;base64,{b64_str}"
+    except Exception as b64_err:
+        print(f"Warning: Failed to convert image to Base64: {b64_err}")
+
+    try:
+        product.save()
+    except Exception as save_err:
+        print(f"Warning: Failed to save product image data: {save_err}")
+
+def _get_product_image_url(product):
+    if not product:
+        return None
+    if getattr(product, 'image_url_str', None):
+        return product.image_url_str
+    if product.image:
+        try:
+            return product.image.url
+        except Exception:
+            return None
+    return None
+
+
 # ---------------- PRODUCT MANAGEMENT ----------------
 @csrf_exempt
 @login_required_or_401
@@ -1027,6 +1069,7 @@ def add_product(request):
             if quantity is not None and quantity == 0:
                 is_avail = False
 
+
             product = Product.objects.create(
                 outlet=outlet,
                 category=category,
@@ -1036,18 +1079,9 @@ def add_product(request):
                 is_available=is_avail
             )
             if request.FILES.get('image'):
-                try:
-                    product.image = request.FILES.get('image')
-                    product.save()
-                except Exception as img_err:
-                    print(f"Warning: Failed to save product image: {img_err}")
+                _process_and_save_image(product, request.FILES.get('image'))
 
-            image_url = None
-            if product.image:
-                try:
-                    image_url = product.image.url
-                except Exception:
-                    image_url = None
+            image_url = _get_product_image_url(product)
 
             try:
                 cust_price = float(product.customer_price)
@@ -2107,12 +2141,7 @@ def outlet_products_view(request):
         for c in categories:
             prod_list = []
             for p in c.products.all():
-                img_url = None
-                if p.image:
-                    try:
-                        img_url = p.image.url
-                    except Exception:
-                        img_url = None
+                img_url = _get_product_image_url(p)
                 try:
                     c_price = float(p.customer_price)
                 except Exception:
@@ -2250,20 +2279,11 @@ def edit_product(request, product_id):
                             pass
 
                 if image:
-                    try:
-                        product.image = image
-                        product.save()
-                    except Exception as img_err:
-                        print(f"Warning: Failed to save product image: {img_err}")
+                    _process_and_save_image(product, image)
                 else:
                     product.save()
 
-                img_url = None
-                if product.image:
-                    try:
-                        img_url = product.image.url
-                    except Exception:
-                        img_url = None
+                img_url = _get_product_image_url(product)
 
                 try:
                     c_price = float(product.customer_price)
