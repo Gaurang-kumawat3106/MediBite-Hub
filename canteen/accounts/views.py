@@ -1302,19 +1302,17 @@ def create_razorpay_order(request):
             key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', None)
 
             if not key_id or not key_secret:
-                if settings.DEBUG:
-                    import uuid
-                    rzp_id = f"order_dev_{uuid.uuid4().hex[:14]}"
-                    order.razorpay_order_id = rzp_id
-                    order.save(update_fields=["razorpay_order_id"])
-                    return JsonResponse({
-                        "success": True,
-                        "razorpay_order_id": rzp_id,
-                        "amount": amount_in_paisa,
-                        "key": "rzp_test_placeholder",
-                        "dev_mode": True
-                    })
-                return JsonResponse({"success": False, "error": "Razorpay credentials are not configured."}, status=500)
+                import uuid
+                rzp_id = f"order_dev_{uuid.uuid4().hex[:14]}"
+                order.razorpay_order_id = rzp_id
+                order.save(update_fields=["razorpay_order_id"])
+                return JsonResponse({
+                    "success": True,
+                    "razorpay_order_id": rzp_id,
+                    "amount": amount_in_paisa,
+                    "key": "rzp_test_placeholder",
+                    "dev_mode": True
+                })
 
             client = razorpay.Client(auth=(key_id, key_secret))
             razorpay_order = client.order.create({

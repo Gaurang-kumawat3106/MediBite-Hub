@@ -16,6 +16,7 @@ interface Product {
   id: number;
   name: string;
   customer_price: number;
+  is_available?: boolean;
   image_url: string | null;
 }
 
@@ -333,33 +334,47 @@ export default function OutletDetailPage() {
                   <div className={`w-full h-full flex items-center justify-center text-gray-300 text-4xl ${product.image_url ? 'hidden' : ''}`}>
                     <i className="fa-solid fa-bowl-food"></i>
                   </div>
-                  
-                  {/* Add Button */}
-                  <button 
-                    onClick={(e) => handleAddToCart(e, product.id, product.name)}
-                    disabled={addingId === product.id}
-                    className="absolute -bottom-5 right-4 bg-white border border-gray-100 shadow-md rounded-full flex items-center overflow-hidden group/btn hover:border-brand transition-colors disabled:opacity-60"
-                  >
-                    <div className="px-3 py-2 text-sm font-bold text-[#2b1b10]">
-                      ₹{product.customer_price}
-                    </div>
-                    <div className="w-10 h-10 flex items-center justify-center bg-gray-50 text-brand border-l border-gray-100 group-hover/btn:bg-brand group-hover/btn:text-white transition-colors">
-                      {addingId === product.id ? (
-                        <i className="fa-solid fa-spinner fa-spin text-xs"></i>
-                      ) : (
-                        <i className="fa-solid fa-plus"></i>
-                      )}
-                    </div>
-                  </button>
                 </div>
                 
-                <div className="p-4 pt-6 flex-1 flex flex-col">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-                    {product.categoryName}
+                <div className="p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                      {product.categoryName}
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold font-heading text-[#2b1b10] leading-tight line-clamp-2">
+                      {product.name}
+                    </h3>
                   </div>
-                  <h3 className="text-sm md:text-base font-bold font-heading text-[#2b1b10] leading-tight line-clamp-2">
-                    {product.name}
-                  </h3>
+
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100/60">
+                    <div className="font-bold text-[#2b1b10] text-sm md:text-base">
+                      ₹{product.customer_price}
+                    </div>
+
+                    {product.is_available === false ? (
+                      <span className="bg-gray-100 text-gray-400 font-bold px-3 py-1.5 rounded-xl text-xs">
+                        Out of Stock
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={(e) => handleAddToCart(e, product.id, product.name)}
+                        disabled={addingId === product.id}
+                        className="bg-brand hover:bg-brand-dark text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60"
+                      >
+                        {addingId === product.id ? (
+                          <>
+                            <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                            <span>Adding...</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-plus text-[10px]"></i>
+                            <span>ADD</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
