@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { fetchWithCache } from "@/lib/apiCache";
@@ -45,6 +46,7 @@ interface OrdersData {
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [data, setData] = useState<OrdersData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -72,7 +74,7 @@ export default function OrdersPage() {
   useEffect(() => { fetchOrders(); }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'order_update' || wsData.type === 'token_update' || wsData.type === 'new_order') {
+    if (wsData.type === 'order_update' || wsData.type === 'token_update') {
       fetchOrders(true);
     }
   });
@@ -101,7 +103,7 @@ export default function OrdersPage() {
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      window.location.href = "/cart"; // Redirect to cart after reordering
+      router.push("/cart");
     } catch (e) {
       console.error(e);
       setLoading(false);

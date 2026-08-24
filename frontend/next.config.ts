@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep Turbopack scoped to this application. A parent-level lockfile should
+  // not expand its filesystem scan or cause it to select the wrong project.
+  turbopack: {
+    root: __dirname,
+  },
   images: {
     remotePatterns: [
       {

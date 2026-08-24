@@ -28,7 +28,7 @@ export default function OutletDashboard() {
   }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'new_order' || wsData.type === 'order_update' || wsData.type === 'token_update') {
+    if (wsData.type === 'new_order' || wsData.type === 'order_update') {
       fetchDashboardData(true);
     }
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -24,6 +25,7 @@ interface HomeData {
 }
 
 export default function CustomerHomePage() {
+  const router = useRouter();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,7 +44,7 @@ export default function CustomerHomePage() {
       localStorage.removeItem("bb_session_key");
       localStorage.removeItem("bb_username");
       invalidateAllCache();
-      window.location.href = "/login";
+      router.replace("/login");
     }
   };
 

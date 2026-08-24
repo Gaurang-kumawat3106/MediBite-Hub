@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
 import { getApiUrl } from "@/lib/utils";
 
 export default function ResendVerificationPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -35,7 +37,7 @@ export default function ResendVerificationPage() {
       if (res.ok || res.redirected || finalUrl.includes("/login") || text.toLowerCase().includes("verification email sent") || text.toLowerCase().includes("already verified")) {
         setMessage("Verification email sent. Check your inbox and then log in.");
         setTimeout(() => {
-          window.location.href = "/login";
+          router.push("/login");
         }, 1800);
         return;
       }

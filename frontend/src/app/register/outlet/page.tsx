@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
 import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
 
 export default function OutletRegisterPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -74,7 +76,7 @@ export default function OutletRegisterPage() {
       if (resData.success) {
         setSuccessMsg(resData.msg || "Registration successful. Please log in.");
         setTimeout(() => {
-          window.location.href = "/login";
+          router.push("/login");
         }, 3000);
       } else {
         if (resData.msg) setErrorMsg(resData.msg);

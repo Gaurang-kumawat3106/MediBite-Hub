@@ -27,7 +27,7 @@ export default function OutletOrders() {
   };
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'new_order' || wsData.type === 'order_update' || wsData.type === 'token_update') {
+    if (wsData.type === 'new_order' || wsData.type === 'order_update') {
       fetchOrders(true);
     }
   });

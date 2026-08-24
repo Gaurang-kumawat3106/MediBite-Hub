@@ -87,12 +87,12 @@ function LoginForm() {
 
         if (data.redirect) {
           if (data.role === "outlet") {
-            window.location.href = "/outlet/home";
+            router.replace("/outlet/home");
           } else {
-            window.location.href = "/customer/home";
+            router.replace("/customer/home");
           }
         } else {
-          window.location.href = "/customer/home";
+          router.replace("/customer/home");
         }
       } else {
         if (data.msg) setErrorMsg(data.msg);

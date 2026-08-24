@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
 import { getApiUrl } from "@/lib/utils";
 
 export default function PasswordResetPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -35,7 +37,7 @@ export default function PasswordResetPage() {
       if (res.ok || res.redirected || finalUrl.includes("/login") || text.includes("emailed you instructions")) {
         setMessage("If an account exists for that email, a password reset link has been sent.");
         setTimeout(() => {
-          window.location.href = "/login";
+          router.push("/login");
         }, 1800);
         return;
       }

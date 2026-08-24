@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 import { fetchWithCSRF } from "@/lib/csrf";
@@ -40,6 +40,7 @@ interface OutletData {
 }
 
 export default function OutletDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const outletId = params?.id as string;
   
@@ -121,7 +122,7 @@ export default function OutletDetailPage() {
 
       if (res.status === 401) {
         setToast({ msg: "Please log in to add items to cart", type: 'error' });
-        setTimeout(() => { window.location.href = "/login"; }, 1200);
+        setTimeout(() => { router.replace("/login"); }, 1200);
         return;
       }
 

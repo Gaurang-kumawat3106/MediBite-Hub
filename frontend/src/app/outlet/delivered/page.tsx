@@ -26,7 +26,7 @@ export default function DeliveredOrders() {
   };
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'order_update' || wsData.type === 'new_order') {
+    if (wsData.type === 'order_update') {
       fetchOrders(filter, true);
     }
   });
