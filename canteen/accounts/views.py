@@ -16,6 +16,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware.csrf import get_token
 import razorpay
+from accounts.services.payment_service import finalize_paid_order
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
@@ -1373,16 +1374,7 @@ def _deduct_product_quantities(order):
 def payment_callback(request):
     """
     Razorpay payment callback handler.
-
-    Security & correctness guarantees:
-    ─────────────────────────────────
-    1. OrderItems are NEVER rebuilt from the current cart here.
-       They were already snapshotted in create_razorpay_order().
-    2. The Razorpay payment amount is verified against the amount stored
-       on the internal Order (server-side truth) — not from the frontend.
-    3. select_for_update() prevents duplicate processing on concurrent callbacks.
-    4. If the Order is already marked 'paid', we return immediately (idempotent).
-    5. The cart is cleared only after the Order is successfully confirmed as paid.
+    Delegates idempotent finalization to payment_service.finalize_paid_order().
     """
     is_json = 'application/json' in request.headers.get('Accept', '')
 
@@ -1400,7 +1392,6 @@ def payment_callback(request):
         return redirect("cart")
 
     is_dev_order = razorpay_order_id.startswith("order_dev_") and settings.DEBUG
-    client = None
 
     if not is_dev_order:
         key_id = getattr(settings, 'RAZORPAY_KEY_ID', None)
@@ -1418,7 +1409,6 @@ def payment_callback(request):
         }
 
         try:
-            # ── Step 1: Verify HMAC signature ────────────────────────────────────
             client.utility.verify_payment_signature(params_dict)
         except razorpay.errors.SignatureVerificationError:
             if is_json: return JsonResponse({"success": False, "error": "Payment verification failed."})
@@ -1430,123 +1420,26 @@ def payment_callback(request):
             messages.error(request, "Something went wrong during payment verification.")
             return redirect("cart")
 
-    try:
-        with transaction.atomic():
-            # ── Step 2: Load the Order using the Razorpay order ID ───────────
-            # select_for_update() locks the row, preventing duplicate processing
-            # if the callback is fired more than once concurrently.
-            try:
-                order = (
-                    Order.objects
-                    .select_for_update()
-                    .get(razorpay_order_id=razorpay_order_id)
-                )
-            except Order.DoesNotExist:
-                if is_json: return JsonResponse({"success": False, "error": "Order not found."})
-                messages.error(request, "Order not found.")
-                return redirect("cart")
+    # Delegate finalization to core payment service
+    success, msg_or_reason, status_code = finalize_paid_order(
+        razorpay_order_id=razorpay_order_id,
+        payment_id=payment_id,
+        signature=signature,
+        source="callback"
+    )
 
-            # ── Step 3: Idempotency guard ─────────────────────────────────────
-            # If this order is already paid (callback received before), do nothing.
-            if order.payment_status == "paid":
-                if is_json: return JsonResponse({"success": True, "redirect_url": "/orders"})
-                return redirect("customer_orders")
-
-            # ── Step 4: Server-side amount verification ───────────────────────
-            if not is_dev_order and client:
-                try:
-                    rzp_payment = client.payment.fetch(payment_id)
-                    rzp_amount_paisa = rzp_payment.get("amount", 0)
-                    expected_amount_paisa = int(order.total_amount * 100)
-                    if rzp_amount_paisa != expected_amount_paisa:
-                        if is_json: return JsonResponse({"success": False, "error": "Payment amount mismatch."})
-                        messages.error(request, "Payment amount mismatch.")
-                        return redirect("cart")
-                except Exception as err:
-                    print(f"PAYMENT_CALLBACK: Amount check skipped (non-fatal): {err}")
-
-            # ── Step 5: Verify order has items (the snapshot must exist) ──────
-            # The OrderItems were created in create_razorpay_order().
-            # We do NOT create OrderItems here. If they are missing, something
-            # went wrong during order creation — do not proceed.
-            if not order.items.exists():
-                print(f"PAYMENT_CALLBACK: Order {order.id} has no items — refusing to mark paid.")
-                if is_json: return JsonResponse({"success": False, "error": "Order has no items. Please contact support."})
-                messages.error(request, "Order has no items. Please contact support.")
-                return redirect("cart")
-
-            # ── Step 6: Mark the Order as paid ───────────────────────────────
-            order.payment_status = "paid"
-            order.razorpay_payment_id = payment_id
-            order.razorpay_signature = signature
-            order.status = "preparing"  # 🔥 payment success → immediately preparing
-            order.save(update_fields=[
-                "payment_status",
-                "razorpay_payment_id",
-                "razorpay_signature",
-                "status"
-            ])
-            _deduct_product_quantities(order)
-
-            # ── Step 7: Clear the cart ────────────────────────────────────────
-            # Only clear CartItems belonging to this order's outlet.
-            # This correctly handles the case where the user added items from a
-            # different outlet in another tab while this payment was in progress.
-            try:
-                cart = Cart.objects.get(user=order.user)
-                # Remove only items that belong to this order's outlet
-                cart.items.filter(product__outlet=order.outlet).delete()
-            except Cart.DoesNotExist:
-                pass  # Cart may have already been cleared or never existed
-
-        # ── Step 8: WebSocket notification to outlet ─────────────────────────
-        # Done outside the atomic block so a WebSocket failure doesn't roll back
-        # the already-committed payment.
-        try:
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"outlet_{order.outlet.id}",
-                {
-                    "type": "new_order",
-                    "order_id": order.id,
-                    "customer_name": order.user.username,
-                    "total_amount": str(order.total_amount)
-                }
-            )
-        except Exception as ws_error:
-            print(f"PAYMENT_CALLBACK WEBSOCKET ERROR (non-fatal): {ws_error}")
-
-        if is_json: return JsonResponse({"success": True, "redirect_url": "/orders"})
-        messages.success(request, "Payment successful! Order placed.")
-        return redirect("customer_orders")
-
-    except Exception as e:
-        print("PAYMENT CALLBACK ERROR:", e)
-        import traceback
-        traceback.print_exc()
-        if is_json: return JsonResponse({"success": False, "error": "Something went wrong while confirming your order. Please try again."})
-        messages.error(request, "Something went wrong while confirming your order. Please try again.")
+    if not success and status_code != 200:
+        if is_json: return JsonResponse({"success": False, "error": msg_or_reason}, status=status_code)
+        messages.error(request, msg_or_reason)
         return redirect("cart")
 
+    if is_json: return JsonResponse({"success": True, "redirect_url": "/orders"})
+    messages.success(request, "Payment successful! Order placed.")
+    return redirect("customer_orders")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # RAZORPAY WEBHOOK
-# ──────────────────────────────────────────────────────────────────────────────
-# This endpoint is called by Razorpay's servers (not the browser).
-# It is a server-to-server safety net for cases where payment_callback()
-# was never reached (network drop, tab closed, etc.).
-#
-# Security model
-# ──────────────
-# 1. Raw body is read ONCE and used for HMAC-SHA256 verification before any
-#    JSON parsing — prevents body-substitution attacks.
-# 2. RAZORPAY_WEBHOOK_SECRET is never hardcoded; it is loaded from settings
-#    which reads it exclusively from the environment / .env file.
-# 3. select_for_update() inside transaction.atomic() prevents duplicate
-#    processing when both payment_callback() and the webhook fire together.
-# 4. OrderItems are NEVER created here — they were snapshotted in
-#    create_razorpay_order(). This view only flips payment_status to "paid".
 # ──────────────────────────────────────────────────────────────────────────────
 
 import hmac
@@ -1557,28 +1450,18 @@ import json as _json
 def payment_webhook(request):
     """
     Razorpay server-to-server webhook handler.
-
-    Registers at: /app/payment/webhook/
-    Configure in Razorpay Dashboard → Webhooks → Active events:
-      ✅ payment.captured
-      ✅ order.paid   (optional but recommended)
-
-    Authentication: HMAC-SHA256 of raw request body using RAZORPAY_WEBHOOK_SECRET.
+    Delegates idempotent finalization to payment_service.finalize_paid_order().
     """
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
-    # ── 1. Reject if webhook secret is not configured ─────────────────────────
     webhook_secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", None)
     if not webhook_secret:
-        # Misconfiguration — log loudly but return 500 so Razorpay retries
         print("WEBHOOK: RAZORPAY_WEBHOOK_SECRET is not set in settings/env.")
         return JsonResponse({"error": "Webhook not configured"}, status=500)
 
-    # ── 2. Read raw body (must happen before any framework parsing) ───────────
-    raw_body = request.body  # bytes
+    raw_body = request.body
 
-    # ── 3. Verify Razorpay webhook signature ──────────────────────────────────
     received_signature = request.headers.get("X-Razorpay-Signature", "")
     expected_signature = hmac.new(
         webhook_secret.encode("utf-8"),
@@ -1590,7 +1473,6 @@ def payment_webhook(request):
         print(f"WEBHOOK: Signature mismatch — possible spoofed request.")
         return JsonResponse({"error": "Invalid signature"}, status=400)
 
-    # ── 4. Parse JSON payload ─────────────────────────────────────────────────
     try:
         payload = _json.loads(raw_body.decode("utf-8"))
     except (_json.JSONDecodeError, UnicodeDecodeError) as e:
@@ -1600,107 +1482,35 @@ def payment_webhook(request):
     event = payload.get("event", "")
     print(f"WEBHOOK: Received event '{event}'")
 
-    # ── 5. Only handle payment.captured and order.paid ────────────────────────
     if event not in ("payment.captured", "order.paid"):
-        # Acknowledge unknown events so Razorpay does not keep retrying them
         return JsonResponse({"status": "ignored", "event": event}, status=200)
 
-    # ── 6. Extract the Razorpay order ID from the payload ────────────────────
     try:
         if event == "payment.captured":
-            razorpay_order_id = payload["payload"]["payment"]["entity"]["order_id"]
-            payment_id        = payload["payload"]["payment"]["entity"]["id"]
-            rzp_amount_paisa  = payload["payload"]["payment"]["entity"]["amount"]
+            razorpay_order_id = payload["payload"]["payment"]["entity"].get("order_id")
+            payment_id        = payload["payload"]["payment"]["entity"].get("id")
         else:  # order.paid
-            razorpay_order_id = payload["payload"]["order"]["entity"]["id"]
-            payment_id        = payload["payload"]["payment"]["entity"]["id"]
-            rzp_amount_paisa  = payload["payload"]["payment"]["entity"]["amount"]
+            razorpay_order_id = payload["payload"]["order"]["entity"].get("id")
+            payment_id        = payload["payload"]["payment"]["entity"].get("id")
     except (KeyError, TypeError) as e:
         print(f"WEBHOOK: Unexpected payload structure for event '{event}': {e}")
         return JsonResponse({"error": "Unexpected payload structure"}, status=400)
 
-    # ── 7. Find our internal Order ────────────────────────────────────────────
-    try:
-        with transaction.atomic():
-            # select_for_update() locks the row — prevents a race condition where
-            # payment_callback() and the webhook both try to mark the order paid
-            # at the same time.
-            try:
-                order = (
-                    Order.objects
-                    .select_for_update()
-                    .get(razorpay_order_id=razorpay_order_id)
-                )
-            except Order.DoesNotExist:
-                # Razorpay may fire the webhook before our DB has committed the
-                # order (very rare). Return 200 so Razorpay does not blacklist
-                # our endpoint; it will retry automatically.
-                print(f"WEBHOOK: Order not found for razorpay_order_id={razorpay_order_id}")
-                return JsonResponse({"status": "order_not_found"}, status=200)
+    if not razorpay_order_id:
+        print(f"WEBHOOK: Event '{event}' has missing razorpay_order_id")
+        return JsonResponse({"error": "Missing razorpay_order_id in payload"}, status=400)
 
-            # ── 8. Idempotency guard ──────────────────────────────────────────
-            # If payment_callback() already handled this, do nothing.
-            if order.payment_status == "paid":
-                print(f"WEBHOOK: Order {order.id} already paid — skipping.")
-                return JsonResponse({"status": "already_paid"}, status=200)
+    # Delegate finalization to core payment service
+    success, msg_or_reason, status_code = finalize_paid_order(
+        razorpay_order_id=razorpay_order_id,
+        payment_id=payment_id,
+        source="webhook"
+    )
 
-            # ── 9. Server-side amount verification ────────────────────────────
-            expected_amount_paisa = int(order.total_amount * 100)
-            if rzp_amount_paisa != expected_amount_paisa:
-                print(
-                    f"WEBHOOK AMOUNT MISMATCH: Order {order.id} "
-                    f"expected {expected_amount_paisa} paisa, "
-                    f"got {rzp_amount_paisa} paisa."
-                )
-                return JsonResponse({"error": "Amount mismatch"}, status=400)
+    if not success and status_code != 200:
+        return JsonResponse({"error": msg_or_reason}, status=status_code)
 
-            # ── 10. Verify snapshot items exist ───────────────────────────────
-            if not order.items.exists():
-                print(f"WEBHOOK: Order {order.id} has no items — cannot confirm.")
-                return JsonResponse({"error": "Order has no items"}, status=400)
-
-            # ── 11. Mark order as paid ────────────────────────────────────────
-            order.payment_status      = "paid"
-            order.razorpay_payment_id = payment_id
-            order.status              = "preparing"
-            order.save(update_fields=[
-                "payment_status",
-                "razorpay_payment_id",
-                "status",
-            ])
-            _deduct_product_quantities(order)
-
-            # ── 12. Clear cart (surgical — only this outlet's items) ──────────
-            try:
-                cart = Cart.objects.get(user=order.user)
-                cart.items.filter(product__outlet=order.outlet).delete()
-            except Cart.DoesNotExist:
-                pass  # already cleared by payment_callback(), or never existed
-
-        # ── 13. WebSocket notification — outside atomic block ─────────────────
-        try:
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"outlet_{order.outlet.id}",
-                {
-                    "type": "new_order",
-                    "order_id": order.id,
-                    "customer_name": order.user.username,
-                    "total_amount": str(order.total_amount),
-                }
-            )
-        except Exception as ws_err:
-            print(f"WEBHOOK WEBSOCKET ERROR (non-fatal): {ws_err}")
-
-        print(f"WEBHOOK: Order {order.id} successfully confirmed via webhook.")
-        return JsonResponse({"status": "ok"}, status=200)
-
-    except Exception as e:
-        import traceback as _tb
-        print(f"WEBHOOK ERROR: {e}")
-        _tb.print_exc()
-        # Return 500 so Razorpay retries the webhook delivery
-        return JsonResponse({"error": "Internal server error"}, status=500)
+    return JsonResponse({"status": "ok", "message": msg_or_reason}, status=200)
 
 
 

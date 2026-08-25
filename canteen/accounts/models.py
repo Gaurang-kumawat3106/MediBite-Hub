@@ -224,9 +224,22 @@ class Order(models.Model):
 
     # Razorpay fields
     payment_status = models.CharField(max_length=20, default="unpaid")
-    razorpay_order_id = models.CharField(max_length=200, null=True, blank=True)
-    razorpay_payment_id = models.CharField(max_length=200, null=True, blank=True)
+    razorpay_order_id = models.CharField(max_length=200, null=True, blank=True, db_index=True)
+    razorpay_payment_id = models.CharField(max_length=200, null=True, blank=True, db_index=True)
     razorpay_signature = models.CharField(max_length=500, null=True, blank=True)
+
+    # Reliability & Audit Tracking
+    fulfillment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('deducted', 'Stock Deducted'),
+            ('failed', 'Stock Deduction Failed')
+        ],
+        default='pending'
+    )
+    payment_verified_at = models.DateTimeField(null=True, blank=True)
+    payment_source = models.CharField(max_length=30, default="unknown")
 
     status = models.CharField(
         max_length=20,
@@ -254,6 +267,7 @@ class Order(models.Model):
             models.Index(fields=['user', 'created_at'], name='order_user_created_idx'),
             models.Index(fields=['outlet', 'status', 'created_at'], name='order_outlet_st_crt_idx'),
             models.Index(fields=['outlet', 'status', 'completed_at'], name='order_outlet_st_cmp_idx'),
+            models.Index(fields=['razorpay_order_id'], name='order_rzp_order_idx'),
         ]
 
     def __str__(self):
