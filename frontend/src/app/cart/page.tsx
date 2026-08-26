@@ -149,17 +149,18 @@ export default function CartPage() {
         headers: { "Accept": "application/json" },
         credentials: "include"
       });
-      const contentType = res.headers.get("content-type");
-      if (!res.ok || !contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
+      let resData;
+      const text = await res.text();
+      try {
+        resData = JSON.parse(text);
+      } catch (e) {
         console.error("Non-JSON response from server during payment creation:", text.substring(0, 1000));
         alert(`Server error (${res.status}). Could not process checkout.`);
         setProcessing(false);
         return;
       }
-      const resData = await res.json();
-      
-      if (!resData.success) {
+
+      if (!res.ok || !resData.success) {
         alert(resData.error || "Failed to create order");
         setProcessing(false);
         return;
@@ -188,21 +189,27 @@ export default function CartPage() {
               body: formData.toString(),
               credentials: "include"
             });
-            const contentType = verifyRes.headers.get("content-type");
-            if (!verifyRes.ok || !contentType || !contentType.includes("application/json")) {
-              const text = await verifyRes.text();
-              console.error("Non-JSON response from server during payment verification:", text.substring(0, 1000));
+            let verifyData;
+            const verifyText = await verifyRes.text();
+            try {
+              verifyData = JSON.parse(verifyText);
+            } catch (e) {
+              console.error("Non-JSON response from server during payment verification:", verifyText.substring(0, 1000));
               alert(`Server error (${verifyRes.status}). Could not verify payment.`);
               setProcessing(false);
               return;
             }
-            const verifyData = await verifyRes.json();
-            
-            if (verifyData.success && verifyData.redirect_url) {
-              router.push(verifyData.redirect_url);
-            } else {
+
+            if (!verifyRes.ok || !verifyData.success) {
               alert(verifyData.error || "Payment verification failed.");
               setProcessing(false);
+              return;
+            }
+            
+            if (verifyData.redirect_url) {
+              router.push(verifyData.redirect_url);
+            } else {
+              alert("Payment verified successfully.");
             }
           } catch (err) {
             console.error(err);
