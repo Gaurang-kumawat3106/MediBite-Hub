@@ -1328,7 +1328,7 @@ def create_razorpay_order(request):
 
     except Exception as e:
         print("CREATE_RAZORPAY_ORDER ERROR:", e)
-        return JsonResponse({"success": False, "error": "Failed to create payment order. Please check gateway config."}, status=500)
+        return JsonResponse({"success": False, "error": f"Failed to create payment order: {str(e)}"}, status=500)
 
     return JsonResponse({
         "success": True,
