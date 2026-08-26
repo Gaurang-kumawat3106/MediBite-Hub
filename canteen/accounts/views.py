@@ -1282,7 +1282,8 @@ def create_razorpay_order(request):
                 actual_amount=actual_amount,
                 platform_fee=platform_fee,
                 status="pending",
-                payment_status="unpaid"
+                payment_status="unpaid",
+                fulfillment_status="pending"
             )
 
             # Step 2: Snapshot the cart into OrderItems RIGHT NOW.
