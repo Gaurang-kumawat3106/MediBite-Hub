@@ -477,10 +477,40 @@ def send_verification_email(request, user):
             fail_silently=False
         )
         return 1
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return 0
+    except Exception as primary_error:
+        print(f"[PRIMARY EMAIL FAILED]: {primary_error}")
+
+    # Fallback to direct SMTP if configured
+    smtp_host = os.getenv('EMAIL_HOST')
+    smtp_user = os.getenv('EMAIL_HOST_USER')
+    smtp_pass = os.getenv('EMAIL_HOST_PASSWORD')
+    if smtp_user and smtp_pass:
+        try:
+            from django.core.mail import get_connection
+            connection = get_connection(
+                backend='django.core.mail.backends.smtp.EmailBackend',
+                host=smtp_host or 'smtp.gmail.com',
+                port=int(os.getenv('EMAIL_PORT', 587)),
+                username=smtp_user,
+                password=smtp_pass.replace(' ', ''),
+                use_tls=True
+            )
+            send_mail(
+                subject=mail_subject,
+                message="",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=message,
+                connection=connection,
+                fail_silently=False
+            )
+            print(f"[FALLBACK SMTP SUCCESS] Verification email sent to {user.email}")
+            return 1
+        except Exception as fallback_error:
+            print(f"[FALLBACK SMTP FAILED]: {fallback_error}")
+
+    return 0
+
 
 @csrf_exempt
 def customer_register(request):
