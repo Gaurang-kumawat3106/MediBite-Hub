@@ -7,6 +7,8 @@ import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
 
+import GoogleLoginButton from "@/components/GoogleLoginButton";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,6 +21,7 @@ function LoginForm() {
   const [isUnverified, setIsUnverified] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
   const [welcomeName, setWelcomeName] = useState("Guest");
+
 
   useEffect(() => {
     const savedName = localStorage.getItem("bb_username");
@@ -210,7 +213,19 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="mt-8 flex flex-col items-center gap-3">
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200"></div>
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">OR</span>
+        <div className="h-px flex-1 bg-gray-200"></div>
+      </div>
+
+      <GoogleLoginButton
+        buttonText="Continue with Google"
+        onError={(msg) => setErrorMsg(msg)}
+      />
+
+      <div className="mt-6 flex flex-col items-center gap-3">
+
         <Link href="/resend-verification" className="text-sm font-semibold text-[#6b5c51] hover:text-[#2b1b10] transition-colors">
           Haven't received verification link?
         </Link>

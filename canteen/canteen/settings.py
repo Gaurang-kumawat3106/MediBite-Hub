@@ -268,8 +268,16 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/app/welcome/"
 LOGOUT_REDIRECT_URL = "/"
 
-# Use Anymail Brevo backend
-EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+# Email Backend Configuration
+# In local development (DEBUG=True), default to console backend so verification links print directly to server logs.
+# In production, use Brevo via Anymail.
+if os.getenv('EMAIL_BACKEND'):
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+elif DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Medibite <medibite.hub26@gmail.com>')
 
 ANYMAIL = {
@@ -277,10 +285,16 @@ ANYMAIL = {
 }
 
 
+
 # -- Razorpay --
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET")
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET")
+
+# -- Google OAuth --
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID") or os.environ.get("NEXT_PUBLIC_GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
 
 
 

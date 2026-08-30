@@ -275,7 +275,107 @@ def login_view(request):
         'next': next_url,
     })
 
+@csrf_exempt
+def google_login_view(request):
+    """
+    Authenticate/Register CUSTOMER users via Google OAuth 2.0 ID Token.
+    Strictly restricted to Customer users only (Outlet Heads are blocked).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'msg': 'Invalid request method.'}, status=405)
+
+    try:
+        body = json.loads(request.body.decode('utf-8')) if request.body else request.POST
+        id_token = body.get('id_token') or body.get('credential') or body.get('token')
+    except Exception:
+        id_token = request.POST.get('id_token') or request.POST.get('credential')
+
+    if not id_token:
+        return JsonResponse({'success': False, 'msg': 'Google token is required.'}, status=400)
+
+    # Verify ID token with Google TokenInfo API
+    try:
+        import requests
+        resp = requests.get(f'https://oauth2.googleapis.com/tokeninfo?id_token={id_token}', timeout=10)
+        if resp.status_code != 200:
+            return JsonResponse({'success': False, 'msg': 'Invalid or expired Google token.'}, status=400)
+        
+        token_data = resp.json()
+        email = token_data.get('email')
+        email_verified = token_data.get('email_verified')
+        
+        if not email or (isinstance(email_verified, bool) and not email_verified) or (isinstance(email_verified, str) and email_verified.lower() != 'true'):
+            return JsonResponse({'success': False, 'msg': 'Unverified or missing Google email.'}, status=400)
+            
+    except Exception as e:
+        return JsonResponse({'success': False, 'msg': f'Failed to verify Google token: {str(e)}'}, status=500)
+
+    UserModel = get_user_model()
+    email_clean = email.strip().lower()
+
+    # Check if user already exists by email or username
+    user = UserModel.objects.filter(Q(email__iexact=email_clean) | Q(username__iexact=email_clean)).first()
+
+    if user:
+        # STRICT ROLE CHECK: Reject Outlet Head accounts
+        if user.is_outlet_head:
+            return JsonResponse({
+                'success': False,
+                'msg': 'Google login is restricted to Customer accounts. Outlet Head accounts must log in using username/password.'
+            }, status=403)
+        
+        # Ensure customer flags are active
+        user.is_customer = True
+        user.is_email_verified = True
+        if not user.is_active:
+            user.is_active = True
+        user.save(update_fields=['is_customer', 'is_email_verified', 'is_active'])
+    else:
+        # Create a new Customer user
+        base_username = email_clean.split('@')[0]
+        username = base_username
+        counter = 1
+        while UserModel.objects.filter(username__iexact=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        first_name = token_data.get('given_name', '')
+        last_name = token_data.get('family_name', '')
+
+        user = UserModel.objects.create_user(
+            username=username,
+            email=email_clean,
+            first_name=first_name,
+            last_name=last_name,
+            is_customer=True,
+            is_outlet_head=False,
+            is_email_verified=True,
+            is_active=True
+        )
+        user.set_unusable_password()
+        user.save()
+
+    # Log in user via Django session
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    request.session.set_expiry(1209600)  # 14 days
+    request.session.save()
+
+    return JsonResponse({
+        'success': True,
+        'redirect': True,
+        'role': 'customer',
+        'session_key': request.session.session_key,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_customer': user.is_customer,
+            'is_outlet_head': user.is_outlet_head,
+        }
+    })
+
 # ---------------- WELCOME SPLASH ----------------
+
 @login_required
 def welcome_splash(request):
     next_url = request.session.pop('next_url', None)
@@ -353,6 +453,12 @@ def send_verification_email(request, user):
     verify_url = f"{base_url}/verify-email/{uid}/{token}/"
     mail_subject = 'Activate your Medibite account'
 
+    print(f"\n==========================================")
+    print(f"[ACCOUNT VERIFICATION LINK] User: {user.email}")
+    print(f"URL: {verify_url}")
+    print(f"==========================================\n")
+
+
     message = render_to_string('accounts/email/verification_email.html', {
         'user': user,
         'site_url': base_url,
@@ -411,9 +517,9 @@ def outlet_register(request):
                 manager=user,
                 name=outlet_name,
                 logo=outlet_logo,
-                is_approved=False,
-                is_featured=False
+                is_approved=False
             )
+
             email_sent = send_verification_email(request, user)
             msg = 'Registration successful. Please wait for admin approval and check your email for verification.'
             if is_json:

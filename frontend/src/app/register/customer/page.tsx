@@ -7,6 +7,8 @@ import Link from "next/link";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
 
+import GoogleLoginButton from "@/components/GoogleLoginButton";
+
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -60,7 +62,6 @@ export default function CustomerRegisterPage() {
       
       if (resData.success) {
         setSuccessMsg(resData.msg || "Registration successful. Please log in.");
-        // Redirect to Next.js login page or let them click
         setTimeout(() => {
           router.push("/login");
         }, 3000);
@@ -159,7 +160,7 @@ export default function CustomerRegisterPage() {
               type="password"
               name="password1"
               className="bb-input pl-10"
-              placeholder="Create password"
+              placeholder="Create password (min 4 characters)"
               value={formData.password1}
               onChange={handleChange}
               required
@@ -190,7 +191,19 @@ export default function CustomerRegisterPage() {
         </button>
       </form>
 
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200"></div>
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">OR</span>
+        <div className="h-px flex-1 bg-gray-200"></div>
+      </div>
+
+      <GoogleLoginButton
+        buttonText="Sign up with Google"
+        onError={(msg) => setErrorMsg(msg)}
+      />
+
       <div className="mt-6 flex flex-col items-center gap-3">
+
         <div className="text-sm text-gray-500 font-medium">Already have an account?</div>
         <Link href="/login" className="text-brand font-semibold hover:text-brand-dark transition-colors">
           Log in instead
