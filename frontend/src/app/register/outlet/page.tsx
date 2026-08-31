@@ -82,13 +82,17 @@ export default function OutletRegisterPage() {
         if (resData.msg) setErrorMsg(resData.msg);
         if (resData.errors) setFieldErrors(resData.errors);
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("A network error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("Outlet registration error:", err);
+      const msg = err?.message?.toLowerCase().includes("fetch")
+        ? "Unable to connect to server. Please check your network connection and try again."
+        : (err?.message || "A network error occurred. Please try again.");
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <AuthLayout 

@@ -514,7 +514,12 @@ def send_verification_email(request, user):
 
 @csrf_exempt
 def customer_register(request):
-    is_json = request.headers.get('Accept') == 'application/json'
+    is_json = (
+        'application/json' in request.headers.get('Accept', '')
+        or request.content_type == 'application/json'
+        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        or request.path.startswith('/app/')
+    )
     form = CustomerSignupForm(request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -536,7 +541,12 @@ def customer_register(request):
 
 @csrf_exempt
 def outlet_register(request):
-    is_json = request.headers.get('Accept') == 'application/json'
+    is_json = (
+        'application/json' in request.headers.get('Accept', '')
+        or request.content_type == 'application/json'
+        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        or request.path.startswith('/app/')
+    )
     form = OutletSignupForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -563,6 +573,7 @@ def outlet_register(request):
             if is_json:
                 return JsonResponse({'success': False, 'errors': form.errors, 'msg': 'Please correct the errors below.'})
     return render(request, 'accounts/outlet_register.html', {'form': form})
+
 
 # ---------------- EMAIL VERIFICATION ----------------
 def verify_email(request, uidb64, token):

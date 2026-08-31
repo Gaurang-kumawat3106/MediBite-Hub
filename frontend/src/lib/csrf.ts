@@ -53,7 +53,13 @@ export async function getCSRFToken(): Promise<string> {
 }
 
 export async function fetchWithCSRF(url: string, options: RequestInit = {}) {
-  const token = await getCSRFToken();
+  let token = "";
+  try {
+    token = await getCSRFToken();
+  } catch (e) {
+    console.warn("CSRF token fetch bypassed:", e);
+  }
+
   const headers = new Headers(options.headers || {});
   if (token) {
     headers.set("X-CSRFToken", token);
@@ -65,9 +71,22 @@ export async function fetchWithCSRF(url: string, options: RequestInit = {}) {
     }
   });
 
-  return fetch(url, {
+  const requestOptions: RequestInit = {
     ...options,
     headers,
-    credentials: "include",
-  });
+    credentials: options.credentials || "include",
+  };
+
+  try {
+    return await fetch(url, requestOptions);
+  } catch (err) {
+    // Retry once if first attempt failed due to transient network glitch
+    if (err instanceof TypeError && err.message.toLowerCase().includes("fetch")) {
+      console.warn("Retrying fetch request after transient error...", url);
+      await new Promise((r) => setTimeout(r, 400));
+      return await fetch(url, requestOptions);
+    }
+    throw err;
+  }
 }
+
