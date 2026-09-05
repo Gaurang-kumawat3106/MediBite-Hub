@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load cloudinary_tags %}
 {% block title %}Home - Bhukkad Box{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/customer_home.css' %}">
@@ -14,7 +15,7 @@
   {% comment %} Example product cards – replace with real data {% endcomment %}
   {% for product in products %}
   <div class="card">
-    <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+    <img src="{{ product.image_url|cloudinary_optimize }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
     <div class="info">
       <h3>{{ product.name }}</h3>
       <p>{{ product.description|truncatewords:15 }}</p>

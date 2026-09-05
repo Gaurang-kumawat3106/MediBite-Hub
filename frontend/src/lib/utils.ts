@@ -26,12 +26,14 @@ export function getImageUrl(url: string | null | undefined, width: number = 360)
   // If already an absolute URL
   if (url.startsWith("http://") || url.startsWith("https://")) {
     if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
-      if (!url.includes("/q_auto")) {
+      const cleanUrl = url.replace("/q_auto:good", "/q_auto");
+      if (!cleanUrl.includes("q_auto") || !cleanUrl.includes("f_auto")) {
         const transform = width > 0 
-          ? `q_auto:good,f_auto,w_${width},c_limit` 
-          : `q_auto:good,f_auto`;
-        return url.replace("/upload/", `/upload/${transform}/`);
+          ? `q_auto,f_auto,w_${width},c_limit` 
+          : `q_auto,f_auto`;
+        return cleanUrl.replace("/upload/", `/upload/${transform}/`);
       }
+      return cleanUrl;
     }
     return url;
   }

@@ -1,5 +1,6 @@
 
 {% load static %}
+{% load cloudinary_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,9 +53,11 @@
 
           <!-- Image -->
           {% if item.product.image %}
-            <img src="{{ item.product.image.url }}"
+            <img src="{{ item.product.image.url|cloudinary_optimize }}"
                  alt="{{ item.product.name }}"
-                 class="item-img">
+                 class="item-img"
+                 loading="lazy"
+                 decoding="async">
           {% else %}
             <div class="item-img">
               <i class="fa-solid fa-bowl-food"></i>

@@ -62,7 +62,7 @@ export default function OutletDashboard() {
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-16 h-16 bg-white rounded-2xl border border-gray-100 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                   {data?.outlet?.logo_url ? (
-                    <img src={getImageUrl(data.outlet.logo_url, 160) as string} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={getImageUrl(data.outlet.logo_url, 160) as string} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <i className="fa-solid fa-store text-2xl text-gray-300"></i>
                   )}

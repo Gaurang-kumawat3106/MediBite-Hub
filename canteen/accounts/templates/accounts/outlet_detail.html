@@ -1,3 +1,4 @@
+{% load cloudinary_tags %}
 {% comment %} {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -43,7 +44,7 @@
 <div class="bb-outlet-hero">
   <div class="bb-outlet-logo-box">
     {% if outlet.logo %}
-      <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }} logo"/>
+      <img src="{{ outlet.logo.url|cloudinary_optimize }}" alt="{{ outlet.name }} logo"/>
     {% else %}
       <i class="fa-solid fa-store"></i>
     {% endif %}
@@ -78,7 +79,7 @@
           <!-- ── Image top ── -->
           <div class="bb-pcard-img">
             {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+              <img src="{{ product.image.url|cloudinary_optimize }}" alt="{{ product.name }}" loading="lazy" decoding="async">
             {% else %}
               <div class="bb-no-img"><i class="fa-solid fa-bowl-food"></i></div>
             {% endif %}
@@ -486,7 +487,7 @@
         {% if outlet.logo %}
 
             <img
-                src="{{ outlet.logo.url }}"
+                src="{{ outlet.logo.url|cloudinary_optimize }}"
                 alt="{{ outlet.name }} logo"
                 width="50"
                 height="50"
@@ -598,7 +599,7 @@
                             {% if product.image %}
 
                                 <img
-                                    src="{{ product.image.url }}"
+                                    src="{{ product.image.url|cloudinary_optimize }}"
                                     alt="{{ product.name }}"
                                     loading="lazy"
                                     decoding="async"

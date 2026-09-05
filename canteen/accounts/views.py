@@ -861,7 +861,7 @@ def customer_home(request):
                 {
                     'id': o.id,
                     'name': o.name,
-                    'logo_url': o.logo.url if o.logo else None
+                    'logo_url': optimize_cloudinary_url(o.logo.url) if o.logo else None
                 } for o in outlets
             ],
             'username': request.user.username
@@ -930,7 +930,7 @@ def outlet_home(request):
             'outlet': {
                 'id': outlet.id,
                 'name': outlet.name,
-                'logo_url': outlet.logo.url if outlet.logo else None
+                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None
             },
             'username': request.user.username,
             'stats': stats
@@ -975,7 +975,7 @@ def outlet_detail(request, id):
             'outlet': {
                 'id': outlet.id,
                 'name': outlet.name,
-                'logo_url': outlet.logo.url if outlet.logo else None
+                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None
             },
             'categories': [
                 {
@@ -1133,18 +1133,30 @@ def _process_and_save_image(product, file_obj):
     except Exception as save_err:
         print(f"Warning: Failed to save product image data: {save_err}")
 
+def optimize_cloudinary_url(url, width=None):
+    if not url or not isinstance(url, str):
+        return url
+    if "res.cloudinary.com" in url and "/upload/" in url:
+        clean_url = url.replace("/q_auto:good", "/q_auto")
+        if "/q_auto" not in clean_url and "/f_auto" not in clean_url:
+            transform = f"q_auto,f_auto,w_{width},c_limit" if width else "q_auto,f_auto"
+            return clean_url.replace("/upload/", f"/upload/{transform}/")
+        return clean_url
+    return url
+
 def _get_product_image_url(product):
     if not product:
         return None
+    url = None
     if getattr(product, 'image_url_str', None) and str(product.image_url_str).strip():
-        return product.image_url_str
-    if product.image:
+        url = product.image_url_str
+    elif product.image:
         try:
             if hasattr(product.image, 'storage') and product.image.storage.exists(product.image.name):
-                return product.image.url
+                url = product.image.url
         except Exception:
             pass
-    return None
+    return optimize_cloudinary_url(url)
 
 
 # ---------------- PRODUCT MANAGEMENT ----------------

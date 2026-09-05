@@ -1,4 +1,5 @@
 {% load static %}
+{% load cloudinary_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,7 +82,7 @@
 
         <div class="bb-outlet-img" style="position:relative;">
           {% if outlet.logo %}
-            <img src="{{ outlet.logo.url }}" alt="{{ outlet.name }}"/>
+            <img src="{{ outlet.logo.url|cloudinary_optimize }}" alt="{{ outlet.name }}" loading="lazy" decoding="async"/>
           {% else %}
             <div class="placeholder-icon"><i class="fa-solid fa-store"></i></div>
           {% endif %}
