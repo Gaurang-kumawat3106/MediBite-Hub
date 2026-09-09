@@ -969,6 +969,34 @@ def outlet_detail(request, id):
         Prefetch('products', queryset=Product.objects.filter(is_available=True))
     )
 
+    cart_count = 0
+    if is_authenticated:
+        cart = Cart.objects.filter(user=user).first()
+        if cart:
+            cart_count = sum(item.quantity for item in cart.items.all())
+
+    all_products = []
+    category_list = []
+    for c in categories:
+        prods = [
+            {
+                'id': p.id,
+                'name': p.name,
+                'product_name': p.name,
+                'customer_price': float(p.customer_price),
+                'price': float(p.customer_price),
+                'quantity': p.quantity,
+                'is_available': p.is_available,
+                'image_url': _get_product_image_url(p)
+            } for p in c.products.all()
+        ]
+        all_products.extend(prods)
+        category_list.append({
+            'id': c.id,
+            'name': c.name,
+            'products': prods
+        })
+
     if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
@@ -977,24 +1005,9 @@ def outlet_detail(request, id):
                 'name': outlet.name,
                 'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None
             },
-            'categories': [
-                {
-                    'id': c.id,
-                    'name': c.name,
-                    'products': [
-                        {
-                            'id': p.id,
-                            'name': p.name,
-                            'product_name': p.name,
-                            'customer_price': float(p.customer_price),
-                            'price': float(p.customer_price),
-                            'quantity': p.quantity,
-                            'is_available': p.is_available,
-                            'image_url': _get_product_image_url(p)
-                        } for p in c.products.all()
-                    ]
-                } for c in categories
-            ]
+            'categories': category_list,
+            'products': all_products,
+            'cart_count': cart_count
         })
 
     return render(request, 'accounts/outlet_detail.html', {
@@ -2117,6 +2130,7 @@ def outlet_products_view(request):
     
     if is_json:
         cat_list = []
+        all_products = []
         for c in categories:
             prod_list = []
             for p in c.products.all():
@@ -2125,21 +2139,25 @@ def outlet_products_view(request):
                     c_price = float(p.customer_price)
                 except Exception:
                     c_price = float(p.price)
-                prod_list.append({
+                item = {
                     'id': p.id,
                     'name': p.name,
                     'price': float(p.price),
                     'customer_price': c_price,
                     'quantity': p.quantity,
                     'is_available': p.is_available,
-                    'image_url': img_url
-                })
+                    'image_url': img_url,
+                    'category_id': c.id,
+                    'category_name': c.name,
+                }
+                prod_list.append(item)
+                all_products.append(item)
             cat_list.append({
                 'id': c.id,
                 'name': c.name,
                 'products': prod_list
             })
-        return JsonResponse({'success': True, 'categories': cat_list})
+        return JsonResponse({'success': True, 'categories': cat_list, 'products': all_products})
     return render(request, 'accounts/outlet_products.html', {
         'outlet': outlet,
         'categories': categories,
