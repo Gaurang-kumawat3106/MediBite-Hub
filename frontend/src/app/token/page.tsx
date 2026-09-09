@@ -59,6 +59,10 @@ export default function TokenPage() {
 
   useEffect(() => {
     fetchTokens();
+    const interval = setInterval(() => {
+      fetchTokens(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {

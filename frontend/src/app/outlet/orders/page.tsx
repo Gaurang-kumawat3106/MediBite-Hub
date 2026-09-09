@@ -27,13 +27,20 @@ export default function OutletOrders() {
   };
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'new_order' || wsData.type === 'order_update') {
+    if (wsData.type === 'new_order') {
+      toast.success(`🔔 New Order #${wsData.order_id} received!`, { duration: 5000 });
+      fetchOrders(true);
+    } else if (wsData.type === 'order_update') {
       fetchOrders(true);
     }
   });
 
   useEffect(() => {
     fetchOrders();
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleUpdateStatus = async (orderId: number, status: string) => {

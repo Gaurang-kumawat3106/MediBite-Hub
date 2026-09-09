@@ -19,7 +19,15 @@ export const useWebSocket = (urlPath: string, onMessage: (data: WebSocketEvent) 
   }, [onMessage]);
 
   useEffect(() => {
-    const fullUrl = getWsUrl(urlPath);
+    let baseUrl = getWsUrl(urlPath);
+    if (typeof window !== "undefined") {
+      const sessionKey = localStorage.getItem("bb_session_key");
+      if (sessionKey) {
+        const separator = baseUrl.includes("?") ? "&" : "?";
+        baseUrl = `${baseUrl}${separator}session_key=${encodeURIComponent(sessionKey)}`;
+      }
+    }
+    const fullUrl = baseUrl;
     
     let reconnectAttempts = 0;
     let isComponentMounted = true;

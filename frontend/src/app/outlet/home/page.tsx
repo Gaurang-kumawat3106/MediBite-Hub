@@ -25,6 +25,10 @@ export default function OutletDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {

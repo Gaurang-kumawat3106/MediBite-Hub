@@ -71,10 +71,16 @@ export default function OrdersPage() {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { 
+    fetchOrders(); 
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'order_update' || wsData.type === 'token_update') {
+    if (wsData.type === 'order_update' || wsData.type === 'token_update' || wsData.type === 'new_order') {
       fetchOrders(true);
     }
   });
