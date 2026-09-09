@@ -1674,6 +1674,16 @@ def payment_webhook(request):
 
 
 
+def _get_token_number_str(order):
+    try:
+        t = getattr(order, 'token', None)
+        if t is not None:
+            return str(t.token_no)
+    except Exception:
+        pass
+    return None
+
+
 @login_required_or_401
 def customer_orders(request):
     if not request.user.is_customer:
@@ -1711,8 +1721,8 @@ def customer_orders(request):
                     'created_at': o.created_at.isoformat(),
                     'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'outlet_name': o.outlet.name,
-                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
-                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token_number': _get_token_number_str(o),
+                    'token': _get_token_number_str(o),
                     'items': [
                         {
                             'id': i.id,
@@ -1780,8 +1790,8 @@ def outlet_orders(request):
                     'created_at': o.created_at.isoformat(),
                     'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'customer_name': o.user.username if o.user else "Guest",
-                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
-                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token_number': _get_token_number_str(o),
+                    'token': _get_token_number_str(o),
                     'items': [
                         {
                             'id': i.id,
@@ -1851,8 +1861,8 @@ def outlet_delivered_orders(request):
                     'created_at': o.created_at.isoformat(),
                     'completed_at': o.completed_at.isoformat() if o.completed_at else None,
                     'customer_name': o.user.username if o.user else "Guest",
-                    'token_number': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
-                    'token': str(getattr(o, 'token', None).token_no) if getattr(o, 'token', None) else None,
+                    'token_number': _get_token_number_str(o),
+                    'token': _get_token_number_str(o),
                     'items': [
                         {
                             'id': i.id,
