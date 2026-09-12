@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { fetchWithCache } from "@/lib/apiCache";
+
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getApiUrl } from "@/lib/utils";
 
@@ -131,14 +133,16 @@ export default function TokenPage() {
     <div className="min-h-screen bg-[#faf9f6] flex flex-col relative">
       
       {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center px-6 py-4">
+      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 py-4">
         <Link href="/customer/home" className="flex items-center gap-3 text-[#2b1b10] hover:text-brand transition-colors font-bold text-sm">
           <i className="fa-solid fa-arrow-left"></i> Home
         </Link>
-        <div className="flex-1 text-center font-bold font-heading text-lg text-[#2b1b10]">
+        <div className="font-bold font-heading text-lg text-[#2b1b10]">
           <i className="fa-solid fa-ticket text-brand mr-2"></i> My Tokens
         </div>
-        <div className="w-[60px]"></div>
+        <div>
+          <PushNotificationToggle compact roleLabel="ready token updates" />
+        </div>
       </nav>
 
       {/* Token Popup */}
@@ -167,7 +171,9 @@ export default function TokenPage() {
       )}
 
       <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8">
+        <PushNotificationToggle className="mb-6" roleLabel="ready token updates" />
         {data?.tokens && data.tokens.length > 0 ? (
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {data.tokens.map(token => {
               const secondsLeft = timers[token.id] || 0;

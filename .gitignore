@@ -43,3 +43,6 @@ frontend/.env.*.local
 frontend/patch_*.py
 frontend/test_*.mjs
 frontend/**/*.swp
+.vapid_keys.json
+canteen/.vapid_keys.json
+

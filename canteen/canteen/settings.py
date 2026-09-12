@@ -318,3 +318,56 @@ else:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
+
+# -- VAPID Web Push Notifications --
+def _setup_vapid_keys():
+    import json
+    from py_vapid import Vapid, b64urlencode
+    from cryptography.hazmat.primitives import serialization
+
+    env_public = os.environ.get("VAPID_PUBLIC_KEY")
+    env_private = os.environ.get("VAPID_PRIVATE_KEY")
+    env_email = os.environ.get("VAPID_ADMIN_EMAIL", "mailto:admin@bhukkadbox.in")
+
+    if env_public and env_private:
+        return env_public, env_private, env_email
+
+    keys_file = BASE_DIR / ".vapid_keys.json"
+    if keys_file.exists():
+        try:
+            with open(keys_file, "r") as f:
+                data = json.load(f)
+                if data.get("public_key") and data.get("private_key"):
+                    return data["public_key"], data["private_key"], data.get("admin_email", env_email)
+        except Exception:
+            pass
+
+    try:
+        vapid = Vapid()
+        vapid.generate_keys()
+        raw_priv = vapid.private_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption()
+        )
+        private_b64 = b64urlencode(raw_priv)
+        raw_pub = vapid.public_key.public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint
+        )
+        public_b64 = b64urlencode(raw_pub)
+
+        with open(keys_file, "w") as f:
+            json.dump({
+                "public_key": public_b64,
+                "private_key": private_b64,
+                "admin_email": env_email
+            }, f, indent=2)
+
+        return public_b64, private_b64, env_email
+    except Exception as err:
+        print("VAPID key generation warning:", err)
+        return "", "", env_email
+
+
+VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_ADMIN_EMAIL = _setup_vapid_keys()

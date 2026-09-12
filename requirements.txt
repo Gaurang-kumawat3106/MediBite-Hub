@@ -57,6 +57,7 @@ pytest==9.0.2
 python-dotenv==1.2.2
 python-engineio==4.13.1
 python-socketio==5.16.1
+pywebpush==2.5.0
 pyzmq==27.1.0
 razorpay==2.0.1
 redis==7.4.0

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { fetchWithCache } from "@/lib/apiCache";
+
 import { fetchWithCSRF } from "@/lib/csrf";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getApiUrl } from "@/lib/utils";
@@ -169,14 +171,16 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-[#faf9f6] flex flex-col relative">
       
       {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center px-6 py-4">
+      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 py-4">
         <Link href="/customer/home" className="flex items-center gap-3 text-[#2b1b10] hover:text-brand transition-colors font-bold text-sm">
           <i className="fa-solid fa-arrow-left"></i> Home
         </Link>
-        <div className="flex-1 text-center font-bold font-heading text-lg text-[#2b1b10]">
+        <div className="font-bold font-heading text-lg text-[#2b1b10]">
           <i className="fa-solid fa-clock-rotate-left text-brand mr-2"></i> My Orders
         </div>
-        <div className="w-[60px]"></div>
+        <div>
+          <PushNotificationToggle compact roleLabel="ready order updates" />
+        </div>
       </nav>
 
       {/* Token Popup */}
@@ -205,7 +209,9 @@ export default function OrdersPage() {
       )}
 
       <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8">
+        <PushNotificationToggle className="mb-6" roleLabel="ready order updates" />
         {data?.orders && data.orders.length > 0 ? (
+
           <div className="flex flex-col gap-4">
             {data.orders.map(order => {
               const displayTotal = order.total_price ?? order.total_amount ?? 0;

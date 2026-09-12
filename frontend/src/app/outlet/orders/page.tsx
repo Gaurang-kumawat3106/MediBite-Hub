@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
+
 import { fetchWithCSRF } from "@/lib/csrf";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getApiUrl } from "@/lib/utils";
@@ -111,10 +113,16 @@ export default function OutletOrders() {
         <div className="p-8 max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold font-heading text-[#2b1b10]">Live Orders</h1>
-            <button onClick={() => fetchOrders(true)} className="text-gray-500 hover:text-brand bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2 text-sm font-bold transition-colors">
-              <i className="fa-solid fa-rotate-right"></i> Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              <PushNotificationToggle compact roleLabel="new paid order alerts" />
+              <button onClick={() => fetchOrders(true)} className="text-gray-500 hover:text-brand bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2 text-sm font-bold transition-colors">
+                <i className="fa-solid fa-rotate-right"></i> Refresh
+              </button>
+            </div>
           </div>
+
+          <PushNotificationToggle className="mb-6" roleLabel="new paid order alerts" />
+
 
           {loading && !data ? (
             <div className="space-y-4">

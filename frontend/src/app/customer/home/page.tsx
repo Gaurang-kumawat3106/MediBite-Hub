@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { fetchWithCache, prefetchAPI, invalidateAllCache } from "@/lib/apiCache";
+
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
 
@@ -141,7 +143,8 @@ export default function CustomerHomePage() {
         <Link href="/customer/home" className="text-xl font-bold font-heading text-brand flex items-center gap-2">
           <i className="fa-solid fa-utensils"></i> Bhukkad Box
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <PushNotificationToggle compact roleLabel="ready order updates" />
           <span className="bg-orange-50 text-brand px-4 py-1.5 rounded-full text-sm font-semibold border border-orange-100">
             {data?.username}
           </span>
@@ -150,6 +153,7 @@ export default function CustomerHomePage() {
           </button>
         </div>
       </nav>
+
 
       {/* Action Buttons */}
       <div className="w-full max-w-4xl px-6 py-4 flex flex-wrap gap-3">

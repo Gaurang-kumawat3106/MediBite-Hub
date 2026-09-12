@@ -395,3 +395,17 @@ class PlatformFeeSlab(models.Model):
 @receiver([post_save, post_delete], sender=PlatformFeeConfig)
 def on_platform_fee_change(sender, **kwargs):
     invalidate_platform_fee_cache()
+
+
+# ---------------- PUSH SUBSCRIPTION ----------------
+class PushSubscription(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.TextField()
+    auth = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"PushSubscription ({self.user.username}) - {self.endpoint[:30]}..."
+

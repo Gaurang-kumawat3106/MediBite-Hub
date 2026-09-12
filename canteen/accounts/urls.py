@@ -70,4 +70,9 @@ path('outlet/products/', views.outlet_products_view, name='outlet_products'),
 path('outlet/product/<int:product_id>/toggle/', views.toggle_availability, name='toggle_availability'),
 path('outlet/product/<int:product_id>/edit/', views.edit_product, name='edit_product'),
 
+# Web Push Notification Endpoints
+path('push/vapid-key/', views.get_vapid_public_key, name='get_vapid_public_key'),
+path('push/subscribe/', views.subscribe_push, name='subscribe_push'),
+path('push/unsubscribe/', views.unsubscribe_push, name='unsubscribe_push'),
+
 ]

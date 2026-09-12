@@ -77,7 +77,9 @@ from .models import (
     Category,
     Product
 )
-from .models import Cart, CartItem, Order, OrderItem, OrderToken
+from .models import Cart, CartItem, Order, OrderItem, OrderToken, PushSubscription
+from accounts.services.push_service import notify_customer_order_ready
+
 import random
 
 TOKEN_VISIBLE_FOR = timedelta(hours=3)
@@ -2019,6 +2021,13 @@ def update_order_status(request, order_id):
             except Exception as ws_err:
                 print("WS broadcast warning:", ws_err)
 
+            # Trigger Web Push Notification to customer when order is ready (completed)
+            if new_status == 'completed':
+                try:
+                    notify_customer_order_ready(order, token_no=token_no)
+                except Exception as push_err:
+                    print("Customer push broadcast warning:", push_err)
+
             return JsonResponse({'success': True, 'status': order.status, 'token_no': token_no})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
@@ -2395,4 +2404,59 @@ def reorder(request, order_id):
         return JsonResponse({'success': True, 'redirect_url': '/cart', 'message': msg})
         
     return redirect('cart')
+
+
+def get_vapid_public_key(request):
+    key = getattr(settings, "VAPID_PUBLIC_KEY", "")
+    return JsonResponse({"success": True, "vapid_public_key": key})
+
+
+@login_required_or_401
+def subscribe_push(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        endpoint = data.get("endpoint")
+        keys = data.get("keys", {})
+        p256dh = keys.get("p256dh")
+        auth = keys.get("auth")
+
+        if not endpoint or not p256dh or not auth:
+            return JsonResponse({"success": False, "error": "Missing subscription parameters"}, status=400)
+
+        subscription, created = PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                "user": request.user,
+                "p256dh": p256dh,
+                "auth": auth
+            }
+        )
+        return JsonResponse({
+            "success": True,
+            "message": "Subscribed successfully",
+            "subscription_id": subscription.id
+        })
+    except Exception as e:
+        return JsonResponse({"success": False, "error": f"Subscription error: {str(e)}"}, status=500)
+
+
+@login_required_or_401
+def unsubscribe_push(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        endpoint = data.get("endpoint")
+
+        if endpoint:
+            PushSubscription.objects.filter(endpoint=endpoint, user=request.user).delete()
+
+        return JsonResponse({"success": True, "message": "Unsubscribed successfully"})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": f"Unsubscribe error: {str(e)}"}, status=500)
+
 

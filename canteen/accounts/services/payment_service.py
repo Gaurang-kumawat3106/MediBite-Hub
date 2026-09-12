@@ -8,8 +8,10 @@ from channels.layers import get_channel_layer
 import razorpay
 
 from accounts.models import Order, CartItem
+from accounts.services.push_service import notify_outlet_head_new_order
 
 logger = logging.getLogger(__name__)
+
 
 def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="callback"):
     """
@@ -83,7 +85,14 @@ def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="c
     # 4. Safe Post-Processing Step 3: WebSocket Live Order Notification to Outlet
     _notify_outlet_websocket_safely(order)
 
+    # 5. Safe Post-Processing Step 4: Web Push Notification to Outlet Head
+    try:
+        notify_outlet_head_new_order(order)
+    except Exception as push_err:
+        logger.warning(f"finalize_paid_order: Web push failed for Order #{order.id}: {push_err}")
+
     return True, "payment_finalized", 200
+
 
 
 def _deduct_stock_safely(order):
