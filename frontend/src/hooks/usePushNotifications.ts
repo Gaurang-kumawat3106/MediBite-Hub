@@ -47,8 +47,40 @@ export function usePushNotifications() {
       .then((registration) => {
         return registration.pushManager.getSubscription();
       })
-      .then((subscription) => {
-        setIsSubscribed(!!subscription);
+      .then(async (subscription) => {
+        if (subscription) {
+          setIsSubscribed(true);
+          // Sync existing browser subscription with backend to ensure request.user in Django DB is linked
+          try {
+            const rawSub = subscription.toJSON();
+            const p256dhKey = subscription.getKey
+              ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh") || new ArrayBuffer(0))))
+              : rawSub.keys?.p256dh;
+            const authKey = subscription.getKey
+              ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth") || new ArrayBuffer(0))))
+              : rawSub.keys?.auth;
+
+            await fetchWithCSRF(`${getApiUrl()}/app/push/subscribe/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                keys: {
+                  p256dh: p256dhKey || rawSub.keys?.p256dh,
+                  auth: authKey || rawSub.keys?.auth,
+                },
+              }),
+            });
+          } catch (syncErr) {
+            console.warn("Failed to auto-sync push subscription with backend:", syncErr);
+          }
+        } else {
+          setIsSubscribed(false);
+        }
       })
       .catch((err) => {
         console.warn("Service Worker registration or subscription check failed:", err);

@@ -26,11 +26,14 @@ def send_user_push_notification(user, title, body, url=None):
         logger.warning("send_user_push_notification: VAPID_PRIVATE_KEY is not configured in settings.")
         return 0
 
+    date_joined = getattr(user, 'date_joined', None)
+    ts = int(date_joined.timestamp()) if date_joined and hasattr(date_joined, 'timestamp') else 0
+
     payload = json.dumps({
         "title": title,
         "body": body,
         "url": url or "/",
-        "timestamp": int(user.date_joined.timestamp() if hasattr(user, 'date_joined') else 0)
+        "timestamp": ts
     })
 
     sent_count = 0

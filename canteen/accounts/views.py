@@ -1976,6 +1976,9 @@ def update_order_status(request, order_id):
             except Exception:
                 pass
         
+        if new_status:
+            new_status = str(new_status).strip().lower()
+        
         if new_status == 'ready':
             new_status = 'completed'
         
