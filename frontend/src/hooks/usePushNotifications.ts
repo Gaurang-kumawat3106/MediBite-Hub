@@ -77,35 +77,53 @@ export function usePushNotifications() {
         return false;
       }
 
-      // 2. Fetch VAPID Public Key from Django Backend
-      const keyRes = await fetch(`${getApiUrl()}/app/push/vapid-key/`, {
-        headers: {
-          Accept: "application/json",
-          ...getSessionKeyHeader(),
-        },
-        credentials: "include",
-      });
-      const keyData = await keyRes.json();
-
-      if (!keyData.success || !keyData.vapid_public_key) {
-        throw new Error(keyData.error || "Failed to retrieve VAPID public key.");
-      }
-
-      // 3. Convert key and subscribe via ServiceWorker PushManager
-      const registration = await navigator.serviceWorker.ready;
-      const convertedKey = urlBase64ToUint8Array(keyData.vapid_public_key);
-
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedKey as unknown as BufferSource,
+      // 2. Obtain VAPID Public Key (Environment variable or Backend Endpoint)
+      let vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        const keyRes = await fetch(`${getApiUrl()}/app/push/vapid-key/`, {
+          headers: {
+            Accept: "application/json",
+            ...getSessionKeyHeader(),
+          },
+          credentials: "include",
         });
+        const keyData = await keyRes.json();
+        if (keyData.success && keyData.vapid_public_key) {
+          vapidPublicKey = keyData.vapid_public_key;
+        }
       }
 
+      if (!vapidPublicKey) {
+        throw new Error("Failed to retrieve VAPID public key.");
+      }
 
-      // 4. Send subscription JSON payload to backend
-      const subJson = subscription.toJSON();
+      // 3. Register fresh subscription (unsubscribing any stale subscription first)
+      const registration = await navigator.serviceWorker.ready;
+      const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        try {
+          await existingSub.unsubscribe();
+        } catch (unsubErr) {
+          console.warn("Unsubscribing stale push subscription warning:", unsubErr);
+        }
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey as unknown as BufferSource,
+      });
+
+      // 4. Extract keys and send subscription JSON payload to backend
+      const rawSub = subscription.toJSON();
+      const p256dhKey = subscription.getKey
+        ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh") || new ArrayBuffer(0))))
+        : rawSub.keys?.p256dh;
+      const authKey = subscription.getKey
+        ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth") || new ArrayBuffer(0))))
+        : rawSub.keys?.auth;
+
       const subRes = await fetch(`${getApiUrl()}/app/push/subscribe/`, {
         method: "POST",
         headers: {
@@ -115,8 +133,11 @@ export function usePushNotifications() {
         },
         credentials: "include",
         body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          keys: subJson.keys,
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: p256dhKey || rawSub.keys?.p256dh,
+            auth: authKey || rawSub.keys?.auth,
+          },
         }),
       });
 
@@ -127,6 +148,7 @@ export function usePushNotifications() {
 
       setIsSubscribed(true);
       return true;
+
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error enabling notifications.";
       console.error("subscribeUser error:", err);
