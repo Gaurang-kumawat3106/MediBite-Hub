@@ -2416,6 +2416,7 @@ def get_vapid_public_key(request):
 
 
 
+@ensure_csrf_cookie
 @login_required_or_401
 def subscribe_push(request):
     if request.method != "POST":
@@ -2448,6 +2449,7 @@ def subscribe_push(request):
         return JsonResponse({"success": False, "error": f"Subscription error: {str(e)}"}, status=500)
 
 
+@ensure_csrf_cookie
 @login_required_or_401
 def unsubscribe_push(request):
     if request.method != "POST":
@@ -2463,5 +2465,27 @@ def unsubscribe_push(request):
         return JsonResponse({"success": True, "message": "Unsubscribed successfully"})
     except Exception as e:
         return JsonResponse({"success": False, "error": f"Unsubscribe error: {str(e)}"}, status=500)
+
+
+def custom_csrf_failure(request, reason=""):
+    """
+    Custom CSRF failure handler.
+    If request is JSON/API/under /app/, returns JSON 403 response instead of HTML page.
+    """
+    is_json = (
+        'application/json' in request.headers.get('Accept', '')
+        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        or request.path.startswith('/app/')
+        or request.content_type == 'application/json'
+    )
+    if is_json:
+        return JsonResponse({
+            'success': False,
+            'error': f'CSRF verification failed: {reason}',
+            'csrf_failed': True
+        }, status=403)
+    from django.views.csrf import csrf_failure
+    return csrf_failure(request, reason=reason)
+
 
 

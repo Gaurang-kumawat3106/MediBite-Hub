@@ -111,6 +111,8 @@ SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 
+CSRF_FAILURE_VIEW = 'accounts.views.custom_csrf_failure'
+
 if not DEBUG:
     CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', '.bhukkadbox.in')
     SESSION_COOKIE_DOMAIN = os.getenv('SESSION_COOKIE_DOMAIN', '.bhukkadbox.in')

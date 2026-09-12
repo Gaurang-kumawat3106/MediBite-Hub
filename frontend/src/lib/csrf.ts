@@ -27,7 +27,6 @@ export async function getCSRFToken(): Promise<string> {
     cachedToken = cookieToken;
     return cookieToken;
   }
-  if (cachedToken) return cachedToken;
   try {
     const res = await fetch(`${getApiUrl()}/app/csrf/`, {
       method: "GET",
