@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getApiUrl } from "@/lib/utils";
-import { getSessionKeyHeader } from "@/lib/csrf";
+import { fetchWithCSRF, getSessionKeyHeader } from "@/lib/csrf";
+
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -124,12 +125,11 @@ export function usePushNotifications() {
         ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth") || new ArrayBuffer(0))))
         : rawSub.keys?.auth;
 
-      const subRes = await fetch(`${getApiUrl()}/app/push/subscribe/`, {
+      const subRes = await fetchWithCSRF(`${getApiUrl()}/app/push/subscribe/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          ...getSessionKeyHeader(),
         },
         credentials: "include",
         body: JSON.stringify({
@@ -174,17 +174,17 @@ export function usePushNotifications() {
         await subscription.unsubscribe();
 
         // Notify backend to remove subscription
-        await fetch(`${getApiUrl()}/app/push/unsubscribe/`, {
+        await fetchWithCSRF(`${getApiUrl()}/app/push/unsubscribe/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            ...getSessionKeyHeader(),
           },
           credentials: "include",
           body: JSON.stringify({ endpoint }),
         });
       }
+
 
       setIsSubscribed(false);
       return true;

@@ -47,6 +47,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://medi-bite-hub.vercel.app",
     "https://bhukkadbox.in",
     "https://www.bhukkadbox.in",
+    "https://api.bhukkadbox.in",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
@@ -87,6 +88,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://medi-bite-hub.vercel.app",
     "https://bhukkadbox.in",
     "https://www.bhukkadbox.in",
+    "https://api.bhukkadbox.in",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
@@ -104,9 +106,15 @@ if extra_csrf:
 CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False
+
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
+
+if not DEBUG:
+    CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', '.bhukkadbox.in')
+    SESSION_COOKIE_DOMAIN = os.getenv('SESSION_COOKIE_DOMAIN', '.bhukkadbox.in')
+
 
 # Prefer the public frontend domain for auth email links.
 # In production, set SITE_URL explicitly in Render env to the public frontend URL.

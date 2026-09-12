@@ -2406,9 +2406,11 @@ def reorder(request, order_id):
     return redirect('cart')
 
 
+@ensure_csrf_cookie
 def get_vapid_public_key(request):
     key = getattr(settings, "VAPID_PUBLIC_KEY", "")
     return JsonResponse({"success": True, "vapid_public_key": key})
+
 
 
 @login_required_or_401
