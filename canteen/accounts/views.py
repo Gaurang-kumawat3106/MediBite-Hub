@@ -2416,7 +2416,6 @@ def get_vapid_public_key(request):
 
 
 
-@ensure_csrf_cookie
 @login_required_or_401
 def subscribe_push(request):
     if request.method != "POST":
@@ -2449,7 +2448,6 @@ def subscribe_push(request):
         return JsonResponse({"success": False, "error": f"Subscription error: {str(e)}"}, status=500)
 
 
-@ensure_csrf_cookie
 @login_required_or_401
 def unsubscribe_push(request):
     if request.method != "POST":

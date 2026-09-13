@@ -173,9 +173,17 @@ export function usePushNotifications() {
         }),
       });
 
-      const subData = await subRes.json();
-      if (!subData.success) {
-        throw new Error(subData.error || "Failed to save subscription on server.");
+      const contentType = subRes.headers.get("content-type") || "";
+      let subData: any = {};
+      if (contentType.includes("application/json")) {
+        subData = await subRes.json();
+      } else {
+        const text = await subRes.text();
+        throw new Error(subRes.ok ? "Server returned non-JSON response." : `Server error (${subRes.status}): ${text.substring(0, 100)}`);
+      }
+
+      if (!subRes.ok || !subData.success) {
+        throw new Error(subData.error || `Subscription failed with status ${subRes.status}`);
       }
 
       setIsSubscribed(true);
