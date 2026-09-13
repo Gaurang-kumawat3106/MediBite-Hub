@@ -863,7 +863,8 @@ def customer_home(request):
                 {
                     'id': o.id,
                     'name': o.name,
-                    'logo_url': optimize_cloudinary_url(o.logo.url) if o.logo else None
+                    'logo_url': optimize_cloudinary_url(o.logo.url) if o.logo else None,
+                    'is_accepting_orders': getattr(o, 'is_accepting_orders', True)
                 } for o in outlets
             ],
             'username': request.user.username
@@ -932,7 +933,8 @@ def outlet_home(request):
             'outlet': {
                 'id': outlet.id,
                 'name': outlet.name,
-                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None
+                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None,
+                'is_accepting_orders': getattr(outlet, 'is_accepting_orders', True)
             },
             'username': request.user.username,
             'stats': stats
@@ -1005,7 +1007,8 @@ def outlet_detail(request, id):
             'outlet': {
                 'id': outlet.id,
                 'name': outlet.name,
-                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None
+                'logo_url': optimize_cloudinary_url(outlet.logo.url) if outlet.logo else None,
+                'is_accepting_orders': getattr(outlet, 'is_accepting_orders', True)
             },
             'categories': category_list,
             'products': all_products,
@@ -1337,6 +1340,12 @@ def add_to_cart(request, product_id):
             return JsonResponse({'success': False, 'message': 'Product is unavailable'}, status=400)
         return redirect('outlet_detail', product.outlet.id)
 
+    if not getattr(product.outlet, 'is_accepting_orders', True):
+        if is_ajax:
+            return JsonResponse({'success': False, 'message': f'{product.outlet.name} is currently not accepting orders.'}, status=400)
+        messages.error(request, f'{product.outlet.name} is currently not accepting orders.')
+        return redirect('outlet_detail', product.outlet.id)
+
     cart, _ = Cart.objects.get_or_create(user=request.user)
 
     # Check if cart already has items from another outlet in 1 query
@@ -1378,7 +1387,7 @@ def cart_view(request):
     items = cart.items.select_related('product__outlet').all()
 
     total = sum(item.total_price() for item in items)
-    can_order = all(item.product.is_available for item in items) and bool(items)
+    can_order = all(item.product.is_available and getattr(item.product.outlet, 'is_accepting_orders', True) for item in items) and bool(items)
 
     if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
@@ -1439,6 +1448,8 @@ def create_razorpay_order(request):
             return JsonResponse({"success": False, "error": f"{item.product.name} is unavailable"}, status=400)
 
     outlet = items[0].product.outlet
+    if not getattr(outlet, 'is_accepting_orders', True):
+        return JsonResponse({"success": False, "error": f"{outlet.name} is currently not accepting orders."}, status=400)
 
     # Calculate amounts from the cart snapshot
     actual_amount = sum(item.outlet_total() for item in items)
@@ -2484,6 +2495,68 @@ def custom_csrf_failure(request, reason=""):
         }, status=403)
     from django.views.csrf import csrf_failure
     return csrf_failure(request, reason=reason)
+
+
+@login_required_or_401
+def toggle_outlet_accepting_orders(request):
+    """
+    Toggle or explicitly set accepting orders status for the authenticated outlet head's outlet.
+    """
+    if not getattr(request.user, 'is_outlet_head', False):
+        return JsonResponse({'success': False, 'error': 'Unauthorized. Only outlet heads can perform this action.'}, status=403)
+    if _is_pending_outlet_user(request.user):
+        return JsonResponse({'success': False, 'error': 'Account pending verification.'}, status=403)
+
+    outlet = getattr(request.user, 'outlet', None)
+    if not outlet:
+        return JsonResponse({'success': False, 'error': 'No outlet associated with this account.'}, status=404)
+
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body.decode('utf-8')) if request.body else {}
+        except Exception:
+            data = {}
+
+        if 'is_accepting_orders' in data:
+            outlet.is_accepting_orders = bool(data['is_accepting_orders'])
+        else:
+            outlet.is_accepting_orders = not outlet.is_accepting_orders
+
+        outlet.save(update_fields=['is_accepting_orders'])
+
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    "customers",
+                    {
+                        "type": "outlet_status_update",
+                        "outlet_id": outlet.id,
+                        "is_accepting_orders": outlet.is_accepting_orders,
+                    }
+                )
+        except Exception as e:
+            logger.warning(f"Error broadcasting outlet status update: {e}")
+
+        return JsonResponse({
+            'success': True,
+            'is_accepting_orders': outlet.is_accepting_orders,
+            'outlet_id': outlet.id,
+            'message': 'Order receiving status updated successfully.'
+        })
+
+    elif request.method == 'GET':
+        return JsonResponse({
+            'success': True,
+            'is_accepting_orders': outlet.is_accepting_orders,
+            'outlet_id': outlet.id
+        })
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
 
 
 

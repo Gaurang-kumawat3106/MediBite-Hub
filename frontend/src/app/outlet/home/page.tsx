@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
+import OrderAcceptingToggle from "@/components/OrderAcceptingToggle";
 import { fetchWithCache } from "@/lib/apiCache";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
@@ -63,7 +64,7 @@ export default function OutletDashboard() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-white rounded-2xl border border-gray-100 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                   {data?.outlet?.logo_url ? (
                     <img src={getImageUrl(data.outlet.logo_url, 160) as string} alt="Logo" className="w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -75,6 +76,14 @@ export default function OutletDashboard() {
                   <h1 className="text-2xl font-bold font-heading text-[#2b1b10]">{data?.outlet?.name}</h1>
                   <p className="text-gray-500">Welcome back, {data?.username}</p>
                 </div>
+              </div>
+
+              {/* Order Receiving Status Toggle */}
+              <div className="mb-8">
+                <OrderAcceptingToggle 
+                  initialState={data?.outlet?.is_accepting_orders}
+                  onStatusChange={() => fetchDashboardData(true)}
+                />
               </div>
 
           {/* Stats Grid */}

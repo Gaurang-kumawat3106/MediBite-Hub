@@ -408,7 +408,7 @@ export default function CartPage() {
                   </button>
                 ) : (
                   <button disabled className="w-full bg-gray-100 text-gray-400 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 cursor-not-allowed">
-                    Items Unavailable
+                    {data.items?.some(i => i.is_available === false) ? "Items Unavailable" : "Outlet Not Accepting Orders"}
                   </button>
                 )}
 

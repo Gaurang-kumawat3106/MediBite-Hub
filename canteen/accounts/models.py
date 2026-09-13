@@ -71,6 +71,7 @@ class Outlet(models.Model):
     name = models.CharField(max_length=50)
     logo = models.ImageField(upload_to='outlet_logos/', blank=True, null=True)
     is_approved = models.BooleanField(default=False)
+    is_accepting_orders = models.BooleanField(default=True)
 
     manager = models.OneToOneField(   # 🔥 ONE outlet = ONE outlet head
         CustomUser,

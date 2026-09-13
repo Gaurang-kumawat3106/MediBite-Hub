@@ -6,7 +6,8 @@ export type WebSocketEvent =
   | { type: "new_order"; order_id: number; customer_name: string; total_amount: string }
   | { type: "order_update"; order_id: number; status: string; token_no?: number | null; message?: string }
   | { type: "token_update"; order_id: number; token_no: number; message?: string }
-  | { type: "product_deactivated"; product_id: number; product_name: string };
+  | { type: "product_deactivated"; product_id: number; product_name: string }
+  | { type: "outlet_status_update"; outlet_id: number; is_accepting_orders: boolean };
 
 export const useWebSocket = (urlPath: string, onMessage: (data: WebSocketEvent) => void) => {
   const [isConnected, setIsConnected] = useState(false);

@@ -34,6 +34,7 @@ interface OutletData {
     name: string;
     description: string;
     logo_url: string | null;
+    is_accepting_orders?: boolean;
   };
   categories: Category[];
   cart_count: number;
@@ -79,7 +80,7 @@ export default function OutletDetailPage() {
   }, [outletId]);
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'product_deactivated') {
+    if (wsData.type === 'product_deactivated' || wsData.type === 'outlet_status_update') {
       fetchOutletData(true);
     }
   });
@@ -104,6 +105,10 @@ export default function OutletDetailPage() {
 
   const handleAddToCart = async (e: React.MouseEvent, productId: number, productName: string) => {
     e.preventDefault();
+    if (data?.outlet?.is_accepting_orders === false) {
+      setToast({ msg: `${data.outlet.name} is currently not accepting orders.`, type: 'error' });
+      return;
+    }
     if (addingId === productId) return;
 
     // Instant optimistic visual feedback (0ms perceived latency!)
@@ -267,8 +272,12 @@ export default function OutletDetailPage() {
       )}
 
       {/* Hero */}
-      <div className="bg-[#2b1b10] text-white px-6 py-10 flex flex-col items-center text-center">
-          <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden bg-white shrink-0 border-[3px] border-white shadow-md z-10 flex items-center justify-center">
+      <div className={`px-6 py-10 flex flex-col items-center text-center transition-all ${
+        data.outlet.is_accepting_orders === false 
+          ? "bg-[#1f1a18] text-neutral-300 grayscale contrast-[0.95]" 
+          : "bg-[#2b1b10] text-white"
+      }`}>
+          <div className="relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden bg-white shrink-0 border-[3px] border-white shadow-md z-10 flex items-center justify-center">
             {data.outlet.logo_url ? (
               <img 
                 src={getImageUrl(data.outlet.logo_url, 240) as string} 
@@ -280,10 +289,34 @@ export default function OutletDetailPage() {
             ) : (
               <i className="fa-solid fa-store text-3xl text-gray-300"></i>
             )}
+            {data.outlet.is_accepting_orders === false && (
+              <div className="absolute bottom-0 inset-x-0 bg-neutral-900/90 text-white text-[9px] font-bold text-center py-0.5 uppercase tracking-wider">
+                Closed
+              </div>
+            )}
           </div>
-        <h1 className="text-3xl font-bold font-heading mb-2">{data.outlet.name}</h1>
-        <p className="text-gray-400 text-sm max-w-sm">Order your favourite meals, freshly prepared.</p>
+        <div className="flex items-center gap-2 mt-3 mb-1">
+          <h1 className="text-3xl font-bold font-heading">{data.outlet.name}</h1>
+          {data.outlet.is_accepting_orders === false && (
+            <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              Orders Paused
+            </span>
+          )}
+        </div>
+        <p className="text-gray-400 text-sm max-w-sm">
+          {data.outlet.is_accepting_orders === false
+            ? "This outlet is currently not receiving new orders. Please check back later."
+            : "Order your favourite meals, freshly prepared."}
+        </p>
       </div>
+
+      {/* Outlet Closed Alert Banner */}
+      {data.outlet.is_accepting_orders === false && (
+        <div className="bg-amber-500 text-neutral-950 px-6 py-3 border-y border-amber-600/20 flex items-center justify-center gap-3 font-semibold text-xs sm:text-sm">
+          <i className="fa-solid fa-triangle-exclamation text-base"></i>
+          <span>This outlet is currently <strong>not accepting orders</strong>. Browsing menu only.</span>
+        </div>
+      )}
 
       {/* Category Strip */}
       <div className="sticky top-[73px] z-30 bg-[#faf9f6]/95 backdrop-blur-sm py-4 border-b border-gray-100">
@@ -352,7 +385,11 @@ export default function OutletDetailPage() {
                       ₹{product.customer_price}
                     </div>
 
-                    {product.is_available === false ? (
+                    {data.outlet.is_accepting_orders === false ? (
+                      <span className="bg-gray-100 text-gray-500 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">
+                        <i className="fa-solid fa-circle-pause text-[10px] text-gray-400"></i> Closed
+                      </span>
+                    ) : product.is_available === false ? (
                       <span className="bg-gray-100 text-gray-400 font-bold px-3 py-1.5 rounded-xl text-xs">
                         Out of Stock
                       </span>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
+import OrderAcceptingToggle from "@/components/OrderAcceptingToggle";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 
 import { fetchWithCSRF } from "@/lib/csrf";
@@ -111,9 +112,10 @@ export default function OutletOrders() {
       <OutletSidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <h1 className="text-2xl font-bold font-heading text-[#2b1b10]">Live Orders</h1>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <OrderAcceptingToggle compact />
               <PushNotificationToggle compact roleLabel="new paid order alerts" />
               <button onClick={() => fetchOrders(true)} className="text-gray-500 hover:text-brand bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2 text-sm font-bold transition-colors">
                 <i className="fa-solid fa-rotate-right"></i> Refresh

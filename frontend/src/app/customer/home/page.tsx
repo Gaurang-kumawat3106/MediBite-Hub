@@ -10,6 +10,7 @@ import { fetchWithCache, prefetchAPI, invalidateAllCache } from "@/lib/apiCache"
 
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
@@ -17,6 +18,7 @@ interface Outlet {
   id: number;
   name: string;
   logo_url: string | null;
+  is_accepting_orders?: boolean;
 }
 
 interface HomeData {
@@ -50,36 +52,41 @@ export default function CustomerHomePage() {
     }
   };
 
+  const fetchData = async (force = false) => {
+    try {
+      const json = await fetchWithCache<HomeData>(`${getApiUrl()}/app/customer/home/`, force);
+      if (json.success) {
+        setData(json);
+        // Prefetch menus for all visible outlets in the background
+        if (json.outlets && Array.isArray(json.outlets)) {
+          json.outlets.forEach((o) => {
+            prefetchAPI(`${getApiUrl()}/app/outlet/${o.id}/`);
+          });
+        }
+        // Prefetch cart in background
+        prefetchAPI(`${getApiUrl()}/app/cart/`);
+      } else {
+        setError(json.msg || "Failed to load outlets.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Network error. Please make sure the Django server is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (fetchRef.current) return;
     fetchRef.current = true;
-
-    async function fetchData() {
-      try {
-        const json = await fetchWithCache<HomeData>(`${getApiUrl()}/app/customer/home/`);
-        if (json.success) {
-          setData(json);
-          // Prefetch menus for all visible outlets in the background
-          if (json.outlets && Array.isArray(json.outlets)) {
-            json.outlets.forEach((o) => {
-              prefetchAPI(`${getApiUrl()}/app/outlet/${o.id}/`);
-            });
-          }
-          // Prefetch cart in background
-          prefetchAPI(`${getApiUrl()}/app/cart/`);
-        } else {
-          setError(json.msg || "Failed to load outlets.");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Network error. Please make sure the Django server is running.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchData();
   }, []);
+
+  useWebSocket("/ws/orders/", (wsData) => {
+    if (wsData.type === 'outlet_status_update') {
+      fetchData(true);
+    }
+  });
 
   if (loading && !data) {
     return (
@@ -191,44 +198,73 @@ export default function CustomerHomePage() {
 
         {data?.outlets && data.outlets.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {data.outlets.map((outlet) => (
-              <Link 
-                href={`/outlet/${outlet.id}`} 
-                key={outlet.id}
-                onMouseEnter={() => prefetchAPI(`${getApiUrl()}/app/outlet/${outlet.id}/`)}
-                className="group bg-white rounded-3xl p-4 flex items-center gap-5 border border-gray-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
-                  {outlet.logo_url ? (
-                    <Image 
-                      src={getImageUrl(outlet.logo_url) as string} 
-                      alt={outlet.name}
-                      fill
-                      sizes="96px"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
-                      unoptimized={outlet.logo_url.includes('res.cloudinary.com')}
-                    />
-                  ) : (
-                    <i className="fa-solid fa-store text-3xl text-gray-300 group-hover:scale-110 transition-transform duration-500"></i>
-                  )}
-                  <div className="absolute bottom-0 inset-x-0 bg-green-500 text-white text-[10px] font-bold text-center py-0.5 uppercase tracking-wider">
-                    Open
+            {data.outlets.map((outlet) => {
+              const isClosed = outlet.is_accepting_orders === false;
+              return (
+                <Link 
+                  href={`/outlet/${outlet.id}`} 
+                  key={outlet.id}
+                  onMouseEnter={() => prefetchAPI(`${getApiUrl()}/app/outlet/${outlet.id}/`)}
+                  className={`group bg-white rounded-3xl p-4 flex items-center gap-5 border border-gray-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+                    isClosed ? "grayscale contrast-[0.95] opacity-80 hover:opacity-95" : ""
+                  }`}
+                >
+                  <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
+                    {outlet.logo_url ? (
+                      <Image 
+                        src={getImageUrl(outlet.logo_url) as string} 
+                        alt={outlet.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        unoptimized={outlet.logo_url.includes('res.cloudinary.com')}
+                      />
+                    ) : (
+                      <i className="fa-solid fa-store text-3xl text-gray-300 group-hover:scale-110 transition-transform duration-500"></i>
+                    )}
+                    <div
+                      className={`absolute bottom-0 inset-x-0 text-white text-[10px] font-bold text-center py-0.5 uppercase tracking-wider ${
+                        isClosed ? "bg-neutral-800" : "bg-green-500"
+                      }`}
+                    >
+                      {isClosed ? "Closed" : "Open"}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex-1 flex flex-col py-1">
-                  <h3 className="text-lg font-bold font-heading text-[#2b1b10] mb-1 line-clamp-1 group-hover:text-brand transition-colors">
-                    {outlet.name}
-                  </h3>
-                  <div className="text-sm font-medium text-gray-400 flex items-center gap-1.5 mb-3">
-                    <i className="fa-regular fa-clock"></i> 15–25 min
+                  
+                  <div className="flex-1 flex flex-col py-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-bold font-heading text-[#2b1b10] line-clamp-1 group-hover:text-brand transition-colors">
+                        {outlet.name}
+                      </h3>
+                      {isClosed && (
+                        <span className="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          Paused
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-gray-400 flex items-center gap-1.5 mb-3">
+                      {isClosed ? (
+                        <span className="text-gray-500 font-medium flex items-center gap-1">
+                          <i className="fa-regular fa-circle-pause text-xs text-amber-500"></i> Not accepting orders
+                        </span>
+                      ) : (
+                        <>
+                          <i className="fa-regular fa-clock"></i> 15–25 min
+                        </>
+                      )}
+                    </div>
+                    <div
+                      className={`text-sm font-bold flex items-center gap-1.5 group-hover:gap-2.5 transition-all ${
+                        isClosed ? "text-gray-400" : "text-brand"
+                      }`}
+                    >
+                      {isClosed ? "View menu (Closed)" : "View menu"}{" "}
+                      <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                    </div>
                   </div>
-                  <div className="text-sm font-bold text-brand flex items-center gap-1.5 group-hover:gap-2.5 transition-all">
-                    View menu <i className="fa-solid fa-arrow-right text-[10px]"></i>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-3xl border border-gray-100 p-12 flex flex-col items-center justify-center text-center shadow-[0_2px_15px_rgba(0,0,0,0.03)]">

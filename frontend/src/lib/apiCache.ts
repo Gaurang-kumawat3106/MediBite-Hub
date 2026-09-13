@@ -161,5 +161,10 @@ export const invalidateCachesForEvent = (event: { type: string }) => {
       invalidateMatchingCache("/app/outlet/");
       invalidateMatchingCache("/app/customer/home");
       break;
+    case "outlet_status_update":
+      invalidateMatchingCache("/app/outlet/");
+      invalidateMatchingCache("/app/customer/home");
+      invalidateMatchingCache("/app/cart");
+      break;
   }
 };

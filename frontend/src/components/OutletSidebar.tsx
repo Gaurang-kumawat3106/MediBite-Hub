@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
 import { invalidateAllCache } from "@/lib/apiCache";
+import OrderAcceptingToggle from "@/components/OrderAcceptingToggle";
 
 export default function OutletSidebar() {
   const pathname = usePathname();
@@ -65,7 +66,8 @@ export default function OutletSidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100 space-y-3">
+          <OrderAcceptingToggle compact />
           <button 
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl font-bold text-sm transition-all"
