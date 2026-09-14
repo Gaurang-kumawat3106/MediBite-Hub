@@ -8,6 +8,7 @@ import { fetchWithCSRF } from "@/lib/csrf";
 import { getApiUrl } from "@/lib/utils";
 
 import GoogleLoginButton from "@/components/GoogleLoginButton";
+import LoginSuccessAnimation from "@/components/LoginSuccessAnimation";
 
 function LoginForm() {
   const router = useRouter();
@@ -16,6 +17,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isUnverified, setIsUnverified] = useState(false);
@@ -88,14 +90,10 @@ function LoginForm() {
           localStorage.setItem("bb_username", data.user.username);
         }
 
-        if (data.redirect) {
-          if (data.role === "outlet") {
-            router.replace("/outlet/home");
-          } else {
-            router.replace("/customer/home");
-          }
+        if (data.role === "outlet") {
+          router.replace("/outlet/home");
         } else {
-          router.replace("/customer/home");
+          setShowCelebration(true);
         }
       } else {
         if (data.msg) setErrorMsg(data.msg);
@@ -111,12 +109,19 @@ function LoginForm() {
   };
 
   return (
-    <AuthLayout 
-      title={
-        <>Welcome back, <span className="text-brand">{welcomeName}</span></>
-      } 
-      subtitle="Log in to access your account"
-    >
+    <>
+      {showCelebration && (
+        <LoginSuccessAnimation
+          username={welcomeName !== "Guest" ? welcomeName : (username || "Foodie")}
+          onComplete={() => router.replace("/customer/home")}
+        />
+      )}
+      <AuthLayout 
+        title={
+          <>Welcome back, <span className="text-brand">{welcomeName}</span></>
+        } 
+        subtitle="Log in to access your account"
+      >
       {successMsg && (
         <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-xl flex items-start gap-2 text-sm font-medium">
           <i className="fa-solid fa-circle-check mt-0.5"></i>
@@ -222,6 +227,7 @@ function LoginForm() {
       <GoogleLoginButton
         buttonText="Continue with Google"
         onError={(msg) => setErrorMsg(msg)}
+        onSuccess={() => setShowCelebration(true)}
       />
 
       <div className="mt-6 flex flex-col items-center gap-3">
@@ -240,6 +246,7 @@ function LoginForm() {
         </div>
       </div>
     </AuthLayout>
+    </>
   );
 }
 

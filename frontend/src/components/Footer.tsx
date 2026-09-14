@@ -68,6 +68,7 @@ export default function Footer() {
               <li className="flex items-start gap-2"><i className="fa-solid fa-user mt-1 text-gray-400"></i> <span>Founders: Gaurang Kumawat & Bodh Morya</span></li>
               <li className="flex items-center gap-2"><i className="fa-solid fa-envelope text-gray-400"></i> <a href="mailto:gaurangkumawat026@gmail.com" className="hover:text-brand">gaurangkumawat026@gmail.com</a></li>
               <li className="flex items-center gap-2"><i className="fa-solid fa-phone text-gray-400"></i> <a href="tel:+918640006268" className="hover:text-brand">+91 8640006268</a></li>
+              <li className="flex items-center gap-2"><i className="fa-solid fa-phone text-gray-400"></i> <a href="tel:+916266953342" className="hover:text-brand">+91 6266 953 342</a></li>
               <li className="flex items-start gap-2"><i className="fa-solid fa-location-dot mt-1 text-gray-400"></i> <span>College Canteen,<br/>Medi-Caps University, Indore</span></li>
             </ul>
           </div>

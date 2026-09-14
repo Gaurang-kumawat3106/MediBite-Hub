@@ -7,6 +7,15 @@ export const metadata: Metadata = {
   title: "Bhukkad Box",
   description: "Fresh Meals, Freshly Ordered - Campus Canteen Hub",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

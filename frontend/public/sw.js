@@ -17,8 +17,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'BhukkadBox Notification';
     const options = {
       body: data.body || 'You have a new update.',
-      icon: data.icon || '/next.svg',
-      badge: data.badge || '/next.svg',
+      icon: data.icon || '/icon.png',
+      badge: data.badge || '/icon.png',
       tag: data.tag || 'bhukkadbox-notification',
       data: {
         url: data.url || '/'

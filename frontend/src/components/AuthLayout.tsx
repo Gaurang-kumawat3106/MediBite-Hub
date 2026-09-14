@@ -12,9 +12,13 @@ export default function AuthLayout({ children, title, subtitle }: { children: Re
           Fresh Meals, Freshly Ordered
         </div>
 
-        {/* Floating cutlery icon */}
-        <div className="absolute left-1/2 -bottom-6 -translate-x-1/2 w-12 h-12 bg-brand rounded-full flex items-center justify-center shadow-[0_4px_12px_rgba(232,93,32,0.4)] border-4 border-[#2b1b10] z-20">
-          <i className="fa-solid fa-utensils text-white text-sm"></i>
+        {/* Floating brand logo replacing knife and fork */}
+        <div className="absolute left-1/2 -bottom-8 -translate-x-1/2 w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.25)] border-4 border-[#2b1b10] z-20 overflow-hidden p-1 transition-transform duration-200 hover:scale-105">
+          <img
+            src="/icon.png"
+            alt="Bhukkad Box Logo"
+            className="w-full h-full object-contain rounded-xl"
+          />
         </div>
       </div>
 

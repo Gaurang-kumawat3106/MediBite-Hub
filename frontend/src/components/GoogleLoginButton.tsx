@@ -60,8 +60,11 @@ export default function GoogleLoginButton({
           localStorage.setItem("bb_username", data.user.username);
         }
 
-        onSuccess?.();
-        router.replace("/customer/home");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.replace("/customer/home");
+        }
       } else {
         onError?.(data.msg || "Google authentication failed.");
       }

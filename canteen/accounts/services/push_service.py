@@ -32,6 +32,8 @@ def send_user_push_notification(user, title, body, url=None):
     payload = json.dumps({
         "title": title,
         "body": body,
+        "icon": "/icon.png",
+        "badge": "/icon.png",
         "url": url or "/",
         "timestamp": ts
     })
