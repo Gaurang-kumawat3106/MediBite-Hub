@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import OrderAcceptingToggle from "@/components/OrderAcceptingToggle";
+import VoiceAlertToggle from "@/components/VoiceAlertToggle";
 import { fetchWithCache } from "@/lib/apiCache";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getImageUrl, getApiUrl } from "@/lib/utils";
+import { announceNewOrder } from "@/lib/voiceAnnouncement";
 
 export default function OutletDashboard() {
   const [data, setData] = useState<any>(null);
@@ -33,7 +35,15 @@ export default function OutletDashboard() {
   }, []);
 
   useWebSocket("/ws/orders/", (wsData) => {
-    if (wsData.type === 'new_order' || wsData.type === 'order_update') {
+    if (wsData.type === 'new_order') {
+      announceNewOrder({
+        order_id: wsData.order_id,
+        token_number: wsData.token_number,
+        items_summary: wsData.items_summary,
+        items: wsData.items,
+      });
+      fetchDashboardData(true);
+    } else if (wsData.type === 'order_update') {
       fetchDashboardData(true);
     }
   });
@@ -78,12 +88,13 @@ export default function OutletDashboard() {
                 </div>
               </div>
 
-              {/* Order Receiving Status Toggle */}
-              <div className="mb-8">
+              {/* Order Receiving Status & Voice Announcement Toggles */}
+              <div className="mb-8 flex flex-wrap items-center gap-3">
                 <OrderAcceptingToggle 
                   initialState={data?.outlet?.is_accepting_orders}
                   onStatusChange={() => fetchDashboardData(true)}
                 />
+                <VoiceAlertToggle compact />
               </div>
 
           {/* Stats Grid */}

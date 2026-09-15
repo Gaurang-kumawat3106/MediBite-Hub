@@ -98,8 +98,11 @@ class OrderConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'new_order',
             'order_id': event.get('order_id'),
+            'token_number': event.get('token_number'),
             'customer_name': event.get('customer_name', 'Guest'),
-            'total_amount': str(event.get('total_amount', '0.00'))
+            'total_amount': str(event.get('total_amount', '0.00')),
+            'items_summary': event.get('items_summary', ''),
+            'items': event.get('items', [])
         }))
 
     # Receive token update

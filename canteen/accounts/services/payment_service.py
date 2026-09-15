@@ -146,13 +146,43 @@ def _notify_outlet_websocket_safely(order):
     try:
         channel_layer = get_channel_layer()
         if channel_layer:
+            # Build items list and natural speech summary for voice announcement
+            items_parts = []
+            items_payload = []
+            for item in order.items.select_related('product').all():
+                name = item.product.name if item.product else getattr(item, 'product_name', 'Item')
+                qty = item.quantity
+                items_parts.append(f"{qty} {name}")
+                items_payload.append({
+                    "name": name,
+                    "quantity": qty
+                })
+            
+            if len(items_parts) > 1:
+                items_summary = ", ".join(items_parts[:-1]) + " and " + items_parts[-1]
+            elif items_parts:
+                items_summary = items_parts[0]
+            else:
+                items_summary = "food items"
+
+            token_no = None
+            try:
+                t = getattr(order, 'token', None)
+                if t is not None:
+                    token_no = str(t.token_no)
+            except Exception:
+                pass
+
             async_to_sync(channel_layer.group_send)(
                 f"outlet_{order.outlet.id}",
                 {
                     "type": "new_order",
                     "order_id": order.id,
-                    "customer_name": order.user.username,
-                    "total_amount": str(order.total_amount)
+                    "token_number": token_no,
+                    "customer_name": order.user.username if order.user else "Guest",
+                    "total_amount": str(order.total_amount),
+                    "items_summary": items_summary,
+                    "items": items_payload,
                 }
             )
             logger.info(f"_notify_outlet_websocket_safely: WS event sent for Order #{order.id} to group outlet_{order.outlet.id}.")

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import OutletSidebar from "@/components/OutletSidebar";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import OrderAcceptingToggle from "@/components/OrderAcceptingToggle";
+import VoiceAlertToggle from "@/components/VoiceAlertToggle";
 import { fetchWithCache, invalidateCache } from "@/lib/apiCache";
 
 import { fetchWithCSRF } from "@/lib/csrf";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getApiUrl } from "@/lib/utils";
+import { announceNewOrder } from "@/lib/voiceAnnouncement";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function OutletOrders() {
@@ -16,10 +18,31 @@ export default function OutletOrders() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  const isFirstLoadRef = useRef(true);
+  const knownOrderIdsRef = useRef<Set<number>>(new Set());
+
   const fetchOrders = async (force = false) => {
     try {
       const json = await fetchWithCache<any>(`${getApiUrl()}/app/outlet/orders/`, force);
-      if (json.success) {
+      if (json.success && Array.isArray(json.orders)) {
+        if (isFirstLoadRef.current) {
+          json.orders.forEach((o: any) => knownOrderIdsRef.current.add(o.id));
+          isFirstLoadRef.current = false;
+        } else {
+          // Detect any new paid orders fetched via polling
+          json.orders.forEach((o: any) => {
+            if (!knownOrderIdsRef.current.has(o.id)) {
+              knownOrderIdsRef.current.add(o.id);
+              if (o.status !== "cancelled" && o.status !== "delivered") {
+                announceNewOrder({
+                  order_id: o.id,
+                  token_number: o.token_number || o.token,
+                  items: o.items,
+                });
+              }
+            }
+          });
+        }
         setData(json);
       }
     } catch (err) {
@@ -32,6 +55,13 @@ export default function OutletOrders() {
   useWebSocket("/ws/orders/", (wsData) => {
     if (wsData.type === 'new_order') {
       toast.success(`🔔 New Order #${wsData.order_id} received!`, { duration: 5000 });
+      knownOrderIdsRef.current.add(wsData.order_id);
+      announceNewOrder({
+        order_id: wsData.order_id,
+        token_number: wsData.token_number,
+        items_summary: wsData.items_summary,
+        items: wsData.items,
+      });
       fetchOrders(true);
     } else if (wsData.type === 'order_update') {
       fetchOrders(true);
@@ -117,6 +147,7 @@ export default function OutletOrders() {
             <div className="flex flex-wrap items-center gap-3">
               <OrderAcceptingToggle compact />
               <PushNotificationToggle compact roleLabel="new paid order alerts" />
+              <VoiceAlertToggle compact />
               <button onClick={() => fetchOrders(true)} className="text-gray-500 hover:text-brand bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2 text-sm font-bold transition-colors">
                 <i className="fa-solid fa-rotate-right"></i> Refresh
               </button>

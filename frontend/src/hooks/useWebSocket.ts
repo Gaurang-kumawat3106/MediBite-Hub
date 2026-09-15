@@ -3,7 +3,15 @@ import { getWsUrl } from '@/lib/utils';
 import { invalidateCachesForEvent } from '@/lib/apiCache';
 
 export type WebSocketEvent =
-  | { type: "new_order"; order_id: number; customer_name: string; total_amount: string }
+  | {
+      type: "new_order";
+      order_id: number;
+      customer_name: string;
+      total_amount: string;
+      token_number?: string | number | null;
+      items_summary?: string;
+      items?: Array<{ name: string; quantity: number }>;
+    }
   | { type: "order_update"; order_id: number; status: string; token_no?: number | null; message?: string }
   | { type: "token_update"; order_id: number; token_no: number; message?: string }
   | { type: "product_deactivated"; product_id: number; product_name: string }

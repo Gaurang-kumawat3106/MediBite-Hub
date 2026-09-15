@@ -9,6 +9,7 @@ import { getApiUrl } from "@/lib/utils";
 
 import GoogleLoginButton from "@/components/GoogleLoginButton";
 import LoginSuccessAnimation from "@/components/LoginSuccessAnimation";
+import PwaInstallButton from "@/components/PwaInstallButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -244,6 +245,9 @@ function LoginForm() {
             Outlet head register
           </Link>
         </div>
+
+        {/* PWA Install Button at the bottom of Login */}
+        <PwaInstallButton />
       </div>
     </AuthLayout>
     </>

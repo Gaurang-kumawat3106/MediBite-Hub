@@ -17,6 +17,8 @@ function connectOrderWebSocket() {
             updateOrderStatusUI(data.order_id, data.status);
         } else if (data.type === 'new_order') {
             showNotification(`New Order #${data.order_id} from ${data.customer_name}! Total: ₹${data.total_amount}`, 'success');
+            // Announce order via browser SpeechSynthesis
+            announceNewOrderSpeech(data);
             // Refresh outlet orders if on outlet orders page
             if (typeof refreshOutletOrders === 'function') refreshOutletOrders();
         } else if (data.type === 'token_update') {
@@ -113,6 +115,39 @@ function updateOrderStatusUI(orderId, status) {
     if (statusBadge) {
         statusBadge.textContent = status;
         statusBadge.className = `status-badge status-${status.toLowerCase()}`;
+    }
+}
+
+// Voice announcement for new paid orders
+const bbAnnouncedOrderIds = new Set();
+
+function announceNewOrderSpeech(data) {
+    if (!data || !data.order_id || bbAnnouncedOrderIds.has(data.order_id)) return;
+    bbAnnouncedOrderIds.add(data.order_id);
+
+    if (!('speechSynthesis' in window)) return;
+
+    const orderNum = data.token_number || data.order_id;
+    let itemsText = data.items_summary;
+    if (!itemsText && Array.isArray(data.items) && data.items.length > 0) {
+        const parts = data.items.map(i => `${i.quantity || 1} ${i.name || 'item'}`);
+        itemsText = parts.join(' and ');
+    }
+    if (!itemsText) itemsText = "food items";
+
+    const speechText = `New order number ${orderNum}. ${itemsText}.`;
+    console.log("🔊 Speaking new order:", speechText);
+
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = "en-US";
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn("SpeechSynthesis error:", e);
     }
 }
 

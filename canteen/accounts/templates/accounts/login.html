@@ -8,6 +8,8 @@
   <meta name="description" content="Login to Bhukkad Box and start ordering fresh meals from your favourite outlets.">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#000000">
   <link rel="stylesheet" href="{% static 'css/bhukkad.css' %}">
   <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
@@ -109,8 +111,54 @@
         </div>
       </div>
 
+      <!-- Install App Button at the Bottom of Login -->
+      <div class="bb-install-section" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid rgba(0,0,0,0.08); text-align: center;">
+        <button id="bbInstallBtn" type="button" class="bb-btn-install" style="
+          width: 100%;
+          padding: 0.85rem 1.2rem;
+          background: #000000;
+          color: #ffffff;
+          font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 0.95rem;
+          font-weight: 600;
+          border-radius: 12px;
+          border: 1px solid #111111;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.65rem;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+          transition: all 0.2s ease;
+        ">
+          <i class="fa-solid fa-download" style="font-size: 1rem;"></i>
+          <span id="bbInstallBtnText">Install Bhukkad Box App</span>
+        </button>
+      </div>
+
     </div><!-- /card -->
   </div><!-- /page -->
+
+  <!-- Install Guide Modal -->
+  <div id="bbInstallModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#ffffff; border-radius:16px; max-width:380px; width:100%; padding:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); position:relative; text-align:left; font-family:'DM Sans',sans-serif;">
+      <button type="button" id="bbCloseModalBtn" style="position:absolute; top:14px; right:14px; background:transparent; border:none; font-size:1.4rem; line-height:1; cursor:pointer; color:#6b7280;">&times;</button>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+        <div style="width:40px; height:40px; border-radius:10px; background:#000; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.15rem;">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#111827;">Install Bhukkad Box</h3>
+          <p style="margin:0; font-size:0.8rem; color:#6b7280;">Quick access right from your home screen</p>
+        </div>
+      </div>
+      <div id="bbInstallModalBody" style="font-size:0.875rem; color:#374151; line-height:1.5; margin-bottom:1.25rem;">
+      </div>
+      <button type="button" id="bbModalGotItBtn" style="width:100%; padding:0.75rem; background:#000000; color:#ffffff; font-weight:600; font-size:0.9rem; border-radius:10px; border:none; cursor:pointer;">
+        Got it
+      </button>
+    </div>
+  </div>
 
   <script>
     // Personalise welcome name from localStorage if it exists
@@ -125,6 +173,95 @@
     form.addEventListener('submit', () => {
       loader.style.display = 'flex';
     });
+
+    // PWA Install Button Handler
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('bbInstallBtn');
+    const installModal = document.getElementById('bbInstallModal');
+    const installModalBody = document.getElementById('bbInstallModalBody');
+    const closeModalBtn = document.getElementById('bbCloseModalBtn');
+    const modalGotItBtn = document.getElementById('bbModalGotItBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    function showInstallGuide(messageHtml) {
+      if (installModalBody) installModalBody.innerHTML = messageHtml;
+      if (installModal) installModal.style.display = 'flex';
+    }
+
+    function hideInstallGuide() {
+      if (installModal) installModal.style.display = 'none';
+    }
+
+    if (closeModalBtn) closeModalBtn.addEventListener('click', hideInstallGuide);
+    if (modalGotItBtn) modalGotItBtn.addEventListener('click', hideInstallGuide);
+    if (installModal) {
+      installModal.addEventListener('click', (e) => {
+        if (e.target === installModal) hideInstallGuide();
+      });
+    }
+
+    if (installBtn) {
+      installBtn.addEventListener('mouseenter', () => {
+        installBtn.style.background = '#222222';
+      });
+      installBtn.addEventListener('mouseleave', () => {
+        installBtn.style.background = '#000000';
+      });
+
+      installBtn.addEventListener('click', async () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        if (isStandalone) {
+          showInstallGuide('<div style="padding:0.5rem 0; text-align:center;"><strong>Bhukkad Box is already installed!</strong><br><span style="color:#6b7280; font-size:0.8rem; margin-top:4px; display:inline-block;">You are already using the installed version of the app.</span></div>');
+          return;
+        }
+
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            deferredPrompt = null;
+          }
+          return;
+        }
+
+        const ua = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const isMac = /Macintosh/.test(ua);
+
+        if (isIOS) {
+          showInstallGuide(`
+            <ol style="margin:0; padding-left:1.25rem; display:flex; flex-direction:column; gap:0.6rem;">
+              <li>Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket" style="color:#2563eb;"></i> at the bottom of Safari.</li>
+              <li>Scroll down and tap <strong>Add to Home Screen</strong> <i class="fa-regular fa-square-plus"></i>.</li>
+              <li>Tap <strong>Add</strong> in the top-right corner.</li>
+            </ol>
+          `);
+        } else if (isMac || /Windows|Linux/.test(ua)) {
+          showInstallGuide(`
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+              <p style="margin:0;">To install Bhukkad Box on your desktop:</p>
+              <div style="background:#f3f4f6; padding:0.75rem; border-radius:8px; font-size:0.82rem; line-height:1.5;">
+                <strong>Method 1:</strong> Click the <strong>Install</strong> icon (<i class="fa-solid fa-arrow-down-to-bracket"></i> or <i class="fa-solid fa-desktop"></i>) on the right side of the address bar.<br><br>
+                <strong>Method 2:</strong> Click the browser menu (<strong>⋮</strong> or <strong>…</strong>) in the top-right corner and choose <strong>Install Bhukkad Box</strong>.
+              </div>
+            </div>
+          `);
+        } else {
+          showInstallGuide(`
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+              <p style="margin:0;">To install the app:</p>
+              <div style="background:#f3f4f6; padding:0.75rem; border-radius:8px; font-size:0.82rem; line-height:1.5;">
+                Tap your browser menu (<strong>⋮</strong>) in the top-right corner and tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+              </div>
+            </div>
+          `);
+        }
+      });
+    }
   </script>
 
   {% if show_approval_popup %}
