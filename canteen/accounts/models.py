@@ -410,3 +410,22 @@ class PushSubscription(models.Model):
     def __str__(self):
         return f"PushSubscription ({self.user.username}) - {self.endpoint[:30]}..."
 
+
+# ---------------- OUTLET SETTINGS ----------------
+class OutletSettings(models.Model):
+    outlet = models.OneToOneField(
+        Outlet,
+        on_delete=models.CASCADE,
+        related_name='settings'
+    )
+    default_prep_time_mins = models.PositiveIntegerField(
+        default=20,
+        help_text="Default preparation time in minutes for orders"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Settings for {self.outlet.name} (Prep: {self.default_prep_time_mins}m)"
+
+

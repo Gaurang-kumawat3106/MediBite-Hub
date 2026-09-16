@@ -16,8 +16,9 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware.csrf import get_token
 import razorpay
-from accounts.services.payment_service import finalize_paid_order
+from accounts.services.payment_service import finalize_paid_order, generate_token_for_order
 from django.http import JsonResponse
+
 from django.views.decorators.http import require_POST
 
 def login_required_or_401(view_func):
@@ -77,7 +78,8 @@ from .models import (
     Category,
     Product
 )
-from .models import Cart, CartItem, Order, OrderItem, OrderToken, PushSubscription
+from .models import Cart, CartItem, Order, OrderItem, OrderToken, PushSubscription, OutletSettings
+
 from accounts.services.push_service import notify_customer_order_ready
 
 import random
@@ -1803,9 +1805,12 @@ def outlet_orders(request):
         'items__product', 'token'
     ).order_by('-created_at')
 
+    settings_obj, _ = OutletSettings.objects.get_or_create(outlet=outlet)
+
     if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'success': True,
+            'default_prep_time_mins': settings_obj.default_prep_time_mins,
             'orders': [
                 {
                     'id': o.id,
@@ -1831,8 +1836,51 @@ def outlet_orders(request):
             ]
         })
     return render(request, 'accounts/outlet_orders.html', {
-        'orders': orders
-    }) 
+        'orders': orders,
+        'default_prep_time_mins': settings_obj.default_prep_time_mins
+    })
+
+
+@csrf_exempt
+@login_required_or_401
+def outlet_settings_api(request):
+    """
+    GET: Retrieve outlet settings (e.g. prep time).
+    POST: Update outlet settings (e.g. default_prep_time_mins).
+    """
+    outlet = _get_user_outlet(request.user)
+    if not outlet:
+        return JsonResponse({'error': 'Outlet not found or permission denied'}, status=403)
+
+    settings_obj, _ = OutletSettings.objects.get_or_create(outlet=outlet)
+
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            body = request.POST
+
+        prep_time = body.get('default_prep_time_mins') or body.get('prep_time')
+        if prep_time is not None:
+            try:
+                prep_time_val = int(prep_time)
+                if 1 <= prep_time_val <= 180:
+                    settings_obj.default_prep_time_mins = prep_time_val
+                    settings_obj.save()
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'Invalid prep_time value'}, status=400)
+
+        return JsonResponse({
+            'success': True,
+            'default_prep_time_mins': settings_obj.default_prep_time_mins,
+            'message': 'Outlet settings updated successfully'
+        })
+
+    return JsonResponse({
+        'success': True,
+        'default_prep_time_mins': settings_obj.default_prep_time_mins
+    })
+ 
 
 @login_required_or_401
 def outlet_delivered_orders(request):

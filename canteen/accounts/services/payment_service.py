@@ -1,16 +1,64 @@
 import logging
+import random
 from datetime import timedelta
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from django.conf import settings
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import razorpay
 
-from accounts.models import Order, CartItem
+from accounts.models import Order, CartItem, OrderToken
 from accounts.services.push_service import notify_outlet_head_new_order
 
 logger = logging.getLogger(__name__)
+
+
+def generate_token_for_order(order):
+    """
+    Create a daily sequential/unique token for the outlet upon successful payment.
+    Token number will not repeat for the same outlet on the same day.
+    """
+    existing = OrderToken.objects.filter(order=order).first()
+    if existing:
+        return existing
+
+    token_date = timezone.localdate()
+    outlet = order.outlet
+    user = order.user
+
+    for _ in range(5):
+        with transaction.atomic():
+            next_no = random.randint(1, 999)
+            if OrderToken.objects.filter(outlet=outlet, token_date=token_date, token_no=next_no).exists():
+                continue
+            
+            try:
+                token_obj = OrderToken.objects.create(
+                    order=order,
+                    outlet=outlet,
+                    user=user,
+                    token_date=token_date,
+                    token_no=next_no,
+                )
+                
+                # Trigger WebSocket notification for token
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{user.id}",
+                        {
+                            "type": "token_update",
+                            "order_id": order.id,
+                            "token_no": next_no,
+                            "message": f"Your order token is #{next_no}"
+                        }
+                    )
+                return token_obj
+            except IntegrityError:
+                continue
+
+    return None
 
 
 def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="callback"):
@@ -76,6 +124,12 @@ def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="c
     if already_paid:
         return True, "already_paid", 200
 
+    # 1.5 Generate token immediately after payment finalization
+    try:
+        generate_token_for_order(order)
+    except Exception as token_err:
+        logger.warning(f"finalize_paid_order: Token generation warning for Order #{order.id}: {token_err}")
+
     # 2. Safe Post-Processing Step 1: Stock Deduction
     _deduct_stock_safely(order)
 
@@ -92,6 +146,7 @@ def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="c
         logger.warning(f"finalize_paid_order: Web push failed for Order #{order.id}: {push_err}")
 
     return True, "payment_finalized", 200
+
 
 
 
@@ -167,11 +222,12 @@ def _notify_outlet_websocket_safely(order):
 
             token_no = None
             try:
-                t = getattr(order, 'token', None)
+                t = OrderToken.objects.filter(order=order).first()
                 if t is not None:
                     token_no = str(t.token_no)
             except Exception:
                 pass
+
 
             async_to_sync(channel_layer.group_send)(
                 f"outlet_{order.outlet.id}",
