@@ -207,9 +207,11 @@ export default function CartPage() {
             }
             
             if (verifyData.redirect_url) {
+              sessionStorage.setItem("payment_success_flag", "true");
               router.push(verifyData.redirect_url);
             } else {
               alert("Payment verified successfully.");
+              setProcessing(false);
             }
           } catch (err) {
             console.error(err);

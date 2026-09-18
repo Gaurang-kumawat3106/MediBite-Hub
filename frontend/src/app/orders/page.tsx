@@ -53,6 +53,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showPopup, setShowPopup] = useState(false);
+  const [justPaid, setJustPaid] = useState(false);
 
   const fetchOrders = async (force = false) => {
     try {
@@ -74,6 +75,9 @@ export default function OrdersPage() {
   };
 
   useEffect(() => { 
+    if (typeof window !== "undefined" && sessionStorage.getItem("payment_success_flag") === "true") {
+      setJustPaid(true);
+    }
     fetchOrders(); 
     const interval = setInterval(() => {
       fetchOrders(true);
@@ -167,6 +171,22 @@ export default function OrdersPage() {
     );
   }
 
+  const isOrderVisible = data?.orders?.some(o => {
+    const diff = Date.now() - new Date(o.created_at).getTime();
+    return diff < 60000; 
+  });
+  const showConfirming = justPaid && !isOrderVisible;
+
+  // Clear flag once we see the order
+  useEffect(() => {
+    if (isOrderVisible && justPaid) {
+      setJustPaid(false);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("payment_success_flag");
+      }
+    }
+  }, [isOrderVisible, justPaid]);
+
   return (
     <div className="min-h-screen bg-[#faf9f6] flex flex-col relative">
       
@@ -210,6 +230,14 @@ export default function OrdersPage() {
 
       <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8">
         <PushNotificationToggle className="mb-6" roleLabel="ready order updates" />
+        
+        {showConfirming && (
+          <div className="bg-brand text-white p-4 rounded-xl mb-6 font-bold flex items-center justify-center gap-3 animate-pulse shadow-md">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            Payment received. Confirming your order...
+          </div>
+        )}
+
         {data?.orders && data.orders.length > 0 ? (
 
           <div className="flex flex-col gap-4">
@@ -281,7 +309,7 @@ export default function OrdersPage() {
               );
             })}
           </div>
-        ) : (
+        ) : showConfirming ? null : (
           <div className="flex flex-col items-center justify-center text-center py-20 px-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
             <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center text-brand text-4xl mb-6">
               <i className="fa-solid fa-receipt"></i>
