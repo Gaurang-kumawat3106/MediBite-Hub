@@ -1715,6 +1715,8 @@ def _get_token_number_str(order):
 @login_required_or_401
 def customer_orders(request):
     if not request.user.is_customer:
+        if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '') or request.path.startswith('/app/'):
+            return JsonResponse({'success': False, 'error': 'Customer account required', 'login_required': True}, status=403)
         return redirect('login')
     
     # Only show orders that are not unpaid (e.g., paid, cancelled, pending but not unpaid)
@@ -1736,7 +1738,7 @@ def customer_orders(request):
             popup_token.viewed_at = timezone.now()
             popup_token.save(update_fields=['is_viewed', 'viewed_at'])
 
-    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', ''):
+    if request.headers.get('Accept') == 'application/json' or 'application/json' in request.headers.get('Accept', '') or request.path.startswith('/app/'):
         return JsonResponse({
             'success': True,
             'orders': [
@@ -1744,11 +1746,11 @@ def customer_orders(request):
                     'id': o.id,
                     'status': o.status,
                     'payment_status': o.payment_status,
-                    'total_amount': float(o.total_amount),
-                    'total_price': float(o.total_amount),
-                    'created_at': o.created_at.isoformat(),
+                    'total_amount': float(o.total_amount) if o.total_amount is not None else 0.0,
+                    'total_price': float(o.total_amount) if o.total_amount is not None else 0.0,
+                    'created_at': o.created_at.isoformat() if o.created_at else None,
                     'completed_at': o.completed_at.isoformat() if o.completed_at else None,
-                    'outlet_name': o.outlet.name,
+                    'outlet_name': o.outlet.name if o.outlet else "Unknown Outlet",
                     'token_number': _get_token_number_str(o),
                     'token': _get_token_number_str(o),
                     'items': [
@@ -1757,7 +1759,7 @@ def customer_orders(request):
                             'product_name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
                             'name': i.product.name if i.product else getattr(i, 'product_name', 'Item'),
                             'quantity': i.quantity,
-                            'price': float(i.unit_price)
+                            'price': float(i.unit_price) if getattr(i, 'unit_price', None) is not None else 0.0
                         } for i in o.items.all()
                     ]
                 } for o in orders
@@ -1767,7 +1769,7 @@ def customer_orders(request):
                 'order_id': popup_token.order.id,
                 'token_number': str(popup_token.token_no),
                 'token': str(popup_token.token_no),
-                'outlet_name': popup_token.outlet.name,
+                'outlet_name': popup_token.outlet.name if (popup_token and popup_token.outlet) else "Unknown Outlet",
                 'remaining_seconds': getattr(popup_token, 'remaining_seconds', 0)
             } if popup_token else None
         })

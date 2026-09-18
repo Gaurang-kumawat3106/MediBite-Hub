@@ -60,15 +60,18 @@ export default function OrdersPage() {
       const json = await fetchWithCache<OrdersData>(`${getApiUrl()}/app/customer/orders/`, force);
       if (json.success) {
         setData(json);
+        setError("");
         if (json.popup_token) {
           setShowPopup(true);
         }
+      } else if ((json as any).login_required) {
+        router.push("/login");
       } else {
-        setError("Failed to load orders.");
+        setError((json as any).error || "Failed to load orders.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Network error.");
+      setError(err?.message || "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -123,7 +126,9 @@ export default function OrdersPage() {
   };
 
   const formatDate = (isoString: string) => {
+    if (!isoString) return "";
     const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
     return d.toLocaleString(undefined, { 
       month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
     });
@@ -172,8 +177,9 @@ export default function OrdersPage() {
   }
 
   const isOrderVisible = data?.orders?.some(o => {
+    if (!o.created_at) return false;
     const diff = Date.now() - new Date(o.created_at).getTime();
-    return diff < 60000; 
+    return !isNaN(diff) && diff < 60000; 
   });
   const showConfirming = justPaid && !isOrderVisible;
 
@@ -231,6 +237,21 @@ export default function OrdersPage() {
       <div className="flex-1 w-full max-w-3xl mx-auto px-6 py-8">
         <PushNotificationToggle className="mb-6" roleLabel="ready order updates" />
         
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl mb-6 flex items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3 font-semibold text-sm">
+              <i className="fa-solid fa-circle-exclamation text-red-500 text-base"></i>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => { setLoading(true); setError(""); fetchOrders(true); }}
+              className="px-4 py-2 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 transition-colors shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {showConfirming && (
           <div className="bg-brand text-white p-4 rounded-xl mb-6 font-bold flex items-center justify-center gap-3 animate-pulse shadow-md">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
