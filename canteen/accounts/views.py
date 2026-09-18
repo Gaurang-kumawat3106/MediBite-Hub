@@ -2606,5 +2606,143 @@ def toggle_outlet_accepting_orders(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
+# ---------------- PRINT AGENT API ----------------
+@csrf_exempt
+def print_agent_pending_jobs(request):
+    """
+    Returns pending print jobs for the Print Agent to process.
+    Supports optional ?outlet_id= filter.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    from accounts.models import PrintJob
+    outlet_id = request.GET.get('outlet_id')
+    jobs_qs = PrintJob.objects.filter(status='pending').select_related(
+        'order', 'order__user', 'order__outlet', 'order__token'
+    ).prefetch_related('order__items__product').order_by('created_at')
+
+    if outlet_id and outlet_id.isdigit():
+        jobs_qs = jobs_qs.filter(outlet_id=int(outlet_id))
+
+    jobs_data = []
+    for job in jobs_qs[:20]:
+        order = job.order
+        token_no = order.token.token_no if hasattr(order, 'token') and order.token else None
+        customer_name = order.user.get_full_name() or order.user.username
+
+        items_data = []
+        for item in order.items.all():
+            items_data.append({
+                'name': item.product.name,
+                'quantity': item.quantity,
+                'price': str(item.customer_unit_price),
+                'total': str(item.line_total)
+            })
+
+        jobs_data.append({
+            'job_id': job.id,
+            'order_id': order.id,
+            'outlet_id': order.outlet.id,
+            'outlet_name': order.outlet.name,
+            'customer_name': customer_name,
+            'token_no': token_no,
+            'total_amount': str(order.total_amount),
+            'actual_amount': str(order.actual_amount),
+            'platform_fee': str(order.platform_fee),
+            'created_at': order.created_at.strftime("%d/%m/%Y %H:%M:%S"),
+            'items': items_data
+        })
+
+    return JsonResponse({'status': 'success', 'jobs': jobs_data})
+
+
+@csrf_exempt
+def print_agent_ack_job(request):
+    """
+    Acknowledges that a print job has been printed successfully.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    from accounts.models import PrintJob
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        job_id = data.get('job_id')
+        order_id = data.get('order_id')
+
+        if not job_id and not order_id:
+            return JsonResponse({'error': 'Missing job_id or order_id'}, status=400)
+
+        if job_id:
+            job = PrintJob.objects.get(id=job_id)
+        else:
+            job = PrintJob.objects.get(order_id=order_id)
+
+        if job.status == 'printed':
+            return JsonResponse({'status': 'already_printed', 'message': 'Job already printed'}, status=200)
+
+        job.status = 'printed'
+        job.printed_at = timezone.now()
+        job.save(update_fields=['status', 'printed_at'])
+
+        return JsonResponse({'status': 'success', 'message': f'Job #{job.id} marked as printed'})
+    except PrintJob.DoesNotExist:
+        return JsonResponse({'error': 'Print job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def print_agent_create_test_job(request):
+    """
+    Helper endpoint to create a test print job for dev validation.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    from accounts.models import Order, PrintJob, Outlet, CustomUser, Product, OrderItem
+    try:
+        outlet = Outlet.objects.first()
+        user = CustomUser.objects.filter(role='customer').first() or CustomUser.objects.first()
+        if not outlet or not user:
+            return JsonResponse({'error': 'No outlet or user found'}, status=400)
+
+        order = Order.objects.create(
+            user=user,
+            outlet=outlet,
+            total_amount=262.50,
+            actual_amount=250.00,
+            platform_fee=12.50,
+            payment_status='paid',
+            status='preparing'
+        )
+        
+        product = Product.objects.filter(outlet=outlet).first()
+        if product:
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=2,
+                unit_price=125.00,
+                platform_fee=6.25
+            )
+
+        job, created = PrintJob.objects.get_or_create(
+            order=order,
+            defaults={'outlet': outlet, 'status': 'pending'}
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Test order #{order.id} and PrintJob #{job.id} created.',
+            'job_id': job.id,
+            'order_id': order.id
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
 
 

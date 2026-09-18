@@ -78,4 +78,9 @@ path('push/vapid-key/', views.get_vapid_public_key, name='get_vapid_public_key')
 path('push/subscribe/', views.subscribe_push, name='subscribe_push'),
 path('push/unsubscribe/', views.unsubscribe_push, name='unsubscribe_push'),
 
+# Print Agent Integration Endpoints
+path('print-agent/pending/', views.print_agent_pending_jobs, name='print_agent_pending_jobs'),
+path('print-agent/ack/', views.print_agent_ack_job, name='print_agent_ack_job'),
+path('print-agent/create-test-job/', views.print_agent_create_test_job, name='print_agent_create_test_job'),
+
 ]

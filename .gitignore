@@ -46,3 +46,4 @@ frontend/**/*.swp
 .vapid_keys.json
 canteen/.vapid_keys.json
 h_canteen_logo.jpg
+print-agent/

@@ -429,3 +429,30 @@ class OutletSettings(models.Model):
         return f"Settings for {self.outlet.name} (Prep: {self.default_prep_time_mins}m)"
 
 
+# ---------------- PRINT JOB ----------------
+class PrintJob(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='print_job')
+    outlet = models.ForeignKey(Outlet, on_delete=models.CASCADE, related_name='print_jobs')
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('printed', 'Printed'),
+            ('failed', 'Failed')
+        ],
+        default='pending',
+        db_index=True
+    )
+    printed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'created_at'], name='printjob_st_crt_idx'),
+        ]
+
+    def __str__(self):
+        return f"PrintJob #{self.id} for Order #{self.order.id} ({self.status})"
+
+
+

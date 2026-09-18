@@ -130,6 +130,20 @@ def finalize_paid_order(razorpay_order_id, payment_id, signature=None, source="c
     except Exception as token_err:
         logger.warning(f"finalize_paid_order: Token generation warning for Order #{order.id}: {token_err}")
 
+    # 1.6 Create PrintJob for Print Agent
+    try:
+        from accounts.models import PrintJob
+        PrintJob.objects.get_or_create(
+            order=order,
+            defaults={
+                'outlet': order.outlet,
+                'status': 'pending'
+            }
+        )
+        logger.info(f"finalize_paid_order: PrintJob created for Order #{order.id}.")
+    except Exception as print_err:
+        logger.warning(f"finalize_paid_order: PrintJob creation warning for Order #{order.id}: {print_err}")
+
     # 2. Safe Post-Processing Step 1: Stock Deduction
     _deduct_stock_safely(order)
 
