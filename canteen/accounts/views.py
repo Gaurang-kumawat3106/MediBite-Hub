@@ -2704,7 +2704,7 @@ def print_agent_create_test_job(request):
     from accounts.models import Order, PrintJob, Outlet, CustomUser, Product, OrderItem
     try:
         outlet = Outlet.objects.first()
-        user = CustomUser.objects.filter(role='customer').first() or CustomUser.objects.first()
+        user = CustomUser.objects.filter(is_customer=True).first() or CustomUser.objects.first()
         if not outlet or not user:
             return JsonResponse({'error': 'No outlet or user found'}, status=400)
 
