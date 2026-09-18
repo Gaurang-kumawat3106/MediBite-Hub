@@ -259,21 +259,21 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {data?.orders && data.orders.length > 0 ? (
-
+        {(data?.orders && data.orders.length > 0) ? (
           <div className="flex flex-col gap-4">
-            {data.orders.map(order => {
-              const displayTotal = order.total_price ?? order.total_amount ?? 0;
-              const tokenNo = order.token_number || order.token;
+            {data.orders.filter(Boolean).map(order => {
+              const displayTotal = Number(order.total_price ?? order.total_amount ?? 0);
+              const tokenNo = order.token_number || order.token || null;
+              const itemsList = Array.isArray(order.items) ? order.items.filter(Boolean) : [];
 
               return (
-                <div key={order.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-brand/30 transition-colors">
+                <div key={order.id || Math.random()} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-brand/30 transition-colors">
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span className="font-bold text-[#2b1b10] text-lg">Order #{order.id}</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status)}`}>
-                        {order.status}
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status || '')}`}>
+                        {order.status || 'pending'}
                       </span>
                       {tokenNo && (
                         <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-orange-50 text-brand border border-brand/20">
@@ -289,14 +289,18 @@ export default function OrdersPage() {
                       <i className="fa-regular fa-calendar w-4 text-center"></i> {formatDate(order.created_at)}
                     </div>
 
-                    {order.items && order.items.length > 0 && (
+                    {itemsList.length > 0 && (
                       <div className="text-xs text-gray-500 bg-gray-50 rounded-xl p-3 border border-gray-100 flex flex-col gap-1">
-                        {order.items.map(item => (
-                          <div key={item.id} className="flex justify-between">
-                            <span className="font-medium">{item.quantity}x {item.product_name || item.name}</span>
-                            <span>₹{item.price * item.quantity}</span>
-                          </div>
-                        ))}
+                        {itemsList.map(item => {
+                          const unitPrice = Number(item.price) || 0;
+                          const qty = Number(item.quantity) || 1;
+                          return (
+                            <div key={item.id || Math.random()} className="flex justify-between">
+                              <span className="font-medium">{qty}x {item.product_name || item.name || "Item"}</span>
+                              <span>₹{unitPrice * qty}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -309,6 +313,7 @@ export default function OrdersPage() {
                     <div className="flex gap-2">
                       {order.status === 'pending' && (
                         <button 
+                          type="button"
                           onClick={() => handleCancel(order.id)}
                           className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-100"
                         >
@@ -317,6 +322,7 @@ export default function OrdersPage() {
                       )}
                       {(order.status === 'completed' || order.status === 'cancelled') && (
                         <button 
+                          type="button"
                           onClick={() => handleReorder(order.id)}
                           className="px-4 py-2 text-sm font-bold text-brand bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors border border-brand/20 flex items-center gap-2"
                         >
