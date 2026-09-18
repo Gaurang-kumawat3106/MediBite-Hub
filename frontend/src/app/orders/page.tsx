@@ -94,6 +94,23 @@ export default function OrdersPage() {
     }
   });
 
+  const isOrderVisible = data?.orders?.some(o => {
+    if (!o || !o.created_at) return false;
+    const diff = Date.now() - new Date(o.created_at).getTime();
+    return !isNaN(diff) && diff < 60000; 
+  });
+  const showConfirming = justPaid && !isOrderVisible;
+
+  // Clear flag once we see the order - MUST be called unconditionally before early returns!
+  useEffect(() => {
+    if (isOrderVisible && justPaid) {
+      setJustPaid(false);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("payment_success_flag");
+      }
+    }
+  }, [isOrderVisible, justPaid]);
+
   const handleCancel = async (orderId: number) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
@@ -175,23 +192,6 @@ export default function OrdersPage() {
       </div>
     );
   }
-
-  const isOrderVisible = data?.orders?.some(o => {
-    if (!o.created_at) return false;
-    const diff = Date.now() - new Date(o.created_at).getTime();
-    return !isNaN(diff) && diff < 60000; 
-  });
-  const showConfirming = justPaid && !isOrderVisible;
-
-  // Clear flag once we see the order
-  useEffect(() => {
-    if (isOrderVisible && justPaid) {
-      setJustPaid(false);
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("payment_success_flag");
-      }
-    }
-  }, [isOrderVisible, justPaid]);
 
   return (
     <div className="min-h-screen bg-[#faf9f6] flex flex-col relative">
