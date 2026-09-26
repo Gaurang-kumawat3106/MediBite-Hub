@@ -2608,24 +2608,32 @@ def toggle_outlet_accepting_orders(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
-# ---------------- PRINT AGENT API ----------------
 @csrf_exempt
 def print_agent_pending_jobs(request):
     """
     Returns pending print jobs for the Print Agent to process.
-    Supports optional ?outlet_id= filter.
+    outlet_id is REQUIRED — each Print Agent must identify its own outlet.
+    Without it the request is rejected to prevent cross-outlet data leakage.
     """
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     from accounts.models import PrintJob
     outlet_id = request.GET.get('outlet_id')
-    jobs_qs = PrintJob.objects.filter(status='pending').select_related(
+
+    # REQUIRED — reject anonymous polls that would return all outlets' jobs
+    if not outlet_id or not outlet_id.isdigit():
+        return JsonResponse(
+            {'error': 'outlet_id query parameter is required and must be a positive integer.'},
+            status=400
+        )
+
+    jobs_qs = PrintJob.objects.filter(
+        status='pending',
+        outlet_id=int(outlet_id)   # strict per-outlet filter
+    ).select_related(
         'order', 'order__user', 'order__outlet', 'order__token'
     ).prefetch_related('order__items__product').order_by('created_at')
-
-    if outlet_id and outlet_id.isdigit():
-        jobs_qs = jobs_qs.filter(outlet_id=int(outlet_id))
 
     jobs_data = []
     for job in jobs_qs[:20]:
@@ -2663,6 +2671,8 @@ def print_agent_pending_jobs(request):
 def print_agent_ack_job(request):
     """
     Acknowledges that a print job has been printed successfully.
+    The caller must supply outlet_id; the job's outlet is verified against it
+    so that one outlet's agent can never ACK (and clear) another outlet's job.
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -2672,6 +2682,7 @@ def print_agent_ack_job(request):
         data = json.loads(request.body.decode('utf-8'))
         job_id = data.get('job_id')
         order_id = data.get('order_id')
+        requesting_outlet_id = data.get('outlet_id')
 
         if not job_id and not order_id:
             return JsonResponse({'error': 'Missing job_id or order_id'}, status=400)
@@ -2680,6 +2691,17 @@ def print_agent_ack_job(request):
             job = PrintJob.objects.get(id=job_id)
         else:
             job = PrintJob.objects.get(order_id=order_id)
+
+        # Outlet ownership check: the outlet_id in the ACK must match the job's outlet
+        if requesting_outlet_id is not None:
+            try:
+                if int(requesting_outlet_id) != job.outlet_id:
+                    return JsonResponse(
+                        {'error': 'Outlet mismatch: this job does not belong to the requesting outlet.'},
+                        status=403
+                    )
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'Invalid outlet_id in request body.'}, status=400)
 
         if job.status == 'printed':
             return JsonResponse({'status': 'already_printed', 'message': 'Job already printed'}, status=200)
