@@ -687,6 +687,9 @@ body.bb-theme::before {
   font-weight: 800;
   color: var(--bb-brown);
   margin-bottom: 4px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.25;
 }
 .bb-outlet-meta {
   font-size: 0.78rem;
@@ -1102,13 +1105,15 @@ body.bb-theme::before {
 .bb-nav-title-center {
   flex: 1;
   font-family: 'Syne', sans-serif;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--bb-brown);
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.2;
 }
 .bb-cart-btn {
   display: flex;

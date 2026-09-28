@@ -123,17 +123,23 @@ body.bb-theme {
 
     font-family: "Fraunces", serif;
 
-    font-size: 20px;
+    font-size: 16px;
 
     font-weight: 700;
 
-    max-width: 42%;
+    max-width: 60%;
 
-    white-space: nowrap;
+    white-space: normal;
 
-    overflow: hidden;
+    overflow: visible;
 
-    text-overflow: ellipsis;
+    text-overflow: clip;
+
+    word-break: break-word;
+
+    overflow-wrap: break-word;
+
+    line-height: 1.25;
 }
 
 

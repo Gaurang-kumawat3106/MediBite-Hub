@@ -231,11 +231,11 @@ export default function CustomerHomePage() {
                     </div>
                   </div>
                   
-                  <div className="flex-1 flex flex-col py-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-bold font-heading text-[#2b1b10] line-clamp-1 group-hover:text-brand transition-colors">
-                        {outlet.name}
-                      </h3>
+                    <div className="flex-1 flex flex-col py-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold font-heading text-[#2b1b10] break-words line-clamp-2 leading-tight group-hover:text-brand transition-colors">
+                          {outlet.name}
+                        </h3>
                       {isClosed && (
                         <span className="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                           Paused

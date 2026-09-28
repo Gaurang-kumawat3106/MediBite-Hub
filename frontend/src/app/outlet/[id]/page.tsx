@@ -228,8 +228,8 @@ export default function OutletDetailPage() {
         <Link href="/customer/home" className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
           <i className="fa-solid fa-arrow-left"></i>
         </Link>
-        <div className="text-lg font-bold font-heading text-[#2b1b10]">{data.outlet.name}</div>
-        <div className="flex items-center gap-3">
+        <div className="text-base sm:text-lg font-bold font-heading text-[#2b1b10] text-center px-2 min-w-0 flex-1 break-words line-clamp-2 leading-tight">{data.outlet.name}</div>
+        <div className="flex items-center gap-3 shrink-0">
           <button 
             onClick={() => {
               setIsSearchOpen(true);
@@ -295,8 +295,8 @@ export default function OutletDetailPage() {
               </div>
             )}
           </div>
-        <div className="flex items-center gap-2 mt-3 mb-1">
-          <h1 className="text-3xl font-bold font-heading">{data.outlet.name}</h1>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-3 mb-1 px-4 text-center max-w-full">
+          <h1 className="text-2xl sm:text-3xl font-bold font-heading break-words text-center leading-tight">{data.outlet.name}</h1>
           {data.outlet.is_accepting_orders === false && (
             <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               Orders Paused
