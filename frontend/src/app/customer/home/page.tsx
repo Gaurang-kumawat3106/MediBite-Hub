@@ -206,16 +206,16 @@ export default function CustomerHomePage() {
         {/* Card 1: My Orders */}
         <Link 
           href="/orders" 
-          className="bg-white rounded-[1.8rem] p-3.5 sm:p-4 shadow-[0_10px_25px_rgba(0,0,0,0.06)] border border-gray-100 flex items-center gap-3 hover:shadow-xl hover:-translate-y-0.5 transition-all group"
+          className="bg-white rounded-[1.8rem] p-3 sm:p-4 shadow-[0_10px_25px_rgba(0,0,0,0.06)] border border-gray-100 flex items-center gap-2.5 sm:gap-3 hover:shadow-xl hover:-translate-y-0.5 transition-all group"
         >
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#f4f2eb] text-[#13382c] flex items-center justify-center shrink-0 border border-gray-200/50 group-hover:bg-[#13382c] group-hover:text-white transition-colors">
-            <i className="fa-solid fa-bag-shopping text-base sm:text-lg"></i>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#f4f2eb] text-[#13382c] flex items-center justify-center shrink-0 border border-gray-200/50 group-hover:bg-[#13382c] group-hover:text-white transition-colors">
+            <i className="fa-solid fa-bag-shopping text-sm sm:text-lg"></i>
           </div>
-          <div className="min-w-0">
-            <h2 className="font-bold text-[#13382c] text-sm sm:text-base leading-tight group-hover:text-[#e8a135] transition-colors truncate">
+          <div className="flex flex-col">
+            <h2 className="font-bold text-[#13382c] text-xs sm:text-base leading-tight group-hover:text-[#e8a135] transition-colors whitespace-nowrap">
               My Orders
             </h2>
-            <p className="text-[11px] sm:text-xs text-gray-400 font-medium mt-0.5 truncate">
+            <p className="text-[10px] sm:text-xs text-gray-400 font-medium mt-0.5 whitespace-nowrap">
               Track & reorder
             </p>
           </div>
@@ -224,16 +224,16 @@ export default function CustomerHomePage() {
         {/* Card 2: My Token */}
         <Link 
           href="/token" 
-          className="bg-[#e8a135] rounded-[1.8rem] p-3.5 sm:p-4 shadow-[0_10px_25px_rgba(232,161,53,0.28)] flex items-center gap-3 hover:shadow-xl hover:-translate-y-0.5 transition-all group"
+          className="bg-[#e8a135] rounded-[1.8rem] p-3 sm:p-4 shadow-[0_10px_25px_rgba(232,161,53,0.28)] flex items-center gap-2.5 sm:gap-3 hover:shadow-xl hover:-translate-y-0.5 transition-all group"
         >
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#d48e28] text-[#13382c] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <i className="fa-solid fa-ticket text-base sm:text-lg"></i>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#d48e28] text-[#13382c] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <i className="fa-solid fa-ticket text-sm sm:text-lg"></i>
           </div>
-          <div className="min-w-0">
-            <h2 className="font-bold text-[#13382c] text-sm sm:text-base leading-tight truncate">
+          <div className="flex flex-col">
+            <h2 className="font-bold text-[#13382c] text-xs sm:text-base leading-tight whitespace-nowrap">
               My Token
             </h2>
-            <p className="text-[11px] sm:text-xs text-[#523812] font-medium mt-0.5 truncate">
+            <p className="text-[10px] sm:text-xs text-[#523812] font-medium mt-0.5 whitespace-nowrap">
               Show at counter
             </p>
           </div>
@@ -322,7 +322,7 @@ export default function CustomerHomePage() {
                       href={`/outlet/${outlet.id}`}
                       onMouseEnter={() => prefetchAPI(`${getApiUrl()}/app/outlet/${outlet.id}/`)}
                     >
-                      <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#13382c] group-hover:text-[#e8a135] transition-colors leading-tight line-clamp-1">
+                      <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#13382c] group-hover:text-[#e8a135] transition-colors leading-tight break-words line-clamp-2">
                         {outlet.name}
                       </h3>
                     </Link>
@@ -335,7 +335,7 @@ export default function CustomerHomePage() {
                     <div className="flex items-center justify-between gap-2">
                       {/* Left Info Pills */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="bg-white border border-gray-200/80 px-3 py-1.5 rounded-full text-xs font-bold text-[#13382c] flex items-center gap-1.5 shadow-sm">
+                        <span className="bg-white border border-gray-200/80 px-3 py-1.5 rounded-full text-xs font-bold text-[#13382c] flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                           <i className="fa-regular fa-clock text-gray-400"></i>
                           20–25 min
                         </span>
@@ -345,14 +345,14 @@ export default function CustomerHomePage() {
                       <Link 
                         href={`/outlet/${outlet.id}`}
                         onMouseEnter={() => prefetchAPI(`${getApiUrl()}/app/outlet/${outlet.id}/`)}
-                        className={`text-xs sm:text-sm font-bold pl-4 pr-1.5 py-1.5 rounded-full flex items-center gap-2.5 shadow-sm transition-all ${
+                        className={`text-xs sm:text-sm font-bold pl-4 pr-1.5 py-1.5 rounded-full flex items-center gap-2.5 shadow-sm transition-all whitespace-nowrap shrink-0 ${
                           isClosed 
                             ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
                             : "bg-[#13382c] text-white hover:bg-[#1a4a3b] hover:shadow-md"
                         }`}
                       >
                         Explore
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-transform group-hover:translate-x-0.5 ${
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-transform group-hover:translate-x-0.5 shrink-0 ${
                           isClosed ? "bg-gray-300 text-gray-600" : "bg-[#e8a135] text-[#13382c]"
                         }`}>
                           <i className="fa-solid fa-arrow-right"></i>
