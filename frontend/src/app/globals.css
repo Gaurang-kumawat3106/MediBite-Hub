@@ -1,15 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "DM Sans";
   --font-heading: "Syne";
+  --font-serif: "DM Serif Display", Georgia, serif;
   
   --color-brand: #e85d20;
   --color-brand-dark: #c94c14;
   --color-brand-light: rgba(232, 93, 32, 0.15);
   
-  --color-bg-main: #f5efe6;
-  --color-text-main: #2b1b10;
+  --color-bg-main: #f6f3ed;
+  --color-text-main: #11382b;
   --color-text-sub: #6b5c51;
 }
 
